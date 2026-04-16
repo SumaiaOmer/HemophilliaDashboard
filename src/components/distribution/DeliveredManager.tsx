@@ -11,6 +11,8 @@ export const DeliveredManager: React.FC = () => {
   const [filterState, setFilterState] = useState('all');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [deliveryStartDate, setDeliveryStartDate] = useState('');
+  const [deliveryEndDate, setDeliveryEndDate] = useState('');
 
   useEffect(() => {
     loadDistributions();
@@ -18,7 +20,7 @@ export const DeliveredManager: React.FC = () => {
 
   useEffect(() => {
     filterDistributions();
-  }, [distributions, searchTerm, filterState, startDate, endDate]);
+  }, [distributions, searchTerm, filterState, startDate, endDate, deliveryStartDate, deliveryEndDate]);
 
   const loadDistributions = async () => {
     try {
@@ -83,6 +85,20 @@ export const DeliveredManager: React.FC = () => {
       filtered = filtered.filter(dist => new Date(dist.distributionDate) <= new Date(endDate));
     }
 
+    if (deliveryStartDate) {
+      filtered = filtered.filter(dist => {
+        if (!dist.deliveryDate) return false;
+        return new Date(dist.deliveryDate) >= new Date(deliveryStartDate);
+      });
+    }
+
+    if (deliveryEndDate) {
+      filtered = filtered.filter(dist => {
+        if (!dist.deliveryDate) return false;
+        return new Date(dist.deliveryDate) <= new Date(deliveryEndDate);
+      });
+    }
+
     setFilteredDistributions(filtered);
   };
 
@@ -109,8 +125,31 @@ export const DeliveredManager: React.FC = () => {
     <div className="space-y-6">
       {/* Filters */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
-          <div className="relative flex-1">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Filter className="h-5 w-5 text-gray-500" />
+            <h3 className="font-semibold text-gray-800">Filters</h3>
+          </div>
+          {(searchTerm || filterState !== 'all' || startDate || endDate || deliveryStartDate || deliveryEndDate) && (
+            <button
+              onClick={() => {
+                setSearchTerm('');
+                setFilterState('all');
+                setStartDate('');
+                setEndDate('');
+                setDeliveryStartDate('');
+                setDeliveryEndDate('');
+              }}
+              className="flex items-center gap-1 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 px-3 py-1 rounded-lg transition-colors"
+            >
+              <X className="h-4 w-4" />
+              Clear All
+            </button>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
             <input
               type="text"
@@ -121,21 +160,97 @@ export const DeliveredManager: React.FC = () => {
             />
           </div>
 
-          <div className="flex gap-3">
-            <div className="relative">
-              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <select
-                value={filterState}
-                onChange={(e) => setFilterState(e.target.value)}
-                className="pl-10 pr-8 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none appearance-none bg-white"
-              >
-                <option value="all">All States</option>
-                {uniqueStates.map(state => (
-                  <option key={state} value={state}>{state}</option>
-                ))}
-              </select>
-            </div>
+          <div className="relative">
+            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <select
+              value={filterState}
+              onChange={(e) => setFilterState(e.target.value)}
+              className="w-full pl-10 pr-8 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none appearance-none bg-white"
+            >
+              <option value="all">All States</option>
+              {uniqueStates.map(state => (
+                <option key={state} value={state}>{state}</option>
+              ))}
+            </select>
           </div>
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Calendar className="h-4 w-4 text-blue-600" />
+              <span className="text-sm font-semibold text-blue-800">Filter by Delivery Date</span>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-blue-700 mb-1">From</label>
+                <input
+                  type="date"
+                  value={deliveryStartDate}
+                  onChange={(e) => setDeliveryStartDate(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-blue-700 mb-1">To</label>
+                <input
+                  type="date"
+                  value={deliveryEndDate}
+                  onChange={(e) => setDeliveryEndDate(e.target.value)}
+                  min={deliveryStartDate || undefined}
+                  className="w-full px-3 py-2 text-sm border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
+                />
+              </div>
+            </div>
+            {(deliveryStartDate || deliveryEndDate) && (
+              <button
+                onClick={() => { setDeliveryStartDate(''); setDeliveryEndDate(''); }}
+                className="mt-2 text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1"
+              >
+                <X className="h-3 w-3" /> Clear delivery date filter
+              </button>
+            )}
+          </div>
+
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Calendar className="h-4 w-4 text-gray-600" />
+              <span className="text-sm font-semibold text-gray-700">Filter by Distribution Date</span>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">From</label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">To</label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  min={startDate || undefined}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
+                />
+              </div>
+            </div>
+            {(startDate || endDate) && (
+              <button
+                onClick={() => { setStartDate(''); setEndDate(''); }}
+                className="mt-2 text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
+              >
+                <X className="h-3 w-3" /> Clear distribution date filter
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-3 text-sm text-gray-500">
+          Showing {filteredDistributions.length} of {distributions.length} records
         </div>
       </div>
 
