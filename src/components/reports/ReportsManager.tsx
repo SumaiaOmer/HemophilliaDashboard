@@ -377,10 +377,10 @@ export const ReportsManager: React.FC = () => {
 
           {/* Company Performance Chart */}
           <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-            <div className="flex items-center justify-between mb-6">
+            {/* <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-gray-800">Company Performance</h3>
               <BarChart3 className="h-5 w-5 text-orange-600" />
-            </div>
+            </div> */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Chart */}
               <div>
@@ -407,7 +407,7 @@ export const ReportsManager: React.FC = () => {
                 </div>
               </div>
               {/* Table */}
-              <div>
+              {/* <div>
                 <h4 className="text-sm font-medium text-gray-700 mb-3">Company Details</h4>
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
@@ -429,7 +429,7 @@ export const ReportsManager: React.FC = () => {
                     </tbody>
                   </table>
                 </div>
-              </div>
+              </div> */}
             </div>
           </div>
         </div>
@@ -893,7 +893,7 @@ export const ReportsManager: React.FC = () => {
           </div>
 
           {/* Company Details Table */}
-          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+          {/* <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-semibold text-gray-800">Company Analysis Report</h3>
               <button 
@@ -934,7 +934,7 @@ export const ReportsManager: React.FC = () => {
                 </div>
               ))}
             </div>
-          </div>
+          </div> */}
         </div>
       )}
     </div>

@@ -44,7 +44,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
 
   return (
     <div className="bg-white rounded-lg p-6 w-full max-w-md mx-auto shadow-xl">
-      <div className="flex justify-between items-center mb-6">
+      {/* <div className="flex justify-between items-center mb-6">
         <h3 className="text-lg font-semibold text-gray-800">
           {company ? 'Edit Company' : 'Add New Company'}
         </h3>
@@ -54,10 +54,10 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
         >
           <X className="h-5 w-5 text-gray-500" />
         </button>
-      </div>
+      </div> */}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
+        {/* <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Company Name *
           </label>
@@ -70,7 +70,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
             placeholder="Enter company name"
           />
-        </div>
+        </div> */}
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -110,12 +110,12 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
           >
             Cancel
           </button>
-          <button
+          {/* <button
             type="submit"
             className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
           >
             {company ? 'Update' : 'Create'}
-          </button>
+          </button> */}
         </div>
       </form>
     </div>

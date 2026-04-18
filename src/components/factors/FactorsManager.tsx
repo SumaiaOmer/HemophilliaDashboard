@@ -74,7 +74,7 @@ export const FactorsManager: React.FC = () => {
 
   const isExpiringSoon = (expiryDate: string) => {
     const thirtyDaysFromNow = new Date();
-    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 180);
     const expiry = new Date(expiryDate);
     return expiry <= thirtyDaysFromNow && expiry >= new Date();
   };

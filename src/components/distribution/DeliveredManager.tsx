@@ -257,8 +257,8 @@ export const DeliveredManager: React.FC = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">State</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Medicine</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vial (mg)</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Concentration (MG/UI)</th>
+                {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th> */}
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expiry Date</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
@@ -282,7 +282,7 @@ export const DeliveredManager: React.FC = () => {
         <td className="px-6 py-4 text-sm text-gray-900">{dist.category}</td>
         <td className="px-6 py-4 text-sm text-gray-900">{dist.quantityDistributed}</td>
         <td className="px-6 py-4 text-sm text-gray-900">{dist.mg}</td>
-        <td className="px-6 py-4 text-sm text-gray-900">{dist.companyName}</td>
+        {/* <td className="px-6 py-4 text-sm text-gray-900">{dist.companyName}</td> */}
         <td className="px-6 py-4 text-sm">
           <span
             className={`${
