@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, AlertTriangle } from 'lucide-react';
 import { MedicineDistribution, MedicineDistributionRequest, Factor } from '../../types/api';
+import { toDateInputValue, toISOStringFromDateInput } from '../../lib/dateUtils';
 
 interface DistributionFormProps {
   distribution?: MedicineDistribution | null;
@@ -20,7 +21,7 @@ export const DistributionForm: React.FC<DistributionFormProps> = ({
     state: '',
     quantity: 1,
     quantityDistributed: 0,
-    distributionDate: new Date().toISOString().split('T')[0],
+    distributionDate: toDateInputValue(new Date().toISOString()),
     expiryDate: '',
     mg: 0,
     companyName: '',
@@ -31,16 +32,13 @@ export const DistributionForm: React.FC<DistributionFormProps> = ({
 
   useEffect(() => {
     if (distribution) {
-      const distributionDate = new Date().toISOString().split('T')[0];
-      const expiryDate = new Date(distribution.expiryDate).toISOString().split('T')[0];
-
       setFormData({
         factorId: Number(distribution.factorId),
         state: distribution.state,
         quantity: Number(distribution.quantity) || 1,
         quantityDistributed: Number(distribution.quantityDistributed) || 0,
-        distributionDate,
-        expiryDate,
+        distributionDate: toDateInputValue(new Date().toISOString()),
+        expiryDate: toDateInputValue(distribution.expiryDate),
         mg: Number(distribution.mg) || 0,
         companyName: distribution.companyName,
         category: distribution.category,
@@ -61,11 +59,10 @@ export const DistributionForm: React.FC<DistributionFormProps> = ({
         setSelectedFactor(factor);
 
         if (!distribution) {
-          const expiryDate = new Date(factor.expiryDate).toISOString().split('T')[0];
           setFormData(prev => ({
             ...prev,
             quantity: factor.quantity,
-            expiryDate,
+            expiryDate: toDateInputValue(factor.expiryDate),
             mg: factor.mg,
             companyName: factor.companyName,
             category: factor.drugType,
@@ -81,8 +78,8 @@ export const DistributionForm: React.FC<DistributionFormProps> = ({
     e.preventDefault();
     const submitData = {
       ...formData,
-      distributionDate: new Date(formData.distributionDate).toISOString(),
-      expiryDate: new Date(formData.expiryDate).toISOString(),
+      distributionDate: toISOStringFromDateInput(formData.distributionDate),
+      expiryDate: toISOStringFromDateInput(formData.expiryDate),
     };
     onSave(submitData);
   };
