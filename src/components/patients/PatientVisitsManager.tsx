@@ -6,6 +6,7 @@ import { PatientsService } from '../../services/patients';
 import { FactorsService } from '../../services/factors';
 import { PatientVisitForm } from './PatientVisitForm';
 import { PatientVisitDetails } from './PatientVisitDetails';
+import { formatDate } from '../../lib/dateUtils';
 
 export const PatientVisitsManager: React.FC = () => {
   const [visits, setVisits] = useState<PatientVisit[]>([]);
@@ -69,9 +70,6 @@ export const PatientVisitsManager: React.FC = () => {
            visit.centerName?.toLowerCase().includes(searchLower);
   });
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
-  };
 
   const formatVisitType = (type?: string) => {
     if (!type) return 'N/A';
@@ -243,7 +241,7 @@ export const PatientVisitsManager: React.FC = () => {
                       <div key={index} className="text-xs bg-green-50 p-2 rounded border border-green-200">
                         <p className="font-medium text-green-900">{test.testName}</p>
                         <p className="text-green-700">Result: {test.testResult}</p>
-                        <p className="text-green-600 text-[10px]">Date: {new Date(test.testDate).toLocaleDateString()}</p>
+                        <p className="text-green-600 text-[10px]">Date: {formatDate(test.testDate)}</p>
                       </div>
                     ))}
                   </div>

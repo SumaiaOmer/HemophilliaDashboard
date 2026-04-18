@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Calendar, FileText, User, MapPin, Pill, AlertCircle } from 'lucide-react';
 import { PatientVisit, Patient, Factor } from '../../types/api';
 import { PatientVisitsService } from '../../services/patientVisits';
+import { formatDate } from '../../lib/dateUtils';
 
 interface PatientVisitDetailsProps {
   visitId: number;
@@ -37,13 +38,6 @@ export const PatientVisitDetails: React.FC<PatientVisitDetailsProps> = ({
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
 
   const getDrugName = (drugId: number) => {
     const factor = factors.find(f => f.id === drugId);

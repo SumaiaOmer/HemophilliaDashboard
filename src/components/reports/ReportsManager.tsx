@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { formatDate } from '../../lib/dateUtils';
 import { 
   BarChart3, 
   FileText, 
@@ -146,9 +147,6 @@ export const ReportsManager: React.FC = () => {
     window.URL.revokeObjectURL(url);
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
-  };
 
   if (loading) {
     return (

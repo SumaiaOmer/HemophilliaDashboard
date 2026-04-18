@@ -4,6 +4,7 @@ import { CellPhoneTreatment, CellPhoneTreatmentRequest, Patient } from '../../ty
 import { CellPhoneTreatmentsService } from '../../services/cellPhoneTreatments';
 import { PatientsService } from '../../services/patients';
 import { CellPhoneForm } from './CellPhoneForm';
+import { formatDate } from '../../lib/dateUtils';
 
 export const CellPhoneManager: React.FC = () => {
   const [treatments, setTreatments] = useState<CellPhoneTreatment[]>([]);
@@ -81,9 +82,6 @@ export const CellPhoneManager: React.FC = () => {
     );
   });
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
-  };
 
   const formatTime = (timeString: string) => {
     if (!timeString) return '';

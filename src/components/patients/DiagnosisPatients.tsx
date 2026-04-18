@@ -3,6 +3,7 @@ import { User, Calendar, MapPin, FileText, Search } from 'lucide-react';
 import { PatientVisit, Patient } from '../../types/api';
 import { PatientVisitsService } from '../../services/patientVisits';
 import { PatientsService } from '../../services/patients';
+import { formatDate } from '../../lib/dateUtils';
 
 export const DiagnosisPatients: React.FC = () => {
   const [visits, setVisits] = useState<PatientVisit[]>([]);
@@ -95,9 +96,6 @@ export const DiagnosisPatients: React.FC = () => {
     return matchesSearch && matchesFilter;
   });
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
-  };
 
   const stats = {
     total: visits.length,

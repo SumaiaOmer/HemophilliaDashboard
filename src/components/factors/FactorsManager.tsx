@@ -3,6 +3,7 @@ import { Plus, CreditCard as Edit, Trash2, Pill, Calendar, Package, Building2 } 
 import { Factor, FactorRequest } from '../../types/api';
 import { FactorsService } from '../../services/factors';
 import { FactorForm } from './FactorForm';
+import { formatDate } from '../../lib/dateUtils';
 
 export const FactorsManager: React.FC = () => {
   const [factors, setFactors] = useState<Factor[]>([]);
@@ -66,9 +67,6 @@ export const FactorsManager: React.FC = () => {
     factor.drugType.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
-  };
 
   const isExpired = (expiryDate: string) => {
     return new Date(expiryDate) < new Date();

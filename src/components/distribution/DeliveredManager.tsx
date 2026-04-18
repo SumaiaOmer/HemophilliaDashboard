@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, Filter, Calendar, X } from 'lucide-react';
 import { MedicineDistributionService } from '../../services/medicineDistribution';
 import { MedicineDistribution, MedicineDistributionRequest } from '../../types/api';
+import { formatDate } from '../../lib/dateUtils';
 
 export const DeliveredManager: React.FC = () => {
   const [distributions, setDistributions] = useState<MedicineDistribution[]>([]);
@@ -104,14 +105,6 @@ export const DeliveredManager: React.FC = () => {
 
   const uniqueStates = Array.from(new Set(distributions.map(d => d.state))).sort();
 
-  const formatDate = (dateString: string) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
 
   if (loading) {
     return (

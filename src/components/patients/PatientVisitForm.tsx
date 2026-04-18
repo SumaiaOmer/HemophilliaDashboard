@@ -141,7 +141,7 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
 
     let notesWithFollowUp = formData.notes || '';
     if (formData.serviceType === 'hospital_admission' && followUpDate) {
-      const followUpText = `\nFollow-up Date: ${new Date(followUpDate).toLocaleDateString()}`;
+      const followUpText = `\nFollow-up Date: ${(() => { const d = new Date(followUpDate); const off = d.getTimezoneOffset(); const adj = new Date(d.getTime() + off * 60000); return `${String(adj.getDate()).padStart(2,'0')}/${String(adj.getMonth()+1).padStart(2,'0')}/${adj.getFullYear()}`; })()}`;
       notesWithFollowUp = notesWithFollowUp ? `${notesWithFollowUp}${followUpText}` : followUpText.trim();
     }
 

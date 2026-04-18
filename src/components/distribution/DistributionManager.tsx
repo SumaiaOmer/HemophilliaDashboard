@@ -4,6 +4,7 @@ import { MedicineDistribution, MedicineDistributionRequest, Factor } from '../..
 import { MedicineDistributionService } from '../../services/medicineDistribution';
 import { FactorsService } from '../../services/factors';
 import { DistributionForm } from './DistributionForm';
+import { formatDate } from '../../lib/dateUtils';
 
 export const DistributionManager: React.FC = () => {
   const [distributions, setDistributions] = useState<MedicineDistribution[]>([]);
@@ -133,9 +134,6 @@ export const DistributionManager: React.FC = () => {
 
   const hasActiveFilters = searchTerm || stateFilter !== 'all' || statusFilter !== 'all' || startDate || endDate;
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
-  };
 
   const isExpired = (expiryDate: string) => {
     return new Date(expiryDate) < new Date();
@@ -319,7 +317,7 @@ export const DistributionManager: React.FC = () => {
             {(startDate || endDate) && (
               <div className="inline-flex items-center space-x-1 px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm">
                 <span>
-                  Date: {startDate ? new Date(startDate).toLocaleDateString() : 'Start'} - {endDate ? new Date(endDate).toLocaleDateString() : 'End'}
+                  Date: {startDate ? formatDate(startDate) : 'Start'} - {endDate ? formatDate(endDate) : 'End'}
                 </span>
                 <button onClick={() => { setStartDate(''); setEndDate(''); }} className="hover:bg-orange-200 rounded-full p-0.5">
                   <X className="h-3 w-3" />

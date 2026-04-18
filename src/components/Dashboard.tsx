@@ -5,6 +5,7 @@ import { FactorsService } from '../services/factors';
 import { PatientsService } from '../services/patients';
 import { MedicineDistributionService } from '../services/medicineDistribution';
 import { Factor, MedicineDistribution } from '../types/api';
+import { formatDate } from '../lib/dateUtils';
 
 interface DashboardStats {
   totalPatients: number;
@@ -224,7 +225,7 @@ export const Dashboard: React.FC = () => {
                   </div>
                   <div className="text-right">
                     <div className="text-sm font-medium text-orange-600">
-                      {new Date(drug.expiryDate).toLocaleDateString()}
+                      {formatDate(drug.expiryDate)}
                     </div>
                     <div className="text-xs text-gray-500">expiry date</div>
                   </div>

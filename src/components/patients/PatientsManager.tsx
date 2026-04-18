@@ -1,9 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Users, Calendar, MapPin, Phone, Heart, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, CreditCard as Edit, Trash2, Users, Calendar, MapPin, Phone, Heart, ChevronDown, ChevronUp } from 'lucide-react';
 import { Patient, PatientRequest } from '../../types/api';
 import { PatientsService } from '../../services/patients';
 import { PatientForm } from './PatientForm';
+import { formatDate } from '../../lib/dateUtils';
 
 export const PatientsManager: React.FC = () => {
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -98,9 +99,6 @@ export const PatientsManager: React.FC = () => {
     patient.hemophiliaCenterId?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
-  };
 
   const formatOccupation = (occupation?: string) => {
     if (!occupation) return 'N/A';
@@ -325,7 +323,7 @@ export const PatientsManager: React.FC = () => {
                               {patient.incidenceDate && (
                                 <div>
                                   <span className="text-gray-600">Incidence Date:</span>
-                                  <span className="ml-2 text-gray-900">{new Date(patient.incidenceDate).toLocaleDateString()}</span>
+                                  <span className="ml-2 text-gray-900">{formatDate(patient.incidenceDate)}</span>
                                 </div>
                               )}
                               <div>
