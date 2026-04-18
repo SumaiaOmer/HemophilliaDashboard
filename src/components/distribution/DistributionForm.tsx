@@ -173,7 +173,7 @@ export const DistributionForm: React.FC<DistributionFormProps> = ({
               <div className="text-sm text-blue-800">
                 <strong>Available Qty:</strong> {selectedFactor.quantity} <br />
                 <strong> Expiry:</strong> {(() => { const d = new Date(selectedFactor.expiryDate); const off = d.getTimezoneOffset(); const adj = new Date(d.getTime() + off * 60000); return `${String(adj.getDate()).padStart(2,'0')}/${String(adj.getMonth()+1).padStart(2,'0')}/${adj.getFullYear()}`; })()} |
-                <strong> Company:</strong> {selectedFactor.companyName}
+                
               </div>
               <div className="text-sm text-blue-800 mt-1">
                 <strong>Lot:</strong> {selectedFactor.lotNo} |

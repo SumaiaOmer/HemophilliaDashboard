@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, Calendar, X } from 'lucide-react';
 import { MedicineDistributionService } from '../../services/medicineDistribution';
-import { MedicineDistribution, MedicineDistributionRequest } from '../../types/api';
+import { FactorsService } from '../../services/factors';
+import { MedicineDistribution, MedicineDistributionRequest, Factor } from '../../types/api';
 import { formatDate } from '../../lib/dateUtils';
 
 export const DeliveredManager: React.FC = () => {
   const [distributions, setDistributions] = useState<MedicineDistribution[]>([]);
   const [filteredDistributions, setFilteredDistributions] = useState<MedicineDistribution[]>([]);
+  const [factors, setFactors] = useState<Factor[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterState, setFilterState] = useState('all');
@@ -26,13 +28,25 @@ export const DeliveredManager: React.FC = () => {
   const loadDistributions = async () => {
     try {
       setLoading(true);
-      const data = await MedicineDistributionService.getAll();
+      const [data, factorData] = await Promise.all([
+        MedicineDistributionService.getAll(),
+        FactorsService.getAll().catch(err => {
+          console.error('Error loading factors:', err);
+          return [];
+        })
+      ]);
       setDistributions(data);
+      setFactors(factorData);
     } catch (error) {
       console.error('Error loading distributions:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const getFactorName = (factorId: number) => {
+    const factor = factors.find(f => f.id === factorId);
+    return factor ? factor.name : `Factor ID: ${factorId}`;
   };
 
   const handleToggleStatus = async (distribution: MedicineDistribution) => {
@@ -67,11 +81,15 @@ export const DeliveredManager: React.FC = () => {
 
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(dist =>
-        dist.state.toLowerCase().includes(term) ||
-        dist.companyName.toLowerCase().includes(term) ||
-        dist.category.toLowerCase().includes(term)
-      );
+      filtered = filtered.filter(dist => {
+        const factorName = getFactorName(dist.factorId).toLowerCase();
+        return (
+          factorName.includes(term) ||
+          dist.state.toLowerCase().includes(term) ||
+          dist.companyName.toLowerCase().includes(term) ||
+          dist.category.toLowerCase().includes(term)
+        );
+      });
     }
 
     if (filterState !== 'all') {
@@ -146,7 +164,7 @@ export const DeliveredManager: React.FC = () => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
             <input
               type="text"
-              placeholder="Search by state, company, or category..."
+              placeholder="Search by state, medicine, or category..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
@@ -168,7 +186,7 @@ export const DeliveredManager: React.FC = () => {
           </div>
         </div>
 
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-1 gap-4">
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <div className="flex items-center gap-2 mb-3">
               <Calendar className="h-4 w-4 text-blue-600" />
@@ -204,42 +222,6 @@ export const DeliveredManager: React.FC = () => {
               </button>
             )}
           </div>
-
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <Calendar className="h-4 w-4 text-gray-600" />
-              <span className="text-sm font-semibold text-gray-700">Filter by Distribution Date</span>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">From</label>
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">To</label>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  min={startDate || undefined}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
-                />
-              </div>
-            </div>
-            {(startDate || endDate) && (
-              <button
-                onClick={() => { setStartDate(''); setEndDate(''); }}
-                className="mt-2 text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
-              >
-                <X className="h-3 w-3" /> Clear distribution date filter
-              </button>
-            )}
-          </div>
         </div>
 
         <div className="mt-3 text-sm text-gray-500">
@@ -253,13 +235,14 @@ export const DeliveredManager: React.FC = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Delivery Date</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Distribution Date</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">State</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Medicine</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Medicine / Category</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Concentration (MG/UI)</th>
                 {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th> */}
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expiry Date</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Delivery Date</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
               </tr>
@@ -275,11 +258,14 @@ export const DeliveredManager: React.FC = () => {
         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
           <div className="flex items-center">
             <Calendar className="h-4 w-4 mr-2 text-gray-400" />
-            {dist.deliveryDate ? formatDate(dist.deliveryDate) : 'N/A'}
+            {dist.distributionDate ? formatDate(dist.distributionDate) : 'N/A'}
           </div>
         </td>
         <td className="px-6 py-4 text-sm text-gray-900">{dist.state}</td>
-        <td className="px-6 py-4 text-sm text-gray-900">{dist.category}</td>
+        <td className="px-6 py-4 text-sm text-gray-900">
+          {getFactorName(dist.factorId)}
+          {dist.category ? ` / ${dist.category}` : ''}
+        </td>
         <td className="px-6 py-4 text-sm text-gray-900">{dist.quantityDistributed}</td>
         <td className="px-6 py-4 text-sm text-gray-900">{dist.mg}</td>
         {/* <td className="px-6 py-4 text-sm text-gray-900">{dist.companyName}</td> */}
@@ -295,6 +281,12 @@ export const DeliveredManager: React.FC = () => {
           >
             {formatDate(dist.expiryDate)}
           </span>
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+          <div className="flex items-center">
+            <Calendar className="h-4 w-4 mr-2 text-gray-400" />
+            {dist.deliveryDate ? formatDate(dist.deliveryDate) : 'N/A'}
+          </div>
         </td>
         <td className="px-6 py-4 whitespace-nowrap">
           <span
