@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Smartphone } from 'lucide-react';
 import { CellPhoneTreatment, CellPhoneTreatmentRequest, Patient } from '../../types/api';
+import { toDateInputValue, toISOStringFromDateInput } from '../../lib/dateUtils';
 
 interface CellPhoneFormProps {
   treatment?: CellPhoneTreatment | null;
@@ -27,14 +28,13 @@ export const CellPhoneForm: React.FC<CellPhoneFormProps> = ({
 
   useEffect(() => {
     if (treatment) {
-      const noteDate = new Date(treatment.noteDate).toISOString().split('T')[0];
       setFormData({
         patientId: treatment.patientId,
         cellTreatmentCenter: treatment.cellTreatmentCenter,
         treatmentType: treatment.treatmentType,
         indicationOfTreatment: treatment.indicationOfTreatment,
         lot: treatment.lot,
-        noteDate,
+        noteDate: toDateInputValue(treatment.noteDate),
         quantityLot: treatment.quantityLot,
       });
     }
@@ -44,7 +44,7 @@ export const CellPhoneForm: React.FC<CellPhoneFormProps> = ({
     e.preventDefault();
     const submitData = {
       ...formData,
-      noteDate: new Date(formData.noteDate).toISOString(),
+      noteDate: toISOStringFromDateInput(formData.noteDate),
     };
     onSave(submitData);
   };

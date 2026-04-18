@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
 import { Patient, PatientRequest, PatientTestDate, TestType, OtherMedicalTest } from '../../types/api';
+import { toDateInputValue } from '../../lib/dateUtils';
 
 interface PatientFormProps {
   patient?: Patient | null;
@@ -227,9 +228,9 @@ export const PatientForm: React.FC<PatientFormProps> = ({
 
   useEffect(() => {
     if (patient) {
-      const dateOfBirth = patient.dateOfBirth ? new Date(patient.dateOfBirth).toISOString().split('T')[0] : '';
-      const inhibitorScreeningDate = patient.inhibitorScreeningDate ? new Date(patient.inhibitorScreeningDate).toISOString().split('T')[0] : '';
-      const incidenceDate = patient.incidenceDate ? new Date(patient.incidenceDate).toISOString().split('T')[0] : '';
+      const dateOfBirth = toDateInputValue(patient.dateOfBirth);
+      const inhibitorScreeningDate = toDateInputValue(patient.inhibitorScreeningDate);
+      const incidenceDate = toDateInputValue(patient.incidenceDate);
 
       let chronicDiseasesArray: string[] = [];
       if (patient.chronicDiseases) {
@@ -251,7 +252,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
 
       const hasFactorLevelValue = patient.factorPercent !== undefined && patient.factorPercent !== null;
 
-      const factorPercentDate = patient.factorPercentDate ? new Date(patient.factorPercentDate).toISOString().split('T')[0] : '';
+      const factorPercentDate = toDateInputValue(patient.factorPercentDate);
 
       const normalized1 = normalizePhoneValue(patient.contactNumber1 || patient.contactNumber);
       const normalized2 = normalizePhoneValue(patient.contactNumber2);
@@ -345,7 +346,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
           if (td.testType in testDatesMap) {
             testDatesMap[td.testType] = {
               hasTaken: td.hasTaken,
-              testDate: td.testDate ? new Date(td.testDate).toISOString().split('T')[0] : '',
+              testDate: toDateInputValue(td.testDate),
               result: td.result,
             };
           }
@@ -1068,7 +1069,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                   name="incidenceDate"
                   value={formData.incidenceDate || ''}
                   onChange={handleChange}
-                  max={new Date().toISOString().split('T')[0]}
+                  max={toDateInputValue(new Date().toISOString())}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                 />
               </div>

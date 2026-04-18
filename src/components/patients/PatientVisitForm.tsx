@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Search, Plus, Trash2 } from 'lucide-react';
 import { PatientVisit, PatientVisitRequest, Patient, Factor, VisitDrug } from '../../types/api';
+import { toDateInputValue } from '../../lib/dateUtils';
 
 interface PatientVisitFormProps {
   visit?: PatientVisit | null;
@@ -62,7 +63,7 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
 }) => {
   const [formData, setFormData] = useState<PatientVisitRequest>({
     patientId: 0,
-    visitDate: new Date().toISOString().split('T')[0],
+    visitDate: toDateInputValue(new Date().toISOString()),
     diagnosis: '',
     diagnosisType: '',
     centerState: '',
@@ -87,7 +88,7 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
 
   useEffect(() => {
     if (visit) {
-      const visitDate = visit.visitDate ? new Date(visit.visitDate).toISOString().split('T')[0] : '';
+      const visitDate = visit.visitDate ? toDateInputValue(visit.visitDate) : '';
       const patient = patients.find(p => p.id === visit.patientId);
 
       let serviceType: 'new_visit' | 'followup' | 'hospital_admission' = 'followup';

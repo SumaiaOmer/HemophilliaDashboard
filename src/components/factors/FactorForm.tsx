@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Factor, FactorRequest } from '../../types/api';
+import { toDateInputValue, toISOStringFromDateInput } from '../../lib/dateUtils';
 
 interface FactorFormProps {
   factor?: Factor | null;
@@ -27,12 +28,11 @@ export const FactorForm: React.FC<FactorFormProps> = ({
 
   useEffect(() => {
     if (factor) {
-      const expiryDate = new Date(factor.expiryDate).toISOString().split('T')[0];
       setFormData({
         name: factor.name,
         lotNo: factor.lotNo,
         quantity: factor.quantity,
-        expiryDate,
+        expiryDate: toDateInputValue(factor.expiryDate),
         mg: factor.mg,
         drugType: factor.drugType,
         supplierName: factor.supplierName,
@@ -46,7 +46,7 @@ export const FactorForm: React.FC<FactorFormProps> = ({
     e.preventDefault();
     const submitData = {
       ...formData,
-      expiryDate: new Date(formData.expiryDate).toISOString(),
+      expiryDate: toISOStringFromDateInput(formData.expiryDate),
     };
     onSave(submitData);
   };
