@@ -4,7 +4,7 @@ import { MedicineDistribution, MedicineDistributionRequest, Factor } from '../..
 import { MedicineDistributionService } from '../../services/medicineDistribution';
 import { FactorsService } from '../../services/factors';
 import { DistributionForm } from './DistributionForm';
-import { formatDate } from '../../lib/dateUtils';
+import { formatDate, getDistributionDate } from '../../lib/dateUtils';
 
 export const DistributionManager: React.FC = () => {
   const [distributions, setDistributions] = useState<MedicineDistribution[]>([]);
@@ -106,7 +106,7 @@ export const DistributionManager: React.FC = () => {
 
     let matchesDateRange = true;
     if (startDate || endDate) {
-      const distributionDate = distribution.deliveryDate ? new Date(distribution.deliveryDate) : new Date(distribution.distributionDate);
+      const distributionDate = distribution.deliveryDate ? new Date(distribution.deliveryDate) : new Date(getDistributionDate(distribution));
 
       if (startDate && endDate) {
         const start = new Date(startDate);
@@ -399,7 +399,7 @@ export const DistributionManager: React.FC = () => {
                   <span className="text-xs text-gray-500">Distribution Date:</span>
                   <div className="text-sm text-gray-800 flex items-center">
                     <Calendar className="h-3 w-3 mr-1" />
-                    {distribution.deliveryDate ? formatDate(distribution.deliveryDate) : 'Not set'}
+                    {formatDate(getDistributionDate(distribution)) || 'Not set'}
                   </div>
                 </div>
               </div>

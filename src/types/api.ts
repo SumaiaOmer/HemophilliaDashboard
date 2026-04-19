@@ -356,7 +356,8 @@ export interface MedicineDistribution {
   state: string;
   quantity: number;
   quantityDistributed: number;
-  distributionDate: string;
+  distributionDate?: string;
+  dateOfDistribution?: string;
   expiryDate: string;
   mg: number;
   companyName: string;

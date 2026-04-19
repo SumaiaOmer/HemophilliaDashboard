@@ -29,3 +29,7 @@ export const toISOStringFromDateInput = (dateInputValue: string): string => {
   const date = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
   return date.toISOString();
 };
+
+export const getDistributionDate = (distribution: any): string => {
+  return distribution?.distributionDate || distribution?.dateOfDistribution || '';
+};

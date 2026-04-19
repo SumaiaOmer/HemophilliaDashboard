@@ -3,7 +3,7 @@ import { Search, Filter, Calendar, X } from 'lucide-react';
 import { MedicineDistributionService } from '../../services/medicineDistribution';
 import { FactorsService } from '../../services/factors';
 import { MedicineDistribution, MedicineDistributionRequest, Factor } from '../../types/api';
-import { formatDate } from '../../lib/dateUtils';
+import { formatDate, getDistributionDate } from '../../lib/dateUtils';
 
 export const DeliveredManager: React.FC = () => {
   const [distributions, setDistributions] = useState<MedicineDistribution[]>([]);
@@ -258,7 +258,7 @@ export const DeliveredManager: React.FC = () => {
         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
           <div className="flex items-center">
             <Calendar className="h-4 w-4 mr-2 text-gray-400" />
-            {dist.distributionDate ? formatDate(dist.distributionDate) : 'N/A'}
+            {formatDate(getDistributionDate(dist))}
           </div>
         </td>
         <td className="px-6 py-4 text-sm text-gray-900">{dist.state}</td>
