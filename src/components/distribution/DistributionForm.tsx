@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, AlertTriangle } from 'lucide-react';
 import { MedicineDistribution, MedicineDistributionRequest, Factor } from '../../types/api';
-import { toDateInputValue, toISOStringFromDateInput } from '../../lib/dateUtils';
+import { toDateInputValue } from '../../lib/dateUtils';
 
 interface DistributionFormProps {
   distribution?: MedicineDistribution | null;
@@ -21,7 +21,7 @@ export const DistributionForm: React.FC<DistributionFormProps> = ({
     state: '',
     quantity: 1,
     quantityDistributed: 0,
-    distributionDate: toDateInputValue(new Date().toISOString()),
+    distributionDate: new Date().toISOString().split('T')[0],
     expiryDate: '',
     mg: 0,
     companyName: '',
@@ -37,7 +37,7 @@ export const DistributionForm: React.FC<DistributionFormProps> = ({
         state: distribution.state,
         quantity: Number(distribution.quantity) || 1,
         quantityDistributed: Number(distribution.quantityDistributed) || 0,
-        distributionDate: toDateInputValue(new Date().toISOString()),
+        distributionDate: toDateInputValue(distribution.distributionDate),
         expiryDate: toDateInputValue(distribution.expiryDate),
         mg: Number(distribution.mg) || 0,
         companyName: distribution.companyName,
@@ -78,8 +78,8 @@ export const DistributionForm: React.FC<DistributionFormProps> = ({
     e.preventDefault();
     const submitData = {
       ...formData,
-      distributionDate: toISOStringFromDateInput(formData.distributionDate),
-      expiryDate: toISOStringFromDateInput(formData.expiryDate),
+      distributionDate: formData.distributionDate ? new Date(formData.distributionDate + 'T00:00:00').toISOString() : '',
+      expiryDate: formData.expiryDate ? new Date(formData.expiryDate + 'T00:00:00').toISOString() : '',
     };
     onSave(submitData);
   };
