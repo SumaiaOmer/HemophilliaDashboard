@@ -31,6 +31,7 @@ export class MedicineDistributionService {
   }
 
   static async deliver(id: number): Promise<void> {
-    await apiClient.put(`/DrugDistributions/${id}/deliver`, {});
+    const today = new Date().toISOString().split('T')[0];
+    await apiClient.put(`/DrugDistributions/${id}/deliver`, { deliveryDate: today });
   }
 }
