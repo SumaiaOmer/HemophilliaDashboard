@@ -600,6 +600,8 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
                           required
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                           placeholder="e.g., Factor VIII"
+                         
+                           disabled   
                         />
                       </div>
 
@@ -612,6 +614,7 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
                           value={drug.concentration}
                           onChange={(e) => updateDrug(index, 'concentration', parseFloat(e.target.value) || 0)}
                           required
+                          disabled
                           step="0.01"
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                           placeholder="Concentration"
@@ -639,6 +642,7 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
                         </label>
                         <input
                           type="text"
+                          disabled
                           value={drug.lotNumber || ''}
                           onChange={(e) => updateDrug(index, 'lotNumber', e.target.value)}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
