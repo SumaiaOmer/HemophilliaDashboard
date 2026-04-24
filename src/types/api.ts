@@ -73,10 +73,15 @@ export interface Patient {
   chronicDiseaseOther?: string;
   bloodGroup?: string;
   hasHBVVaccination?: boolean;
+  hbvVaccinationDate?: string;
   hasHealthInsurance?: boolean;
   insuranceProvider?: string;
   isCircumcised?: boolean;
   longTermMedication?: boolean;
+  latestInhibitorLevel?: number;
+  latestInhibitorTestDate?: string;
+  contactRelation?: string;
+  residenceCountry?: string;
   testDates?: PatientTestDate[];
   otherMedicalTests?: OtherMedicalTest[];
   name?: string;
@@ -139,10 +144,15 @@ export interface PatientRequest {
   chronicDiseases?: string[];
   chronicDiseaseOther?: string;
   hasHBVVaccination?: boolean;
+  hbvVaccinationDate?: string;
   hasHealthInsurance?: boolean;
   insuranceProvider?: string;
   isCircumcised?: boolean;
   longTermMedication?: boolean;
+  latestInhibitorLevel?: number;
+  latestInhibitorTestDate?: string;
+  contactRelation?: string;
+  residenceCountry?: string;
   testDates?: PatientTestDate[];
   otherMedicalTests?: OtherMedicalTest[];
 }

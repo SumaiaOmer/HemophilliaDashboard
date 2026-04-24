@@ -202,9 +202,14 @@ export const PatientForm: React.FC<PatientFormProps> = ({
     chronicDiseaseOther: '',
     bloodGroup: '',
     hasHBVVaccination: false,
+    hbvVaccinationDate: '',
     hasHealthInsurance: false,
     insuranceProvider: '',
     isCircumcised: false,
+    latestInhibitorLevel: undefined,
+    latestInhibitorTestDate: '',
+    contactRelation: '',
+    residenceCountry: '',
   });
 
   const [hasChronicDiseases, setHasChronicDiseases] = useState(getInitialChronicDiseases());
@@ -315,10 +320,15 @@ export const PatientForm: React.FC<PatientFormProps> = ({
         chronicDiseaseOther: patient.chronicDiseaseOther || '',
         bloodGroup: patient.bloodGroup || '',
         hasHBVVaccination: patient.hasHBVVaccination || false,
+        hbvVaccinationDate: toDateInputValue(patient.hbvVaccinationDate),
         hasHealthInsurance: patient.hasHealthInsurance || false,
         insuranceProvider: patient.insuranceProvider || '',
         isCircumcised: patient.isCircumcised || false,
         longTermMedication: patient.longTermMedication || false,
+        latestInhibitorLevel: patient.latestInhibitorLevel ? Number(patient.latestInhibitorLevel) : undefined,
+        latestInhibitorTestDate: toDateInputValue(patient.latestInhibitorTestDate),
+        contactRelation: patient.contactRelation || '',
+        residenceCountry: patient.residenceCountry || '',
       });
 
       setHasChronicDiseases(hasChronicDiseasesValue);
@@ -464,6 +474,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
       nationalIdNumber: formData.nationalIdNumber,
       dateOfBirth: formData.dateOfBirth,
       gender: formData.gender,
+      age: formData.age || '',
       maritalStatus: maritalStatusMap[formData.maritalStatus] || capitalizeFirstLetter(formData.maritalStatus),
       occupation: formData.occupation,
       contactNumber1: resolvedContactNumber1,
@@ -492,9 +503,14 @@ export const PatientForm: React.FC<PatientFormProps> = ({
     if (chronicDiseaseString) submitData.chronicDiseases = chronicDiseasesArray;
     if (formData.chronicDiseaseOther) submitData.chronicDiseaseOther = formData.chronicDiseaseOther;
     if (formData.hasHBVVaccination) submitData.hasHBVVaccination = formData.hasHBVVaccination;
+    if (formData.hbvVaccinationDate) submitData.hbvVaccinationDate = formData.hbvVaccinationDate;
     if (formData.hasHealthInsurance) submitData.hasHealthInsurance = formData.hasHealthInsurance;
     submitData.insuranceProvider = formData.insuranceProvider || '';
     if (formData.isCircumcised) submitData.isCircumcised = formData.isCircumcised;
+    if (formData.latestInhibitorLevel) submitData.latestInhibitorLevel = formData.latestInhibitorLevel;
+    if (formData.latestInhibitorTestDate) submitData.latestInhibitorTestDate = formData.latestInhibitorTestDate;
+    if (formData.contactRelation) submitData.contactRelation = formData.contactRelation;
+    if (formData.residenceCountry) submitData.residenceCountry = formData.residenceCountry;
 
     if (formData.residenceType === 'InsideSudan') {
       submitData.residenceState = formData.state;
