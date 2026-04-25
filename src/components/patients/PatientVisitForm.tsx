@@ -544,14 +544,14 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
           {formData.visitType === 'center_visit' && (
             <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
               <div className="flex justify-between items-center mb-4">
-                <h4 className="text-lg font-semibold text-orange-900">Factor Treatment Details</h4>
+                <h4 className="text-lg font-semibold text-orange-900">Drug Treatment Details</h4>
                 <button
                   type="button"
                   onClick={addDrug}
                   className="flex items-center space-x-1 px-3 py-1 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors duration-200 text-sm"
                 >
                   <Plus className="h-4 w-4" />
-                  <span>Add Factor</span>
+                  <span>Add Drug</span>
                 </button>
               </div> 
 
@@ -560,7 +560,7 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
                 {formData.drugs.map((drug, index) => (
                   <div key={index} className="bg-white p-4 rounded-lg border border-orange-200">
                     <div className="flex justify-between items-center mb-3">
-                      <h5 className="font-medium text-gray-800">Factor #{index + 1}</h5>
+                      <h5 className="font-medium text-gray-800">Drug #{index + 1}</h5>
                       <button
                         type="button"
                         onClick={() => removeDrug(index)}
@@ -591,7 +591,7 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Factor Type *
+                          Drug Type *
                         </label>
                         <input
                           type="text"
@@ -600,8 +600,6 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
                           required
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                           placeholder="e.g., Factor VIII"
-                         
-                           disabled   
                         />
                       </div>
 
@@ -614,7 +612,6 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
                           value={drug.concentration}
                           onChange={(e) => updateDrug(index, 'concentration', parseFloat(e.target.value) || 0)}
                           required
-                          disabled
                           step="0.01"
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                           placeholder="Concentration"
@@ -642,7 +639,6 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
                         </label>
                         <input
                           type="text"
-                          disabled
                           value={drug.lotNumber || ''}
                           onChange={(e) => updateDrug(index, 'lotNumber', e.target.value)}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
@@ -654,7 +650,7 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-gray-500 text-center py-4">No Factors entries. Click "Add Factor" to add one.</p>
+              <p className="text-sm text-gray-500 text-center py-4">No drug entries. Click "Add Drug" to add one.</p>
             )}
           </div>
           )}

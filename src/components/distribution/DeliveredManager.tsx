@@ -77,7 +77,7 @@ export const DeliveredManager: React.FC = () => {
   };
 
   const filterDistributions = () => {
-    let filtered = [...distributions].filter(dist => dist.deliveryDate);
+    let filtered = [...distributions];
 
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
