@@ -123,6 +123,62 @@ export const PatientVisitDetails: React.FC<PatientVisitDetailsProps> = ({
                 <p className="text-sm text-gray-600">Gender</p>
                 <p className="font-semibold text-gray-900">{patient?.gender || 'N/A'}</p>
               </div>
+              {patient?.age && (
+                <div>
+                  <p className="text-sm text-gray-600">Age</p>
+                  <p className="font-semibold text-gray-900">{patient.age}</p>
+                </div>
+              )}
+              {patient?.contactNumber1 && (
+                <div>
+                  <p className="text-sm text-gray-600">Contact Number</p>
+                  <p className="font-semibold text-gray-900">{patient.contactNumber1}</p>
+                </div>
+              )}
+              {patient?.homeState && (
+                <div>
+                  <p className="text-sm text-gray-600">Home State</p>
+                  <p className="font-semibold text-gray-900">{patient.homeState}</p>
+                </div>
+              )}
+              {patient?.maritalStatus && (
+                <div>
+                  <p className="text-sm text-gray-600">Marital Status</p>
+                  <p className="font-semibold text-gray-900">{patient.maritalStatus}</p>
+                </div>
+              )}
+              {patient?.diagnosis && (
+                <div>
+                  <p className="text-sm text-gray-600">Diagnosis</p>
+                  <p className="font-semibold text-gray-900">{patient.diagnosis}</p>
+                </div>
+              )}
+              {patient?.severity && (
+                <div>
+                  <p className="text-sm text-gray-600">Severity</p>
+                  <p className="font-semibold text-gray-900 capitalize">{patient.severity}</p>
+                </div>
+              )}
+              {patient?.bloodGroup && (
+                <div>
+                  <p className="text-sm text-gray-600">Blood Group</p>
+                  <p className="font-semibold text-gray-900">{patient.bloodGroup}</p>
+                </div>
+              )}
+              {patient?.hasHealthInsurance !== undefined && (
+                <div>
+                  <p className="text-sm text-gray-600">Health Insurance</p>
+                  <p className="font-semibold text-gray-900">{patient.hasHealthInsurance ? 'Yes' : 'No'}</p>
+                </div>
+              )}
+              {patient?.vitalStatus && (
+                <div>
+                  <p className="text-sm text-gray-600">Vital Status</p>
+                  <p className={`font-semibold ${patient.vitalStatus === 'Died' ? 'text-red-600' : patient.vitalStatus === 'Alive' ? 'text-green-600' : 'text-gray-600'}`}>
+                    {patient.vitalStatus}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
