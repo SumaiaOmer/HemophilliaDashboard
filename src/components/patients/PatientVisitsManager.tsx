@@ -14,6 +14,7 @@ export const PatientVisitsManager: React.FC = () => {
   const [factors, setFactors] = useState<Factor[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [editingVisit, setEditingVisit] = useState<PatientVisit | null>(null);
   const [selectedVisitId, setSelectedVisitId] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -41,11 +42,28 @@ export const PatientVisitsManager: React.FC = () => {
 
   const handleSave = async (visitData: PatientVisitRequest) => {
     try {
-      await PatientVisitsService.create(visitData);
+      if (editingVisit) {
+        // Update existing visit
+        await PatientVisitsService.update(editingVisit.id, visitData);
+      } else {
+        // Create new visit
+        await PatientVisitsService.create(visitData);
+      }
       await loadData();
       setShowForm(false);
+      setEditingVisit(null);
+      setSelectedVisitId(null);
     } catch (error) {
       console.error('Error saving visit:', error);
+    }
+  };
+
+  const handleEdit = (visitId: number) => {
+    const visit = visits.find(v => v.id === visitId);
+    if (visit) {
+      setEditingVisit(visit);
+      setShowForm(true);
+      setSelectedVisitId(null);
     }
   };
 
@@ -266,10 +284,14 @@ export const PatientVisitsManager: React.FC = () => {
 
       {showForm && (
         <PatientVisitForm
+          visit={editingVisit}
           patients={patients}
           factors={factors}
           onSave={handleSave}
-          onCancel={() => setShowForm(false)}
+          onCancel={() => {
+            setShowForm(false);
+            setEditingVisit(null);
+          }}
         />
       )}
 
@@ -279,6 +301,7 @@ export const PatientVisitsManager: React.FC = () => {
           patient={patients.find(p => p.id === visits.find(v => v.id === selectedVisitId)?.patientId)}
           factors={factors}
           onClose={() => setSelectedVisitId(null)}
+          onEdit={handleEdit}
         />
       )}
     </div>

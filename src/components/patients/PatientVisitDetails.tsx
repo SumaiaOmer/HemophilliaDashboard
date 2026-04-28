@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, Calendar, FileText, User, MapPin, Pill, AlertCircle } from 'lucide-react';
+import { X, Calendar, FileText, User, MapPin, Pill, AlertCircle, Edit2 } from 'lucide-react';
 import { PatientVisit, Patient, Factor } from '../../types/api';
 import { PatientVisitsService } from '../../services/patientVisits';
+import { AuthService } from '../../services/auth';
 import { formatDate } from '../../lib/dateUtils';
 
 interface PatientVisitDetailsProps {
@@ -9,6 +10,7 @@ interface PatientVisitDetailsProps {
   patient: Patient | undefined;
   factors: Factor[];
   onClose: () => void;
+  onEdit?: (visitId: number) => void;
 }
 
 export const PatientVisitDetails: React.FC<PatientVisitDetailsProps> = ({
@@ -16,13 +18,17 @@ export const PatientVisitDetails: React.FC<PatientVisitDetailsProps> = ({
   patient,
   factors,
   onClose,
+  onEdit,
 }) => {
   const [visit, setVisit] = useState<PatientVisit | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     loadVisitDetails();
+    const user = AuthService.getCurrentUser();
+    setIsAdmin(user?.role?.toLowerCase() === 'admin');
   }, [visitId]);
 
   const loadVisitDetails = async () => {
@@ -535,6 +541,15 @@ export const PatientVisitDetails: React.FC<PatientVisitDetailsProps> = ({
         </div>
 
         <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 p-6 flex justify-end space-x-3">
+          {isAdmin && onEdit && (
+            <button
+              onClick={() => onEdit(visitId)}
+              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center space-x-2"
+            >
+              <Edit2 className="h-4 w-4" />
+              <span>Edit</span>
+            </button>
+          )}
           <button
             onClick={onClose}
             className="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-lg transition-colors"
