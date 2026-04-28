@@ -100,248 +100,29 @@ export const PatientVisitDetails: React.FC<PatientVisitDetailsProps> = ({
         <div className="p-6 space-y-6">
           {/* Patient Information */}
           <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-            <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
+            <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
               <User className="h-5 w-5 mr-2 text-blue-600" />
               Patient Information
             </h3>
-            <div className="space-y-4">
-              {/* Basic Info */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <h4 className="text-sm font-semibold text-blue-900 mb-2">Basic Information</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="bg-white p-2 rounded border border-blue-100">
-                    <p className="text-xs text-gray-600">Full Name</p>
-                    <p className="font-semibold text-gray-900">{patient?.fullName || 'N/A'}</p>
-                  </div>
-                  <div className="bg-white p-2 rounded border border-blue-100">
-                    <p className="text-xs text-gray-600">National ID</p>
-                    <p className="font-semibold text-gray-900">{patient?.nationalIdNumber || 'N/A'}</p>
-                  </div>
-                  <div className="bg-white p-2 rounded border border-blue-100">
-                    <p className="text-xs text-gray-600">Date of Birth</p>
-                    <p className="font-semibold text-gray-900">
-                      {patient?.dateOfBirth ? formatDate(patient.dateOfBirth) : 'N/A'}
-                    </p>
-                  </div>
-                  <div className="bg-white p-2 rounded border border-blue-100">
-                    <p className="text-xs text-gray-600">Age</p>
-                    <p className="font-semibold text-gray-900">{patient?.age || 'N/A'}</p>
-                  </div>
-                  <div className="bg-white p-2 rounded border border-blue-100">
-                    <p className="text-xs text-gray-600">Gender</p>
-                    <p className="font-semibold text-gray-900">{patient?.gender || 'N/A'}</p>
-                  </div>
-                  <div className="bg-white p-2 rounded border border-blue-100">
-                    <p className="text-xs text-gray-600">Marital Status</p>
-                    <p className="font-semibold text-gray-900">{patient?.maritalStatus || 'N/A'}</p>
-                  </div>
-                </div>
+                <p className="text-sm text-gray-600">Full Name</p>
+                <p className="font-semibold text-gray-900">{patient?.fullName || 'N/A'}</p>
               </div>
-
-              {/* Contact & Location */}
               <div>
-                <h4 className="text-sm font-semibold text-blue-900 mb-2">Contact & Location</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {patient?.contactNumber1 && (
-                    <div className="bg-white p-2 rounded border border-blue-100">
-                      <p className="text-xs text-gray-600">Primary Contact</p>
-                      <p className="font-semibold text-gray-900">{patient.contactNumber1}</p>
-                    </div>
-                  )}
-                  {patient?.contactNumber2 && (
-                    <div className="bg-white p-2 rounded border border-blue-100">
-                      <p className="text-xs text-gray-600">Secondary Contact</p>
-                      <p className="font-semibold text-gray-900">{patient.contactNumber2}</p>
-                    </div>
-                  )}
-                  {patient?.homeState && (
-                    <div className="bg-white p-2 rounded border border-blue-100">
-                      <p className="text-xs text-gray-600">Home State</p>
-                      <p className="font-semibold text-gray-900">{patient.homeState}</p>
-                    </div>
-                  )}
-                  {patient?.homeCityOrTown && (
-                    <div className="bg-white p-2 rounded border border-blue-100">
-                      <p className="text-xs text-gray-600">Home City/Town</p>
-                      <p className="font-semibold text-gray-900">{patient.homeCityOrTown}</p>
-                    </div>
-                  )}
-                  {patient?.homeLocality && (
-                    <div className="bg-white p-2 rounded border border-blue-100">
-                      <p className="text-xs text-gray-600">Home Locality</p>
-                      <p className="font-semibold text-gray-900">{patient.homeLocality}</p>
-                    </div>
-                  )}
-                  {patient?.residenceType && (
-                    <div className="bg-white p-2 rounded border border-blue-100">
-                      <p className="text-xs text-gray-600">Residence Type</p>
-                      <p className="font-semibold text-gray-900">{patient.residenceType === 'InsideSudan' ? 'Inside Sudan' : 'Outside Sudan'}</p>
-                    </div>
-                  )}
-                </div>
+                <p className="text-sm text-gray-600">National ID</p>
+                <p className="font-semibold text-gray-900">{patient?.nationalIdNumber || 'N/A'}</p>
               </div>
-
-              {/* Medical Information */}
               <div>
-                <h4 className="text-sm font-semibold text-blue-900 mb-2">Medical Information</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {patient?.diagnosis && (
-                    <div className="bg-white p-2 rounded border border-blue-100">
-                      <p className="text-xs text-gray-600">Diagnosis</p>
-                      <p className="font-semibold text-gray-900">{patient.diagnosis}</p>
-                    </div>
-                  )}
-                  {patient?.diagnosisType && (
-                    <div className="bg-white p-2 rounded border border-blue-100">
-                      <p className="text-xs text-gray-600">Diagnosis Type</p>
-                      <p className="font-semibold text-gray-900">{patient.diagnosisType}</p>
-                    </div>
-                  )}
-                  {patient?.diagnosisYear && (
-                    <div className="bg-white p-2 rounded border border-blue-100">
-                      <p className="text-xs text-gray-600">Diagnosis Year</p>
-                      <p className="font-semibold text-gray-900">{patient.diagnosisYear}</p>
-                    </div>
-                  )}
-                  {patient?.severity && (
-                    <div className="bg-white p-2 rounded border border-blue-100">
-                      <p className="text-xs text-gray-600">Severity</p>
-                      <p className="font-semibold text-gray-900 capitalize">{patient.severity}</p>
-                    </div>
-                  )}
-                  {patient?.factorPercent !== undefined && (
-                    <div className="bg-white p-2 rounded border border-blue-100">
-                      <p className="text-xs text-gray-600">Factor Percent</p>
-                      <p className="font-semibold text-gray-900">{patient.factorPercent}%</p>
-                    </div>
-                  )}
-                  {patient?.factorPercentDate && (
-                    <div className="bg-white p-2 rounded border border-blue-100">
-                      <p className="text-xs text-gray-600">Factor Percent Date</p>
-                      <p className="font-semibold text-gray-900">{formatDate(patient.factorPercentDate)}</p>
-                    </div>
-                  )}
-                  {patient?.bloodGroup && (
-                    <div className="bg-white p-2 rounded border border-blue-100">
-                      <p className="text-xs text-gray-600">Blood Group</p>
-                      <p className="font-semibold text-gray-900">{patient.bloodGroup}</p>
-                    </div>
-                  )}
-                  {patient?.incidenceDate && (
-                    <div className="bg-white p-2 rounded border border-blue-100">
-                      <p className="text-xs text-gray-600">Incidence Date</p>
-                      <p className="font-semibold text-gray-900">{formatDate(patient.incidenceDate)}</p>
-                    </div>
-                  )}
-                </div>
+                <p className="text-sm text-gray-600">Date of Birth</p>
+                <p className="font-semibold text-gray-900">
+                  {patient?.dateOfBirth ? formatDate(patient.dateOfBirth) : 'N/A'}
+                </p>
               </div>
-
-              {/* Health Status */}
               <div>
-                <h4 className="text-sm font-semibold text-blue-900 mb-2">Health Status</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {patient?.vitalStatus && (
-                    <div className="bg-white p-2 rounded border border-blue-100">
-                      <p className="text-xs text-gray-600">Vital Status</p>
-                      <p className={`font-semibold ${patient.vitalStatus === 'Died' ? 'text-red-600' : patient.vitalStatus === 'Alive' ? 'text-green-600' : 'text-gray-600'}`}>
-                        {patient.vitalStatus}
-                      </p>
-                    </div>
-                  )}
-                  {patient?.hasInhibitors !== undefined && (
-                    <div className="bg-white p-2 rounded border border-blue-100">
-                      <p className="text-xs text-gray-600">Has Inhibitors</p>
-                      <p className="font-semibold text-gray-900">{patient.hasInhibitors ? 'Yes' : 'No'}</p>
-                    </div>
-                  )}
-                  {patient?.inhibitorLevel !== undefined && (
-                    <div className="bg-white p-2 rounded border border-blue-100">
-                      <p className="text-xs text-gray-600">Inhibitor Level</p>
-                      <p className="font-semibold text-gray-900">{patient.inhibitorLevel}</p>
-                    </div>
-                  )}
-                  {patient?.inhibitorScreeningDate && (
-                    <div className="bg-white p-2 rounded border border-blue-100">
-                      <p className="text-xs text-gray-600">Inhibitor Screening Date</p>
-                      <p className="font-semibold text-gray-900">{formatDate(patient.inhibitorScreeningDate)}</p>
-                    </div>
-                  )}
-                  {patient?.hasHBVVaccination !== undefined && (
-                    <div className="bg-white p-2 rounded border border-blue-100">
-                      <p className="text-xs text-gray-600">HBV Vaccination</p>
-                      <p className="font-semibold text-gray-900">{patient.hasHBVVaccination ? 'Yes' : 'No'}</p>
-                    </div>
-                  )}
-                  {patient?.hasHealthInsurance !== undefined && (
-                    <div className="bg-white p-2 rounded border border-blue-100">
-                      <p className="text-xs text-gray-600">Health Insurance</p>
-                      <p className="font-semibold text-gray-900">{patient.hasHealthInsurance ? 'Yes' : 'No'}</p>
-                    </div>
-                  )}
-                  {patient?.insuranceProvider && (
-                    <div className="bg-white p-2 rounded border border-blue-100">
-                      <p className="text-xs text-gray-600">Insurance Provider</p>
-                      <p className="font-semibold text-gray-900">{patient.insuranceProvider}</p>
-                    </div>
-                  )}
-                  {patient?.isCircumcised !== undefined && (
-                    <div className="bg-white p-2 rounded border border-blue-100">
-                      <p className="text-xs text-gray-600">Circumcised</p>
-                      <p className="font-semibold text-gray-900">{patient.isCircumcised ? 'Yes' : 'No'}</p>
-                    </div>
-                  )}
-                  {patient?.longTermMedication !== undefined && (
-                    <div className="bg-white p-2 rounded border border-blue-100">
-                      <p className="text-xs text-gray-600">Long-term Medication</p>
-                      <p className="font-semibold text-gray-900">{patient.longTermMedication ? 'Yes' : 'No'}</p>
-                    </div>
-                  )}
-                </div>
+                <p className="text-sm text-gray-600">Gender</p>
+                <p className="font-semibold text-gray-900">{patient?.gender || 'N/A'}</p>
               </div>
-
-              {/* Additional Info */}
-              <div>
-                <h4 className="text-sm font-semibold text-blue-900 mb-2">Additional Information</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {patient?.occupation && (
-                    <div className="bg-white p-2 rounded border border-blue-100">
-                      <p className="text-xs text-gray-600">Occupation</p>
-                      <p className="font-semibold text-gray-900">{patient.occupation}</p>
-                    </div>
-                  )}
-                  {patient?.familyHistory && (
-                    <div className="bg-white p-2 rounded border border-blue-100">
-                      <p className="text-xs text-gray-600">Family History</p>
-                      <p className="font-semibold text-gray-900">{patient.familyHistory.replace(/_/g, ' ')}</p>
-                    </div>
-                  )}
-                  {patient?.hemophiliaCenterId && (
-                    <div className="bg-white p-2 rounded border border-blue-100">
-                      <p className="text-xs text-gray-600">Hemophilia Center ID</p>
-                      <p className="font-semibold text-gray-900">{patient.hemophiliaCenterId}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Chronic Diseases */}
-              {patient?.chronicDiseases && patient.chronicDiseases.length > 0 && (
-                <div>
-                  <h4 className="text-sm font-semibold text-blue-900 mb-2">Chronic Diseases</h4>
-                  <div className="bg-white p-3 rounded border border-blue-100">
-                    <div className="flex flex-wrap gap-2">
-                      {patient.chronicDiseases.map((disease, index) => (
-                        <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded">
-                          {disease}
-                        </span>
-                      ))}
-                    </div>
-                    {patient.chronicDiseaseOther && (
-                      <p className="text-xs text-gray-600 mt-2">Other: {patient.chronicDiseaseOther}</p>
-                    )}
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 
