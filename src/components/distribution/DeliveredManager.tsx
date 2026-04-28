@@ -35,12 +35,7 @@ export const DeliveredManager: React.FC = () => {
           return [];
         })
       ]);
-      const enrichedData = data.map(dist => ({
-        ...dist,
-        deliveryDate: dist.deliveryDate || undefined,
-        status: dist.status || 'Pending'
-      }));
-      setDistributions(enrichedData);
+      setDistributions(data);
       setFactors(factorData);
     } catch (error) {
       console.error('Error loading distributions:', error);

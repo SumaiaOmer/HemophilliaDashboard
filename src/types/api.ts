@@ -363,7 +363,7 @@ export interface MedicineDistribution {
   companyName: string;
   category: string;
   status: string;
-  deliveryDate?: string;
+  deliveryDate: string;
 }
 
 export interface MedicineDistributionRequest {
