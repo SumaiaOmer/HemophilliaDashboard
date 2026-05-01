@@ -213,10 +213,10 @@ export const Layout: React.FC<LayoutProps> = ({
             w-full flex items-center justify-between ${getPadding()} 
             ${getTextSize()} transition-colors duration-200
             ${isActive && !hasChildren
-              ? 'text-blue-600 bg-blue-100 border-r-2 border-blue-600'
+              ? 'text-red-600 bg-red-100 border-r-2 border-red-600'
               : isActive || (hasChildren && descendantActive)
-              ? 'text-blue-600 bg-blue-50'
-              : 'text-gray-600 hover:text-blue-600 hover:bg-gray-50'
+              ? 'text-red-600 bg-red-50'
+              : 'text-gray-600 hover:text-red-600 hover:bg-red-50'
             }
           `}
           aria-expanded={hasChildren ? isExpanded : undefined}
@@ -290,7 +290,7 @@ export const Layout: React.FC<LayoutProps> = ({
       `}>
         <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200 flex-shrink-0">
           <div className="flex items-center space-x-2">
-            <Activity className="h-8 w-8 text-blue-600" />
+            <Activity className="h-8 w-8 text-red-600" />
             <span className="text-xl font-bold text-gray-800">HemoCore</span>
           </div>
           <button
@@ -308,21 +308,21 @@ export const Layout: React.FC<LayoutProps> = ({
             placeholder="Search menus..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
           />
         </div>
 
         <nav className="flex-1 overflow-y-auto py-4">
           {loading ? (
             <div className="flex justify-center items-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
             </div>
           ) : error ? (
             <div className="text-center text-red-600 py-4 px-6">
               <p className="text-sm">{error}</p>
               <button 
                 onClick={() => window.location.reload()}
-                className="mt-2 text-xs text-blue-600 hover:text-blue-800"
+                className="mt-2 text-xs text-red-600 hover:text-red-800"
               >
                 Retry
               </button>

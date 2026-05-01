@@ -56,6 +56,38 @@ class ApiClient {
 
     if (!response.ok) {
       const errorText = await response.text();
+      try {
+        const errorJson = JSON.parse(errorText);
+        
+        // Handle validation errors (RFC 9110 Problem Details)
+        if (errorJson.errors && typeof errorJson.errors === 'object') {
+          const validationErrors: Record<string, string[]> = errorJson.errors;
+          const errorMessages = Object.entries(validationErrors)
+            .map(([field, messages]) => {
+              const msgs = Array.isArray(messages) ? messages : [messages];
+              return msgs.map(msg => `${field}: ${msg}`).join('\n');
+            })
+            .join('\n');
+          throw new Error(errorMessages);
+        }
+        
+        // Handle standard error response
+        if (errorJson.error) {
+          throw new Error(errorJson.error);
+        }
+        if (errorJson.message) {
+          throw new Error(errorJson.message);
+        }
+        if (errorJson.title) {
+          throw new Error(errorJson.title);
+        }
+      } catch (parseErr) {
+        // If parsing fails, use the raw text
+        if (parseErr instanceof Error && parseErr.message.includes('JSON')) {
+          throw new Error(errorText || `HTTP error! status: ${response.status}`);
+        }
+        throw parseErr;
+      }
       throw new Error(errorText || `HTTP error! status: ${response.status}`);
     }
 

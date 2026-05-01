@@ -105,9 +105,9 @@ export const PatientVisitDetails: React.FC<PatientVisitDetailsProps> = ({
 
         <div className="p-6 space-y-6">
           {/* Patient Information */}
-          <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+          <div className="bg-red-50 rounded-lg p-4 border border-red-200">
             <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
-              <User className="h-5 w-5 mr-2 text-blue-600" />
+              <User className="h-5 w-5 mr-2 text-red-600" />
               Patient Information
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -325,7 +325,7 @@ export const PatientVisitDetails: React.FC<PatientVisitDetailsProps> = ({
           {isAdmin && onEdit && (
             <button
               onClick={() => onEdit(visitId)}
-              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center space-x-2"
+              className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors flex items-center space-x-2"
             >
               <Edit2 className="h-4 w-4" />
               <span>Edit</span>

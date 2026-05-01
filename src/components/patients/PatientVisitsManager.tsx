@@ -17,6 +17,8 @@ export const PatientVisitsManager: React.FC = () => {
   const [editingVisit, setEditingVisit] = useState<PatientVisit | null>(null);
   const [selectedVisitId, setSelectedVisitId] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
 
   useEffect(() => {
     loadData();
@@ -54,7 +56,9 @@ export const PatientVisitsManager: React.FC = () => {
       setEditingVisit(null);
       setSelectedVisitId(null);
     } catch (error) {
-      console.error('Error saving visit:', error);
+      // Re-throw error to be handled by the form
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save visit';
+      throw new Error(errorMessage);
     }
   };
 
@@ -82,10 +86,29 @@ export const PatientVisitsManager: React.FC = () => {
     const patientId = getPatientId(visit.patientId).toLowerCase();
     const searchLower = searchTerm.toLowerCase();
 
-    return patientName.includes(searchLower) ||
+    // Text search filter
+    const matchesSearch = patientName.includes(searchLower) ||
            patientId.includes(searchLower) ||
            visit.visitType?.toLowerCase().includes(searchLower) ||
            visit.centerName?.toLowerCase().includes(searchLower);
+
+    // Date range filter
+    let matchesDateRange = true;
+    if (fromDate || toDate) {
+      const visitDate = new Date(visit.visitDate);
+      if (fromDate) {
+        const from = new Date(fromDate);
+        from.setHours(0, 0, 0, 0);
+        matchesDateRange = matchesDateRange && visitDate >= from;
+      }
+      if (toDate) {
+        const to = new Date(toDate);
+        to.setHours(23, 59, 59, 999);
+        matchesDateRange = matchesDateRange && visitDate <= to;
+      }
+    }
+
+    return matchesSearch && matchesDateRange;
   });
 
 
@@ -105,7 +128,7 @@ export const PatientVisitsManager: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
       </div>
     );
   }
@@ -125,7 +148,7 @@ export const PatientVisitsManager: React.FC = () => {
             }
             setShowForm(true);
           }}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           disabled={loading}
         >
           <Plus className="h-5 w-5" />
@@ -139,8 +162,45 @@ export const PatientVisitsManager: React.FC = () => {
           placeholder="Search by patient name, ID, visit type, or center..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none mb-4"
         />
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              From Date
+            </label>
+            <input
+              type="date"
+              value={fromDate}
+              onChange={(e) => setFromDate(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              To Date
+            </label>
+            <input
+              type="date"
+              value={toDate}
+              onChange={(e) => setToDate(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
+            />
+          </div>
+        </div>
+
+        {(fromDate || toDate) && (
+          <button
+            onClick={() => {
+              setFromDate('');
+              setToDate('');
+            }}
+            className="mt-3 px-3 py-1 text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors"
+          >
+            Clear Dates
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -148,12 +208,12 @@ export const PatientVisitsManager: React.FC = () => {
           <div
             key={visit.id}
             onClick={() => setSelectedVisitId(visit.id)}
-            className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 hover:shadow-md transition-shadow duration-200 cursor-pointer hover:border-blue-300"
+            className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 hover:shadow-md transition-shadow duration-200 cursor-pointer hover:border-red-300"
           >
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center space-x-3">
-                <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
-                  <Calendar className="h-5 w-5 text-blue-600" />
+                <div className="h-10 w-10 bg-red-100 rounded-full flex items-center justify-center">
+                  <Calendar className="h-5 w-5 text-red-600" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-gray-800">{getPatientName(visit.patientId)}</h3>
@@ -171,7 +231,7 @@ export const PatientVisitsManager: React.FC = () => {
               {visit.visitType && (
                 <div className="flex items-center">
                   <FileText className="h-4 w-4 mr-2 text-gray-400" />
-                  <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
+                  <span className="inline-block px-2 py-1 bg-red-100 text-red-800 text-xs rounded">
                     {formatVisitType(visit.visitType)}
                   </span>
                 </div>

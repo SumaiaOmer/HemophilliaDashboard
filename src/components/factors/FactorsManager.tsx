@@ -40,7 +40,9 @@ export const FactorsManager: React.FC = () => {
       setShowForm(false);
       setEditingFactor(null);
     } catch (error) {
-      console.error('Error saving factor:', error);
+      // Re-throw error to be handled by the form
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save drug';
+      throw new Error(errorMessage);
     }
   };
 
@@ -97,7 +99,7 @@ export const FactorsManager: React.FC = () => {
         </div>
         <button
           onClick={() => setShowForm(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors duration-200"
+          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors duration-200"
         >
           <Plus className="h-5 w-5" />
           <span>Add Drug</span>
@@ -111,7 +113,7 @@ export const FactorsManager: React.FC = () => {
           placeholder="Search Drugs by name, lot number, or Drug Type..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
         />
       </div>
 
@@ -122,7 +124,7 @@ export const FactorsManager: React.FC = () => {
             key={factor.id}
             className={`bg-white rounded-lg border-2 shadow-sm hover:shadow-md transition-shadow duration-200 p-6 ${
               isExpired(factor.expiryDate) 
-                ? 'border-red-200 bg-red-50' 
+                  ? 'border-red-500 bg-red-50' 
                 : isExpiringSoon(factor.expiryDate)
                 ? 'border-yellow-200 bg-yellow-50'
                 : 'border-gray-200'
@@ -135,7 +137,7 @@ export const FactorsManager: React.FC = () => {
                     ? 'text-red-600' 
                     : isExpiringSoon(factor.expiryDate)
                     ? 'text-yellow-600'
-                    : 'text-purple-600'
+                    : 'text-red-600'
                 }`} />
                 <h3 className="text-lg font-semibold text-gray-800 truncate">
                   {factor.name}
@@ -144,7 +146,7 @@ export const FactorsManager: React.FC = () => {
               <div className="flex space-x-2">
                 <button
                   onClick={() => handleEdit(factor)}
-                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200"
+                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
                 >
                   <Edit className="h-4 w-4" />
                 </button>
@@ -209,7 +211,7 @@ export const FactorsManager: React.FC = () => {
           </p>
           <button
             onClick={() => setShowForm(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg inline-flex items-center space-x-2 transition-colors duration-200"
+            className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg inline-flex items-center space-x-2 transition-colors duration-200"
           >
             <Plus className="h-5 w-5" />
             <span>Add Your First Factor</span>

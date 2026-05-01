@@ -76,9 +76,9 @@ export const Dashboard: React.FC = () => {
       title: 'Total Patients',
       value: stats.totalPatients,
       icon: Users,
-      color: 'bg-blue-500',
-      bgColor: 'bg-blue-50',
-      textColor: 'text-blue-600',
+      color: 'bg-red-500',
+      bgColor: 'bg-red-50',
+      textColor: 'text-red-600',
     },
     {
       title: 'Active Treatments',
@@ -125,7 +125,7 @@ export const Dashboard: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
       </div>
     );
   }
@@ -135,7 +135,7 @@ export const Dashboard: React.FC = () => {
       {/* Welcome Section */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl p-6 text-white">
         <h2 className="text-2xl font-bold mb-2">Welcome to HemoCore</h2>
-        <p className="text-blue-100">
+        <p className="text-red-100">
           Comprehensive hemophilia treatment management system
         </p>
       </div>
