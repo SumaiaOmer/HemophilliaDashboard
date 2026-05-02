@@ -213,10 +213,10 @@ export const Layout: React.FC<LayoutProps> = ({
             w-full flex items-center justify-between ${getPadding()} 
             ${getTextSize()} transition-colors duration-200
             ${isActive && !hasChildren
-              ? 'text-blue-600 bg-blue-100 border-r-2 border-blue-600'
+              ? 'text-red-600 bg-red-100 border-r-2 border-red-600'
               : isActive || (hasChildren && descendantActive)
-              ? 'text-blue-600 bg-blue-50'
-              : 'text-gray-600 hover:text-blue-600 hover:bg-gray-50'
+              ? 'text-red-600 bg-red-50'
+              : 'text-gray-600 hover:text-red-600 hover:bg-gray-50'
             }
           `}
           aria-expanded={hasChildren ? isExpanded : undefined}
@@ -228,11 +228,6 @@ export const Layout: React.FC<LayoutProps> = ({
             )}
             <span className="truncate">
               {item.displayName || item.name}
-              {item.badge && (
-                <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                  {item.badge}
-                </span>
-              )}
             </span>
           </div>
           {hasChildren && (
@@ -281,16 +276,16 @@ export const Layout: React.FC<LayoutProps> = ({
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-[#fdf2f2]">
       {/* Sidebar */}
       <div className={`
         fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out flex flex-col
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         lg:translate-x-0 lg:static lg:inset-0
       `}>
-        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200 flex-shrink-0">
+        <div className="flex items-center justify-between h-16 px-6 border-b border-red-200 flex-shrink-0">
           <div className="flex items-center space-x-2">
-            <Activity className="h-8 w-8 text-blue-600" />
+            <Activity className="h-8 w-8 text-red-600" />
             <span className="text-xl font-bold text-gray-800">HemoCore</span>
           </div>
           <button
@@ -302,27 +297,27 @@ export const Layout: React.FC<LayoutProps> = ({
         </div>
 
         {/* Search bar for filtering menus including children */}
-        <div className="px-4 py-3 border-b border-gray-200">
+        <div className="px-4 py-3 border-b border-red-200">
           <input
             type="text"
             placeholder="Search menus..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 text-sm border border-red-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
           />
         </div>
 
         <nav className="flex-1 overflow-y-auto py-4">
           {loading ? (
             <div className="flex justify-center items-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
             </div>
           ) : error ? (
             <div className="text-center text-red-600 py-4 px-6">
               <p className="text-sm">{error}</p>
               <button 
                 onClick={() => window.location.reload()}
-                className="mt-2 text-xs text-blue-600 hover:text-blue-800"
+                className="mt-2 text-xs text-red-600 hover:text-red-800"
               >
                 Retry
               </button>
@@ -338,7 +333,7 @@ export const Layout: React.FC<LayoutProps> = ({
 
         {/* User Info and Logout */}
         {user && (
-          <div className="flex-shrink-0 border-t border-gray-200 p-4">
+          <div className="flex-shrink-0 border-t border-red-200 p-4">
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-900 truncate">
@@ -363,7 +358,7 @@ export const Layout: React.FC<LayoutProps> = ({
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="bg-white shadow-sm border-b border-gray-200 flex-shrink-0">
+        <header className="bg-white shadow-sm border-b border-red-200 flex-shrink-0">
           <div className="flex items-center justify-between px-6 py-4">
             <button
               onClick={() => setSidebarOpen(true)}

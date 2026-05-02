@@ -152,7 +152,7 @@ export const PatientVisitDetails: React.FC<PatientVisitDetailsProps> = ({
               {visit.serviceType && (
                 <div>
                   <p className="text-sm text-gray-600">Service Type</p>
-                  <p className="inline-block px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded">
+                  <p className="inline-block px-3 py-1 bg-red-100 text-red-800 text-sm font-medium rounded">
                     {visit.serviceType === 'new_visit'
                       ? 'New Visit'
                       : visit.serviceType === 'hospital_admission'

@@ -84,7 +84,7 @@ export const FactorsManager: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
       </div>
     );
   }
@@ -200,8 +200,8 @@ export const FactorsManager: React.FC = () => {
       </div>
 
       {filteredFactors.length === 0 && !searchTerm && factors.length === 0 && (
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-12 text-center">
-          <Pill className="h-16 w-16 text-blue-600 mx-auto mb-4" />
+        <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-lg p-12 text-center">
+          <Pill className="h-16 w-16 text-red-600 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-gray-800 mb-2">
             No Factors Yet
           </h3>

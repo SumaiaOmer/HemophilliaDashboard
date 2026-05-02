@@ -167,7 +167,7 @@ export const DeliveredManager: React.FC = () => {
               placeholder="Search by state, medicine, or category..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
             />
           </div>
 
@@ -176,7 +176,7 @@ export const DeliveredManager: React.FC = () => {
             <select
               value={filterState}
               onChange={(e) => setFilterState(e.target.value)}
-              className="w-full pl-10 pr-8 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none appearance-none bg-white"
+              className="w-full pl-10 pr-8 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none appearance-none bg-white"
             >
               <option value="all">All States</option>
               {uniqueStates.map(state => (
@@ -187,36 +187,36 @@ export const DeliveredManager: React.FC = () => {
         </div>
 
         <div className="mt-4 grid grid-cols-1 md:grid-cols-1 gap-4">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <div className="flex items-center gap-2 mb-3">
-              <Calendar className="h-4 w-4 text-blue-600" />
-              <span className="text-sm font-semibold text-blue-800">Filter by Delivery Date</span>
+              <Calendar className="h-4 w-4 text-red-600" />
+              <span className="text-sm font-semibold text-red-800">Filter by Delivery Date</span>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-blue-700 mb-1">From</label>
+                <label className="block text-xs font-medium text-red-700 mb-1">From</label>
                 <input
                   type="date"
                   value={deliveryStartDate}
                   onChange={(e) => setDeliveryStartDate(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
+                  className="w-full px-3 py-2 text-sm border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none bg-white"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-blue-700 mb-1">To</label>
+                <label className="block text-xs font-medium text-red-700 mb-1">To</label>
                 <input
                   type="date"
                   value={deliveryEndDate}
                   onChange={(e) => setDeliveryEndDate(e.target.value)}
                   min={deliveryStartDate || undefined}
-                  className="w-full px-3 py-2 text-sm border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
+                  className="w-full px-3 py-2 text-sm border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none bg-white"
                 />
               </div>
             </div>
             {(deliveryStartDate || deliveryEndDate) && (
               <button
                 onClick={() => { setDeliveryStartDate(''); setDeliveryEndDate(''); }}
-                className="mt-2 text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                className="mt-2 text-xs text-red-600 hover:text-red-800 flex items-center gap-1"
               >
                 <X className="h-3 w-3" /> Clear delivery date filter
               </button>

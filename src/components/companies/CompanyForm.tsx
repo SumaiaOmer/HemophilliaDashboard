@@ -82,7 +82,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
             value={formData.country}
             onChange={handleChange}
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+            className="w-full px-3 py-2 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
             placeholder="Enter country"
           />
         </div>
@@ -97,7 +97,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
             value={formData.quantity}
             onChange={handleChange}
             min="0"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+            className="w-full px-3 py-2 border border-red-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
             placeholder="Enter quantity"
           />
         </div>
@@ -106,13 +106,13 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
           <button
             type="button"
             onClick={onCancel}
-            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+            className="flex-1 px-4 py-2 border border-red-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200"
           >
             Cancel
           </button>
           {/* <button
             type="submit"
-            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+            className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
           >
             {company ? 'Update' : 'Create'}
           </button> */}

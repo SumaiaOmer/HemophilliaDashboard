@@ -372,7 +372,7 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
                   value={formData.visitDate}
                   onChange={handleChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
                 />
               </div>
             </div>
@@ -388,7 +388,7 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
                     name="vitalStatus"
                     value={formData.vitalStatus ?? 'Alive'}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
                   >
                     <option value="Alive">Alive</option>
                     <option value="Died">Died</option>
@@ -406,7 +406,7 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
                   value={formData.visitType || ''}
                   onChange={handleChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
                 >
                   <option value="">Select Visit Type</option>
                   <option value="telephone_consultation">Telephone Consultation</option>
@@ -425,7 +425,7 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
                   value={formData.serviceType}
                   onChange={handleChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
                 >
                   <option value="new_visit">New Visit</option>
                   <option value="followup">Follow-up</option>
@@ -442,7 +442,7 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
                   value={formData.centerState}
                   onChange={handleChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
                 >
                   <option value="">Select State</option>
                   <option value="Khartoum">Khartoum</option>
@@ -478,7 +478,7 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
                   onChange={handleChange}
                   required
                   disabled={!formData.centerState}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
                 >
                   <option value="">{formData.centerState ? 'Select Center' : 'Select State First'}</option>
                   {availableCenters.map(center => (
@@ -498,7 +498,7 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
                   value={formData.enteredBy}
                   onChange={handleChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+            className="w-full px-3 py-2 border border-red-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                   placeholder="Staff name"
                 />
               </div>
@@ -516,7 +516,7 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
                 name="complaint"
                 value={formData.complaint || ''}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
               >
                 <option value="">Select Complaint</option>
                 {COMPLAINT_OPTIONS.map(option => (

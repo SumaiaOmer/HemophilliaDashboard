@@ -637,7 +637,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
       <div className="bg-white rounded-lg w-full max-w-4xl my-8 shadow-xl">
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center rounded-t-lg z-10">
+        <div className="sticky top-0 bg-white border-b border-red-200 px-6 py-4 flex justify-between items-center rounded-t-lg z-10">
           <h3 className="text-xl font-semibold text-gray-800">
             {patient ? 'Edit Patient' : 'Add New Patient'}
           </h3>
@@ -650,8 +650,8 @@ export const PatientForm: React.FC<PatientFormProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h4 className="text-lg font-semibold text-blue-900 mb-4">Demographic Data</h4>
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <h4 className="text-lg font-semibold text-red-900 mb-4">Demographic Data</h4>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
@@ -1468,8 +1468,8 @@ export const PatientForm: React.FC<PatientFormProps> = ({
 
           </div>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h4 className="text-lg font-semibold text-blue-900 mb-4">Additional Health Information</h4>
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <h4 className="text-lg font-semibold text-red-900 mb-4">Additional Health Information</h4>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -1818,7 +1818,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+              className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
             >
               {patient ? 'Update Patient' : 'Create Patient'}
             </button>

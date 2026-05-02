@@ -96,7 +96,7 @@ export const CellPhoneManager: React.FC = () => {
       case 'sent':
         return <CheckCircle className="h-4 w-4 text-green-600" />;
       case 'completed':
-        return <CheckCircle className="h-4 w-4 text-blue-600" />;
+        return <CheckCircle className="h-4 w-4 text-red-600" />;
       case 'failed':
         return <XCircle className="h-4 w-4 text-red-600" />;
       default:
@@ -109,7 +109,7 @@ export const CellPhoneManager: React.FC = () => {
       case 'sent':
         return 'bg-green-100 text-green-800';
       case 'completed':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-red-100 text-red-800';
       case 'failed':
         return 'bg-red-100 text-red-800';
       default:
@@ -135,7 +135,7 @@ export const CellPhoneManager: React.FC = () => {
         </div>
         <button
           onClick={() => setShowForm(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors duration-200"
+          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors duration-200"
         >
           <Plus className="h-5 w-5" />
           <span>Add Phone Guidance</span>
@@ -143,18 +143,18 @@ export const CellPhoneManager: React.FC = () => {
       </div>
 
       {/* Search */}
-      <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+      <div className="bg-white rounded-lg p-4 border border-red-200 shadow-sm">
         <input
           type="text"
           placeholder="Search by patient name, phone number, center, type, indication, or lot..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+          className="w-full px-4 py-2 border border-red-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
         />
       </div>
 
       {/* Cell Phone Treatments Table */}
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-lg border border-red-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50">
@@ -182,8 +182,8 @@ export const CellPhoneManager: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="flex-shrink-0">
-                        <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
-                          <Smartphone className="h-5 w-5 text-blue-600" />
+                        <div className="h-10 w-10 bg-red-100 rounded-full flex items-center justify-center">
+                          <Smartphone className="h-5 w-5 text-red-600" />
                         </div>
                       </div>
                       <div className="ml-4">
@@ -227,7 +227,7 @@ export const CellPhoneManager: React.FC = () => {
                     <div className="flex justify-end space-x-2">
                       <button
                         onClick={() => handleEdit(treatment)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200"
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
                       >
                         <Edit className="h-4 w-4" />
                       </button>

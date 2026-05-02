@@ -68,7 +68,7 @@ export const CompaniesManager: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
       </div>
     );
   }
@@ -83,7 +83,7 @@ export const CompaniesManager: React.FC = () => {
         </div>
         <button
           onClick={() => setShowForm(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors duration-200"
+          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors duration-200"
         >
           <Plus className="h-5 w-5" />
           <span>Add Company</span>
@@ -91,13 +91,13 @@ export const CompaniesManager: React.FC = () => {
       </div>
 
       {/* Search */}
-      <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+      <div className="bg-white rounded-lg p-4 border border-red-200 shadow-sm">
         <input
           type="text"
           placeholder="Search companies by name or country..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+          className="w-full px-4 py-2 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
         />
       </div>
 
@@ -106,11 +106,11 @@ export const CompaniesManager: React.FC = () => {
         {filteredCompanies.map((company) => (
           <div
             key={company.id}
-            className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200 p-6"
+            className="bg-white rounded-lg border border-red-200 shadow-sm hover:shadow-md transition-shadow duration-200 p-6"
           >
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
-                <Building2 className="h-8 w-8 text-blue-600 mr-3" />
+                <Building2 className="h-8 w-8 text-red-600 mr-3" />
                 <h3 className="text-lg font-semibold text-gray-800 truncate">
                   {company.name}
                 </h3>
@@ -118,7 +118,7 @@ export const CompaniesManager: React.FC = () => {
               <div className="flex space-x-2">
                 <button
                   onClick={() => handleEdit(company)}
-                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200"
+                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
                 >
                   <Edit className="h-4 w-4" />
                 </button>
@@ -147,7 +147,7 @@ export const CompaniesManager: React.FC = () => {
 
       {filteredCompanies.length === 0 && !searchTerm && companies.length === 0 && (
         <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-12 text-center">
-          <Building2 className="h-16 w-16 text-blue-600 mx-auto mb-4" />
+          <Building2 className="h-16 w-16 text-red-600 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-gray-800 mb-2">
             No Companies Yet
           </h3>
@@ -157,7 +157,7 @@ export const CompaniesManager: React.FC = () => {
           </p>
           <button
             onClick={() => setShowForm(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg inline-flex items-center space-x-2 transition-colors duration-200"
+            className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg inline-flex items-center space-x-2 transition-colors duration-200"
           >
             <Plus className="h-5 w-5" />
             <span>Add Your First Company</span>

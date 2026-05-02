@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Building2, Pill, Stethoscope, TrendingUp, Calendar, AlertTriangle, Package, Truck, Clock } from 'lucide-react';
+import { Users, Pill, Stethoscope, TrendingUp, Calendar, AlertTriangle, Package, Truck, Clock } from 'lucide-react';
 import { CompaniesService } from '../services/companies';
 import { FactorsService } from '../services/factors';
 import { PatientsService } from '../services/patients';
 import { MedicineDistributionService } from '../services/medicineDistribution';
-import { Factor, MedicineDistribution } from '../types/api';
+import leftLogo from '../1.jpeg';
+import rightLogo from '../2.jpeg';
+import { Factor } from '../types/api';
 import { formatDate } from '../lib/dateUtils';
 
 interface DashboardStats {
@@ -133,11 +135,17 @@ export const Dashboard: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl p-6 text-white">
-        <h2 className="text-2xl font-bold mb-2">Welcome to HemoCore</h2>
-        <p className="text-red-100">
-          Comprehensive hemophilia treatment management system
-        </p>
+      <div className="rounded-xl p-6 bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg">
+        <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr_auto] gap-4 items-center">
+          <img src={leftLogo} alt="Left logo" className="h-28 w-28 object-contain rounded-3xl bg-white/10 p-2" />
+          <div>
+            <h2 className="text-2xl font-bold mb-2">Welcome to HemoCore</h2>
+            <p className="text-red-100">
+              Comprehensive hemophilia treatment management system
+            </p>
+          </div>
+          <img src={rightLogo} alt="Right logo" className="h-28 w-28 object-contain rounded-3xl bg-white/10 p-2 justify-self-end" />
+        </div>
       </div>
 
       {/* Stats Grid */}
@@ -147,7 +155,7 @@ export const Dashboard: React.FC = () => {
           return (
             <div
               key={card.title}
-              className={`${card.bgColor} rounded-xl p-6 border border-gray-100 hover:shadow-md transition-shadow duration-200`}
+              className={`${card.bgColor} rounded-xl p-6 border border-red-100 hover:shadow-md transition-shadow duration-200`}
             >
               <div className="flex items-center justify-between">
                 <div>
@@ -240,19 +248,19 @@ export const Dashboard: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
           <div className="flex items-center mb-4">
-            <TrendingUp className="h-6 w-6 text-blue-600 mr-2" />
+            <TrendingUp className="h-6 w-6 text-red-600 mr-2" />
             <h3 className="text-lg font-semibold text-gray-800">Quick Actions</h3>
           </div>
           <div className="space-y-3">
-            <button className="w-full text-left p-3 rounded-lg border border-gray-200 hover:bg-blue-50 hover:border-blue-300 transition-colors duration-200">
+            <button className="w-full text-left p-3 rounded-lg border border-red-200 hover:bg-red-50 hover:border-red-300 transition-colors duration-200">
               <div className="font-medium text-gray-800">Register New Patient</div>
               <div className="text-sm text-gray-500">Add a new patient to the system</div>
             </button>
-            <button className="w-full text-left p-3 rounded-lg border border-gray-200 hover:bg-green-50 hover:border-green-300 transition-colors duration-200">
+            <button className="w-full text-left p-3 rounded-lg border border-red-200 hover:bg-green-50 hover:border-green-300 transition-colors duration-200">
               <div className="font-medium text-gray-800">Record Treatment</div>
               <div className="text-sm text-gray-500">Log a new treatment session</div>
             </button>
-            <button className="w-full text-left p-3 rounded-lg border border-gray-200 hover:bg-purple-50 hover:border-purple-300 transition-colors duration-200">
+            <button className="w-full text-left p-3 rounded-lg border border-red-200 hover:bg-purple-50 hover:border-purple-300 transition-colors duration-200">
               <div className="font-medium text-gray-800">Manage Inventory</div>
               <div className="text-sm text-gray-500">Update factor quantities</div>
             </button>
@@ -266,7 +274,7 @@ export const Dashboard: React.FC = () => {
           </div>
           <div className="space-y-3">
             <div className="flex items-center p-3 rounded-lg bg-gray-50">
-              <div className="h-2 w-2 bg-blue-500 rounded-full mr-3"></div>
+              <div className="h-2 w-2 bg-red-500 rounded-full mr-3"></div>
               <div className="flex-1">
                 <div className="text-sm font-medium text-gray-800">System initialized</div>
                 <div className="text-xs text-gray-500">Ready to manage hemophilia care</div>
@@ -284,14 +292,14 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {/* System Summary */}
-      <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-6 border border-gray-200 shadow-sm">
+      <div className="bg-gradient-to-r from-red-50 to-red-100 rounded-xl p-6 border border-red-200 shadow-sm">
         <div className="flex items-center mb-4">
           <TrendingUp className="h-6 w-6 text-gray-600 mr-2" />
           <h3 className="text-lg font-semibold text-gray-800">System Overview</h3>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600">{stats.totalPatients}</div>
+            <div className="text-2xl font-bold text-red-600">{stats.totalPatients}</div>
             <div className="text-xs text-gray-600 mt-1">Patients</div>
           </div>
           <div className="text-center">

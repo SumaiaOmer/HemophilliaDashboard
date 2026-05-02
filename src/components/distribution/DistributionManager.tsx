@@ -161,7 +161,7 @@ export const DistributionManager: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
       </div>
     );
   }
@@ -179,7 +179,7 @@ export const DistributionManager: React.FC = () => {
         </div>
         <button
           onClick={() => setShowForm(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors duration-200"
+          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors duration-200"
         >
           <Plus className="h-5 w-5" />
           <span>New Distribution</span>
@@ -213,7 +213,7 @@ export const DistributionManager: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
+      <div className="bg-white rounded-lg p-6 border border-red-200 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
             <Filter className="h-5 w-5 text-gray-600" />
@@ -237,13 +237,13 @@ export const DistributionManager: React.FC = () => {
               placeholder="Search by medicine, state ..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+              className="px-4 py-2 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
             />
 
             <select
               value={stateFilter}
               onChange={(e) => setStateFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
             >
               <option value="all">All States</option>
               {statesWithDistributions.map(state => (
@@ -256,7 +256,7 @@ export const DistributionManager: React.FC = () => {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+              className="px-4 py-2 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
             >
               <option value="all">All Status</option>
               <option value="pending">Pending</option>
@@ -272,7 +272,7 @@ export const DistributionManager: React.FC = () => {
                 placeholder="Start Date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
+                className="flex-1 px-3 py-2 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none text-sm"
               />
             </div>
             <div className="flex items-center gap-2">
@@ -282,7 +282,7 @@ export const DistributionManager: React.FC = () => {
                 placeholder="End Date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none text-sm"
               />
             </div>
           </div>
@@ -291,9 +291,9 @@ export const DistributionManager: React.FC = () => {
         {hasActiveFilters && (
           <div className="mt-4 flex flex-wrap gap-2">
             {searchTerm && (
-              <div className="inline-flex items-center space-x-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+              <div className="inline-flex items-center space-x-1 px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm">
                 <span>Search: {searchTerm}</span>
-                <button onClick={() => setSearchTerm('')} className="hover:bg-blue-200 rounded-full p-0.5">
+                <button onClick={() => setSearchTerm('')} className="hover:bg-red-200 rounded-full p-0.5">
                   <X className="h-3 w-3" />
                 </button>
               </div>
@@ -348,7 +348,7 @@ export const DistributionManager: React.FC = () => {
                 ? 'border-yellow-200 bg-yellow-50'
                 : isExpired(distribution.expiryDate)
                 ? 'border-red-200 bg-red-50'
-                : 'border-gray-200 bg-white'
+                : 'border-red-200 bg-white'
             }`}
           >
             <div className="flex items-center justify-between mb-4">
@@ -360,7 +360,7 @@ export const DistributionManager: React.FC = () => {
                     ? 'text-yellow-600'
                     : isExpired(distribution.expiryDate)
                     ? 'text-red-600'
-                    : 'text-blue-600'
+                    : 'text-red-600'
                 }`} />
                 <div>
                   <h3 className="text-lg font-semibold text-gray-800">
@@ -374,7 +374,7 @@ export const DistributionManager: React.FC = () => {
               <div className="flex space-x-2">
                 <button
                   onClick={() => handleEdit(distribution)}
-                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200"
+                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
                   title="Edit"
                 >
                   <Edit className="h-4 w-4" />
@@ -447,8 +447,8 @@ export const DistributionManager: React.FC = () => {
       </div>
 
       {filteredDistributions.length === 0 && !searchTerm && distributions.length === 0 && (
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-12 text-center">
-          <Truck className="h-16 w-16 text-blue-600 mx-auto mb-4" />
+        <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-lg p-12 text-center">
+          <Truck className="h-16 w-16 text-red-600 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-gray-800 mb-2">
             Welcome to Drug Distribution
           </h3>
@@ -459,12 +459,12 @@ export const DistributionManager: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <div className="bg-white rounded-lg p-4 shadow-sm">
-              <div className="text-3xl font-bold text-blue-600 mb-1">2</div>
+              <div className="text-3xl font-bold text-red-600 mb-1">2</div>
               <h4 className="font-semibold text-gray-800 mb-1">Add Factors</h4>
               <p className="text-sm text-gray-600">Add hemophilia medicines with lot numbers and details</p>
             </div>
             <div className="bg-white rounded-lg p-4 shadow-sm">
-              <div className="text-3xl font-bold text-blue-600 mb-1">3</div>
+              <div className="text-3xl font-bold text-red-600 mb-1">3</div>
               <h4 className="font-semibold text-gray-800 mb-1">Create Distributions</h4>
               <p className="text-sm text-gray-600">Distribute medicines to different Sudan states</p>
             </div>

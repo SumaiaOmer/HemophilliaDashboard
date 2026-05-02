@@ -151,7 +151,7 @@ export const ReportsManager: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
       </div>
     );
   }
@@ -196,7 +196,7 @@ export const ReportsManager: React.FC = () => {
                 onClick={() => setActiveReport(report.id)}
                 className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors duration-200 ${
                   activeReport === report.id
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-red-600 text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
@@ -213,13 +213,13 @@ export const ReportsManager: React.FC = () => {
         <div className="space-y-6">
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-blue-50 rounded-xl p-6 border border-blue-100">
+            <div className="bg-red-50 rounded-xl p-6 border border-red-100">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-blue-600 mb-1">Total Patients</p>
-                  <p className="text-3xl font-bold text-blue-700">{reportData.patients.length}</p>
+                  <p className="text-sm font-medium text-red-600 mb-1">Total Patients</p>
+                  <p className="text-3xl font-bold text-red-700">{reportData.patients.length}</p>
                 </div>
-                <Users className="h-8 w-8 text-blue-600" />
+                <Users className="h-8 w-8 text-red-600" />
               </div>
             </div>
             <div className="bg-purple-50 rounded-xl p-6 border border-purple-100">
@@ -321,7 +321,7 @@ export const ReportsManager: React.FC = () => {
           <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-gray-800">State Distribution</h3>
-              <PieChart className="h-5 w-5 text-blue-600" />
+              <PieChart className="h-5 w-5 text-red-600" />
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Chart */}
@@ -736,7 +736,7 @@ export const ReportsManager: React.FC = () => {
           <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-gray-800">State Consumption Analysis</h3>
-              <MapPin className="h-5 w-5 text-blue-600" />
+              <MapPin className="h-5 w-5 text-red-600" />
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Patient Distribution Chart */}
@@ -806,7 +806,7 @@ export const ReportsManager: React.FC = () => {
               {stateStats.map((stat, index) => (
                 <div key={index} className="border border-gray-200 rounded-lg p-6">
                   <div className="flex items-center mb-4">
-                    <MapPin className="h-6 w-6 text-blue-600 mr-2" />
+                    <MapPin className="h-6 w-6 text-red-600 mr-2" />
                     <h4 className="text-lg font-semibold text-gray-800">{stat.state}</h4>
                   </div>
                   <div className="space-y-3">
@@ -924,7 +924,7 @@ export const ReportsManager: React.FC = () => {
                       <span className="text-sm text-gray-600">Categories:</span>
                       <div className="flex flex-wrap gap-1 mt-1">
                         {stat.categories.map((category, idx) => (
-                          <span key={idx} className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
+                            <span key={idx} className="px-2 py-1 text-xs bg-red-100 text-red-800 rounded-full">
                             {category}
                           </span>
                         ))}

@@ -257,8 +257,8 @@ export const PatientVisitsManager: React.FC = () => {
 
               {visit.drugs && visit.drugs.length > 0 && (
                 <div className="flex items-center text-gray-600">
-                  <Pill className="h-4 w-4 mr-2 text-blue-500" />
-                  <span className="text-xs font-semibold text-blue-700">
+                  <Pill className="h-4 w-4 mr-2 text-red-500" />
+                  <span className="text-xs font-semibold text-red-700">
                     Drugs Administered: {visit.drugs.length}
                   </span>
                 </div>

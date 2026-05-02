@@ -149,7 +149,7 @@ export const DistributionForm: React.FC<DistributionFormProps> = ({
             value={formData.factorId}
             onChange={handleChange}
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+            className="w-full px-3 py-2 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
           >
             <option value={0}>Select medicine/factor</option>
             {Array.isArray(factors) && factors.length > 0 ? (
@@ -166,13 +166,13 @@ export const DistributionForm: React.FC<DistributionFormProps> = ({
           </select>
 
           {selectedFactor && (
-            <div className="mt-3 p-3 bg-blue-50 rounded-lg">
-              <div className="text-sm text-blue-800">
+            <div className="mt-3 p-3 bg-red-50 rounded-lg">
+              <div className="text-sm text-red-800">
                 <strong>Available Qty:</strong> {selectedFactor.quantity} <br />
                 <strong> Expiry:</strong> {(() => { const d = new Date(selectedFactor.expiryDate); const off = d.getTimezoneOffset(); const adj = new Date(d.getTime() + off * 60000); return `${String(adj.getDate()).padStart(2,'0')}/${String(adj.getMonth()+1).padStart(2,'0')}/${adj.getFullYear()}`; })()} |
                 
               </div>
-              <div className="text-sm text-blue-800 mt-1">
+              <div className="text-sm text-red-800 mt-1">
                 <strong>Lot:</strong> {selectedFactor.lotNo} |
                 <strong> Concentration:</strong> {selectedFactor.mg} |
                 <strong> Drug Type:</strong> {selectedFactor.drugType}
@@ -244,7 +244,7 @@ export const DistributionForm: React.FC<DistributionFormProps> = ({
               required
               min="1"
               max={selectedFactor?.quantity || 999999}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
               placeholder="Quantity to distribute"
             />
           </div>
@@ -276,7 +276,7 @@ export const DistributionForm: React.FC<DistributionFormProps> = ({
               onChange={handleChange}
               required
               disabled
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-gray-50 cursor-not-allowed"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none bg-gray-50 cursor-not-allowed"
             />
             <p className="mt-1 text-xs text-gray-500">Automatically set to today's date</p>
           </div>
@@ -293,7 +293,7 @@ export const DistributionForm: React.FC<DistributionFormProps> = ({
               required
               readOnly
               disabled={!selectedFactor}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-gray-50"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none bg-gray-50"
               placeholder="Auto-filled"
             />
             <p className="mt-1 text-xs text-gray-500">Auto-filled from selected factor</p>
@@ -312,7 +312,7 @@ export const DistributionForm: React.FC<DistributionFormProps> = ({
           <button
             type="submit"
             disabled={!selectedFactor}
-            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
             {distribution ? 'Update Distribution' : 'Create Distribution'}
           </button>

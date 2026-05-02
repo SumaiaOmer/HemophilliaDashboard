@@ -205,7 +205,7 @@ export const RoleManager: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
       </div>
     );
   }
@@ -218,7 +218,7 @@ export const RoleManager: React.FC = () => {
         </div>
       )}
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div className="bg-white rounded-lg shadow-sm border border-red-200 p-6">
         <h3 className="text-lg font-semibold text-gray-800 mb-4">Create New Role</h3>
         <div className="flex gap-2">
           <input
@@ -226,13 +226,13 @@ export const RoleManager: React.FC = () => {
             value={newRoleName}
             onChange={(e) => setNewRoleName(e.target.value)}
             placeholder="Enter role name"
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 px-4 py-2 border border-red-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
             onKeyPress={(e) => e.key === 'Enter' && handleCreateRole()}
           />
           <button
             onClick={handleCreateRole}
             disabled={creatingRole || !newRoleName.trim()}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
+            className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-400 transition-colors"
           >
             <Plus className="h-5 w-5" />
           </button>
@@ -245,7 +245,7 @@ export const RoleManager: React.FC = () => {
           const selectedScreens = selectedScreensByRole[role.id] || [];
 
           return (
-            <div key={role.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div key={role.id} className="bg-white rounded-lg shadow-sm border border-red-200 overflow-hidden">
               <div className="p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div>
@@ -268,7 +268,7 @@ export const RoleManager: React.FC = () => {
                   </button>
 
                   {expanded?.expandedType === 'screens' && (
-                    <div className="mt-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="mt-3 p-4 bg-red-50 rounded-lg border border-red-200">
                       <div className="mb-3 text-sm text-gray-600 font-medium">
                         Select parent screens (main) and their child screens (sub) below:
                       </div>
@@ -282,7 +282,7 @@ export const RoleManager: React.FC = () => {
                           const parentSelected = selectedScreens.includes(parent.id);
 
                           return (
-                            <div key={parent.id} className="border border-gray-200 rounded-lg bg-white">
+                            <div key={parent.id} className="border border-red-200 rounded-lg bg-white">
                               <div className="flex items-center gap-2 p-3">
                                 {hasChildren && (
                                   <button
@@ -312,14 +312,14 @@ export const RoleManager: React.FC = () => {
                                         handleScreenToggle(role.id, parent.id);
                                       }
                                     }}
-                                    className="w-4 h-4 rounded border-gray-300 text-blue-600"
+                                    className="w-4 h-4 rounded border-gray-300 text-red-600"
                                   />
                                   <div className="flex-1">
                                     <div className="flex items-center gap-2">
                                       <span className="text-sm font-semibold text-gray-800">
                                         {parent.displayName || parent.name}
                                       </span>
-                                      <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full font-medium">
+                                      <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full font-medium">
                                         Parent
                                       </span>
                                       {hasChildren && (
@@ -336,7 +336,7 @@ export const RoleManager: React.FC = () => {
                               </div>
 
                               {hasChildren && isExpanded && (
-                                <div className="border-t border-gray-200 bg-gray-50 px-3 py-2">
+                                <div className="border-t border-red-200 bg-red-50 px-3 py-2">
                                   <div className="space-y-1">
                                     {parent.children.map((child) => (
                                       <label
@@ -347,7 +347,7 @@ export const RoleManager: React.FC = () => {
                                           type="checkbox"
                                           checked={selectedScreens.includes(child.id)}
                                           onChange={() => handleScreenToggle(role.id, child.id)}
-                                          className="w-4 h-4 rounded border-gray-300 text-blue-600"
+                                          className="w-4 h-4 rounded border-red-300 text-red-600"
                                         />
                                         <div className="flex-1">
                                           <div className="flex items-center gap-2">
@@ -373,13 +373,13 @@ export const RoleManager: React.FC = () => {
                       </div>
 
                       {selectedScreens.length > 0 && (
-                        <div className="mt-4 p-3 bg-white rounded-lg border border-blue-200">
+                        <div className="mt-4 p-3 bg-white rounded-lg border border-red-200">
                           <div className="text-sm text-gray-600 mb-2">
                             Selected: <span className="font-semibold text-gray-800">{selectedScreens.length}</span> screen{selectedScreens.length !== 1 ? 's' : ''}
                           </div>
                           <button
                             onClick={() => handleAssignScreens(role.id)}
-                            className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                            className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
                           >
                             Assign {selectedScreens.length} Screen{selectedScreens.length !== 1 ? 's' : ''} to {role.name}
                           </button>
@@ -416,7 +416,7 @@ export const RoleManager: React.FC = () => {
                           return (
                             <div
                               key={user.id}
-                              className="flex items-center justify-between p-2 bg-white rounded border border-gray-200"
+                              className="flex items-center justify-between p-2 bg-white rounded border border-red-200"
                             >
                               <div className="flex-1">
                                 <div className="text-sm font-medium text-gray-800">{user.username}</div>
@@ -450,7 +450,7 @@ export const RoleManager: React.FC = () => {
       </div>
 
       {roles.length === 0 && (
-        <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
+        <div className="text-center py-12 bg-white rounded-lg border border-red-200">
           <p className="text-gray-500">No roles created yet. Create one to get started.</p>
         </div>
       )}

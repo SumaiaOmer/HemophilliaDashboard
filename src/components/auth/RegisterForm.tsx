@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { UserPlus, Eye, EyeOff, User, Lock } from 'lucide-react';
 import { RegisterRequest, Role } from '../../types/api';
 import { RolesService } from '../../services/roles';
+import logo1 from '../../1.jpeg';
+import bg2 from '../../2.jpeg';
 
 const SUDAN_STATES = [
   'Khartoum',
@@ -101,10 +103,21 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
   }, []);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+    <div
+      className="min-h-screen flex items-center justify-center bg-[#fdf2f2] py-12 px-4 sm:px-6 lg:px-8"
+      style={{
+        backgroundImage: `url(${bg2})`,
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'center center',
+        backgroundSize: 'cover',
+      }}
+    >
+      <div className="max-w-md w-full space-y-8 bg-white/95 shadow-xl rounded-3xl p-8">
         <div className="text-center">
-          <div className="mx-auto h-12 w-12 bg-blue-600 rounded-full flex items-center justify-center">
+          <div className="mx-auto mb-4 h-24 w-24 rounded-3xl overflow-hidden border border-red-200 shadow-sm">
+            <img src={logo1} alt="HemoCore logo" className="h-full w-full object-cover" />
+          </div>
+          <div className="mx-auto h-12 w-12 bg-red-600 rounded-full flex items-center justify-center">
             <UserPlus className="h-6 w-6 text-white" />
           </div>
           <h2 className="mt-6 text-3xl font-bold text-gray-900">
@@ -139,7 +152,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                   required
                   value={formData.username}
                   onChange={handleChange}
-                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  className="block w-full pl-10 pr-3 py-3 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
                   placeholder="Enter your username"
                 />
               </div>
@@ -161,7 +174,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                   required
                   value={formData.password}
                   onChange={handleChange}
-                  className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  className="block w-full pl-10 pr-10 py-3 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
                   placeholder="Enter your password"
                 />
                 <button
@@ -194,10 +207,10 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                   required
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className={`block w-full pl-10 pr-10 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none ${
+                  className={`block w-full pl-10 pr-10 py-3 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none ${
                     confirmPassword && formData.password !== confirmPassword
                       ? 'border-red-300'
-                      : 'border-gray-300'
+                      : 'border-red-300'
                   }`}
                   placeholder="Confirm your password"
                 />
@@ -218,7 +231,32 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
               )}
             </div>
 
-        
+            <div>
+              <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
+                Role
+              </label>
+              <select
+                id="role"
+                name="role"
+                value={formData.role || ''}
+                onChange={handleChange}
+                required
+                className="block w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
+              >
+                <option value="">Select a role</option>
+                {roles.map(role => (
+                  <option key={role.id} value={role.name}>
+                    {role.name}
+                  </option>
+                ))}
+              </select>
+              {rolesLoading && (
+                <p className="mt-2 text-sm text-gray-500">Loading roles...</p>
+              )}
+              {rolesError && (
+                <p className="mt-2 text-sm text-red-600">{rolesError}</p>
+              )}
+            </div>
 
             <div>
               <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-2">
@@ -230,7 +268,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                 value={formData.state || ''}
                 onChange={handleChange}
                 required
-                className="block w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                className="block w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
               >
                 <option value="">Select a state</option>
                 {SUDAN_STATES.map(state => (
@@ -246,7 +284,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
             <button
               type="submit"
               disabled={loading || (!!confirmPassword && formData.password !== confirmPassword)}
-              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
             >
               {loading ? (
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
@@ -263,7 +301,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
             <button
               type="button"
               onClick={onSwitchToLogin}
-              className="text-sm text-blue-600 hover:text-blue-500 transition-colors duration-200"
+              className="text-sm text-red-600 hover:text-red-500 transition-colors duration-200"
             >
               Already have an account? Sign in
             </button>

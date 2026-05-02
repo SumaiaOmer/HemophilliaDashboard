@@ -91,7 +91,7 @@ export const CellPhoneForm: React.FC<CellPhoneFormProps> = ({
             value={formData.patientId}
             onChange={handleChange}
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+            className="w-full px-3 py-2 border border-red-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
           >
             <option value={0}>Select patient</option>
             {patients.map(patient => (
@@ -112,7 +112,7 @@ export const CellPhoneForm: React.FC<CellPhoneFormProps> = ({
             value={formData.cellTreatmentCenter}
             onChange={handleChange}
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+            className="w-full px-3 py-2 border border-red-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
             placeholder="Enter treatment center name"
           />
         </div>
@@ -126,7 +126,7 @@ export const CellPhoneForm: React.FC<CellPhoneFormProps> = ({
             value={formData.treatmentType}
             onChange={handleChange}
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+            className="w-full px-3 py-2 border border-red-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
           >
             <option value="">Select treatment type</option>
             {treatmentTypes.map(type => (
@@ -147,7 +147,7 @@ export const CellPhoneForm: React.FC<CellPhoneFormProps> = ({
             onChange={handleChange}
             required
             rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"
+            className="w-full px-3 py-2 border border-red-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"
             placeholder="Enter indication for treatment"
           />
         </div>
@@ -163,7 +163,7 @@ export const CellPhoneForm: React.FC<CellPhoneFormProps> = ({
               value={formData.lot}
               onChange={handleChange}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+              className="w-full px-3 py-2 border border-red-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
               placeholder="Lot number"
             />
           </div>
@@ -179,7 +179,7 @@ export const CellPhoneForm: React.FC<CellPhoneFormProps> = ({
               onChange={handleChange}
               required
               min="0"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+              className="w-full px-3 py-2 border border-red-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
               placeholder="Quantity"
             />
           </div>
@@ -195,7 +195,7 @@ export const CellPhoneForm: React.FC<CellPhoneFormProps> = ({
             value={formData.noteDate}
             onChange={handleChange}
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+            className="w-full px-3 py-2 border border-red-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
           />
         </div>
 
@@ -203,13 +203,13 @@ export const CellPhoneForm: React.FC<CellPhoneFormProps> = ({
           <button
             type="button"
             onClick={onCancel}
-            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+            className="flex-1 px-4 py-2 border border-red-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200"
           >
             Cancel
           </button>
           <button
             type="submit"
-            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+            className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
           >
             {treatment ? 'Update' : 'Create'}
           </button>
