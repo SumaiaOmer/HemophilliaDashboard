@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { LogIn, Eye, EyeOff, User, Lock } from 'lucide-react';
 import { LoginRequest } from '../../types/api';
 import logo1 from '../../1.jpeg';
-import bg2 from '../../2.jpeg';
 
 interface LoginFormProps {
   onLogin: (credentials: LoginRequest) => Promise<void>;
@@ -37,16 +36,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   };
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center bg-[#fdf2f2] py-12 px-4 sm:px-6 lg:px-8"
-      style={{
-        backgroundImage: `url(${bg2})`,
-        backgroundRepeat: 'no-repeat',
-        backgroundPosition: 'center center',
-        backgroundSize: 'cover',
-      }}
-    >
-      <div className="max-w-md w-full space-y-8 bg-white/95 shadow-xl rounded-3xl p-8">
+    <div className="min-h-screen flex items-center justify-center bg-[#fdf2f2] py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8 bg-red-50/80 shadow-sm rounded-3xl p-8">
         <div className="text-center">
           <div className="mx-auto mb-4 h-24 w-24 rounded-3xl overflow-hidden border border-red-200 shadow-sm">
             <img src={logo1} alt="HemoCore logo" className="h-full w-full object-cover" />
