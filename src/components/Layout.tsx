@@ -175,26 +175,44 @@ export const Layout: React.FC<LayoutProps> = ({
     const isActive = normalize(activeSection) === itemRoute;
     const descendantActive = !isActive && nodeContainsActive(item, activeSection);
 
-    // Dynamic padding based on nesting level
+    // Explicit Tailwind padding classes by nesting level
     const getPadding = () => {
-      if (level === 0) return 'px-6 py-3';
-      if (level === 1) return 'pl-10 pr-6 py-2';
-      if (level === 2) return 'pl-14 pr-6 py-2';
-      return `pl-${16 + (level - 2) * 4} pr-6 py-2`;
+      switch (level) {
+        case 0:
+          return 'px-6 py-3';
+        case 1:
+          return 'pl-10 pr-6 py-2';
+        case 2:
+          return 'pl-14 pr-6 py-2';
+        case 3:
+          return 'pl-16 pr-6 py-2';
+        default:
+          return 'pl-20 pr-6 py-2';
+      }
     };
 
-    // Dynamic text size for deeper levels
+    // Explicit Tailwind text size by nesting level
     const getTextSize = () => {
-      if (level === 0) return 'text-sm font-medium';
-      if (level === 1) return 'text-sm';
-      return 'text-xs';
+      switch (level) {
+        case 0:
+          return 'text-sm font-medium';
+        case 1:
+          return 'text-sm';
+        default:
+          return 'text-xs';
+      }
     };
 
-    // Dynamic icon size based on level
+    // Explicit Tailwind icon size by nesting level
     const getIconSize = () => {
-      if (level === 0) return 'h-5 w-5';
-      if (level === 1) return 'h-4 w-4';
-      return 'h-3.5 w-3.5';
+      switch (level) {
+        case 0:
+          return 'h-5 w-5';
+        case 1:
+          return 'h-4 w-4';
+        default:
+          return 'h-3.5 w-3.5';
+      }
     };
 
     const handleClick = () => {
