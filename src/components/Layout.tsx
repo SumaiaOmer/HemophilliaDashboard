@@ -167,7 +167,7 @@ export const Layout: React.FC<LayoutProps> = ({
 
   // Render menu item recursively with dynamic child support
   const renderMenuItem = (item: ScreenTreeNode, level: number = 0) => {
-    const Icon = getIcon(item.icon);
+    const Icon = getIcon(item.icon, item.name || item.code);
     const hasChildren = item.children && item.children.length > 0;
     const isExpanded = expandedMenus[item.id] || false;
     
