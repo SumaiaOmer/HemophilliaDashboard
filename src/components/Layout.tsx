@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X, LogOut, Activity, ChevronDown } from 'lucide-react';
+import { Menu, X, LogOut, Droplets, ChevronDown } from 'lucide-react';
 import { AuthService } from '../services/auth';
 import { ScreensService, ScreenTreeNode } from '../services/screens';
 import { getIcon } from '../lib/iconMap';
@@ -303,7 +303,7 @@ export const Layout: React.FC<LayoutProps> = ({
       `}>
         <div className="flex items-center justify-between h-16 px-6 border-b border-red-200 flex-shrink-0">
           <div className="flex items-center space-x-2">
-            <Activity className="h-8 w-8 text-red-600" />
+            <Droplets className="h-8 w-8 text-red-600" />
             <span className="text-xl font-bold text-gray-800">HemoCore</span>
           </div>
           <button
