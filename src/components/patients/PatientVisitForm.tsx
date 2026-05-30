@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, Search, Plus, Trash2 } from 'lucide-react';
 import { PatientVisit, PatientVisitRequest, Patient, Factor, VisitDrug } from '../../types/api';
 import { toDateInputValue } from '../../lib/dateUtils';
-
+import { LookupsService, LookupItem } from '../../services/lookups';
 interface PatientVisitFormProps {
   visit?: PatientVisit | null;
   patients: Patient[];
@@ -12,46 +12,30 @@ interface PatientVisitFormProps {
 }
 
 const COMPLAINT_OPTIONS = [
-  'Joint hemarthrosis',
-  'Intracranial hemorrhage',
-  'Iliopsoas hematoma',
-  'Hematemesis',
-  'Melena',
-  'Gum bleeding',
-  'Tooth extraction',
-  'Tongue bleeding',
-  'Epistaxis',
-  'Hematuria',
-  'Crush injury/RTA',
-  'Hemorrhagic cyst',
-  'Menorrhagia',
-  'Subconjunctival bleeding',
-  'Orbital hematoma',
-  'Preoperative preparation/intervention',
-  'Labour',
-  'Circumcision',
-  'Other',
+  { id: 'COMPLAINT_JOINT_HEMARTHROSIS', name: 'Joint hemarthrosis', type: 'ComplaintOptions' },
+  { id: 'COMPLAINT_INTRACRANIAL_HEM', name: 'Intracranial hemorrhage', type: 'ComplaintOptions' },
+  { id: 'COMPLAINT_ILIOPSOAS_HEMATOMA', name: 'Iliopsoas hematoma', type: 'ComplaintOptions' },
+  { id: 'COMPLAINT_HEMATEMESIS', name: 'Hematemesis', type: 'ComplaintOptions' },
+  { id: 'COMPLAINT_MELENA', name: 'Melena', type: 'ComplaintOptions' },
+  { id: 'COMPLAINT_GUM_BLEEDING', name: 'Gum bleeding', type: 'ComplaintOptions' },
+  { id: 'COMPLAINT_TOOTH_EXTRACTION', name: 'Tooth extraction', type: 'ComplaintOptions' },
+  { id: 'COMPLAINT_TONGUE_BLEEDING', name: 'Tongue bleeding', type: 'ComplaintOptions' },
+  { id: 'COMPLAINT_EPISTAXIS', name: 'Epistaxis', type: 'ComplaintOptions' },
+  { id: 'COMPLAINT_HEMATURIA', name: 'Hematuria', type: 'ComplaintOptions' },
+  { id: 'COMPLAINT_CRUSH_INJURY_RTA', name: 'Crush injury/RTA', type: 'ComplaintOptions' },
+  { id: 'COMPLAINT_HEMORRHAGIC_CYST', name: 'Hemorrhagic cyst', type: 'ComplaintOptions' },
+  { id: 'COMPLAINT_MENORRHAGIA', name: 'Menorrhagia', type: 'ComplaintOptions' },
+  { id: 'COMPLAINT_SUBCONJUNCTIVAL', name: 'Subconjunctival bleeding', type: 'ComplaintOptions' },
+  { id: 'COMPLAINT_ORBITAL_HEMATOMA', name: 'Orbital hematoma', type: 'ComplaintOptions' },
+  { id: 'COMPLAINT_PREOP_PREP', name: 'Preoperative preparation/intervention', type: 'ComplaintOptions' },
+  { id: 'COMPLAINT_LABOUR', name: 'Labour', type: 'ComplaintOptions' },
+  { id: 'COMPLAINT_CIRCUMCISION', name: 'Circumcision', type: 'ComplaintOptions' },
+  { id: 'COMPLAINT_OTHER', name: 'Other', type: 'ComplaintOptions' }
 ];
 
 const STATE_CENTERS: Record<string, string[]> = {
-  'Khartoum': ['Khartoum Teaching Hospital', 'Omdurman Hospital', 'Bahri Hospital', 'Ibn Sina Hospital', 'Royal Care Hospital'],
-  'Al Jazirah': ['Wad Madani Teaching Hospital', 'Al Managil Hospital'],
-  'White Nile': ['Rabak Hospital', 'Kosti Hospital'],
-  'Blue Nile': ['Ad-Damazin Hospital'],
-  'Northern': ['Dongola Hospital', 'Merowe Hospital'],
-  'River Nile': ['Atbara Teaching Hospital', 'Shendi Hospital'],
-  'Red Sea': ['Port Sudan Teaching Hospital'],
-  'Kassala': ['Kassala Teaching Hospital'],
-  'Al Qadarif': ['Al Qadarif Hospital'],
-  'Sennar': ['Sennar Hospital'],
-  'North Kordofan': ['El Obeid Teaching Hospital'],
-  'South Kordofan': ['Kadugli Hospital'],
-  'West Kordofan': ['El Fula Hospital'],
-  'Central Darfur': ['Zalingei Hospital'],
-  'North Darfur': ['El Fasher Hospital'],
-  'South Darfur': ['Nyala Teaching Hospital'],
-  'East Darfur': ['Ed Daein Hospital'],
-  'West Darfur': ['El Geneina Hospital']
+  'Khartoum': ['Khartoum Teaching Hospital', 'Omdurman Hospital', 'Bahri Hospital'],
+  'Al Jazirah': ['Wad Madani Teaching Hospital']
 };
 
 export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
@@ -87,6 +71,41 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const patientSearchRef = useRef<HTMLDivElement>(null);
+  const [vitalStatusOptions, setVitalStatusOptions] = useState<LookupItem[]>([
+    { id: 'Alive', name: 'Alive', type: 'VitalStatuses' },
+    { id: 'Died', name: 'Died', type: 'VitalStatuses' },
+    { id: 'Unknown', name: 'Unknown', type: 'VitalStatuses' }
+  ]);
+  const [visitTypeOptions, setVisitTypeOptions] = useState<LookupItem[]>([
+    { id: 'telephone_consultation', name: 'Telephone Consultation', type: 'VisitTypes' },
+    { id: 'center_visit', name: 'Center Visit', type: 'VisitTypes' }
+  ]);
+  const [serviceTypeOptions, setServiceTypeOptions] = useState<LookupItem[]>([
+    { id: 'new_visit', name: 'New Visit', type: 'ServiceTypes' },
+    { id: 'followup', name: 'Follow-up', type: 'ServiceTypes' },
+    { id: 'hospital_admission', name: 'Hospital Admission', type: 'ServiceTypes' }
+  ]);
+  const [complaintOptions, setComplaintOptions] = useState<LookupItem[]>(COMPLAINT_OPTIONS);
+  const [sudanStates, setSudanStates] = useState<LookupItem[]>([
+    { id: 'Khartoum', name: 'Khartoum', type: 'SudanStates' },
+    { id: 'Al Jazirah', name: 'Al Jazirah', type: 'SudanStates' },
+    { id: 'White Nile', name: 'White Nile', type: 'SudanStates' },
+    { id: 'Blue Nile', name: 'Blue Nile', type: 'SudanStates' },
+    { id: 'Northern', name: 'Northern', type: 'SudanStates' },
+    { id: 'River Nile', name: 'River Nile', type: 'SudanStates' },
+    { id: 'Red Sea', name: 'Red Sea', type: 'SudanStates' },
+    { id: 'Kassala', name: 'Kassala', type: 'SudanStates' },
+    { id: 'Al Qadarif', name: 'Al Qadarif', type: 'SudanStates' },
+    { id: 'Sennar', name: 'Sennar', type: 'SudanStates' },
+    { id: 'North Kordofan', name: 'North Kordofan', type: 'SudanStates' },
+    { id: 'South Kordofan', name: 'South Kordofan', type: 'SudanStates' },
+    { id: 'West Kordofan', name: 'West Kordofan', type: 'SudanStates' },
+    { id: 'Central Darfur', name: 'Central Darfur', type: 'SudanStates' },
+    { id: 'North Darfur', name: 'North Darfur', type: 'SudanStates' },
+    { id: 'South Darfur', name: 'South Darfur', type: 'SudanStates' },
+    { id: 'East Darfur', name: 'East Darfur', type: 'SudanStates' },
+    { id: 'West Darfur', name: 'West Darfur', type: 'SudanStates' }
+  ]);
 
   useEffect(() => {
     if (visit) {
@@ -137,6 +156,35 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    const loadLookupOptions = async () => {
+      const [vitalStatusLookup, visitTypeLookup, serviceTypeLookup, complaintsLookup, sudanStatesLookup] = await Promise.all([
+        LookupsService.getByType('VitalStatuses'),
+        LookupsService.getByType('VisitTypes'),
+        LookupsService.getByType('ServiceTypes'),
+        LookupsService.getByType('ComplaintOptions'),
+        LookupsService.getByType('SudanStates'),
+      ]);
+
+      if (vitalStatusLookup.length > 0) {
+        setVitalStatusOptions(vitalStatusLookup);
+      }
+      if (visitTypeLookup.length > 0) {
+        setVisitTypeOptions(visitTypeLookup);
+      }
+      if (serviceTypeLookup.length > 0) {
+        setServiceTypeOptions(serviceTypeLookup);
+      }
+      if (complaintsLookup.length > 0) {
+        setComplaintOptions(complaintsLookup);
+      }
+      if (sudanStatesLookup.length > 0) {
+        setSudanStates(sudanStatesLookup);
+      }
+    };
+    loadLookupOptions();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -390,9 +438,10 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
                     onChange={handleChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
                   >
-                    <option value="Alive">Alive</option>
-                    <option value="Died">Died</option>
-                    <option value="Unknown">Unknown</option>
+                    <option value="">Select Status</option>
+                    {vitalStatusOptions.map(option => (
+                      <option key={option.id} value={option.id}>{option.name}</option>
+                    ))}
                   </select>
                 </div>
               )}
@@ -409,8 +458,9 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
                 >
                   <option value="">Select Visit Type</option>
-                  <option value="telephone_consultation">Telephone Consultation</option>
-                  <option value="center_visit">Center Visit</option>
+                  {visitTypeOptions.map(option => (
+                    <option key={option.id} value={option.id}>{option.name}</option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -427,9 +477,10 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
                 >
-                  <option value="new_visit">New Visit</option>
-                  <option value="followup">Follow-up</option>
-                  <option value="hospital_admission">Hospital Admission</option>
+                  <option value="">Select Service Type</option>
+                  {serviceTypeOptions.map(option => (
+                    <option key={option.id} value={option.id}>{option.name}</option>
+                  ))}
                 </select>
               </div>
 
@@ -445,24 +496,9 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
                 >
                   <option value="">Select State</option>
-                  <option value="Khartoum">Khartoum</option>
-                  <option value="Al Jazirah">Al Jazirah</option>
-                  <option value="White Nile">White Nile</option>
-                  <option value="Blue Nile">Blue Nile</option>
-                  <option value="Northern">Northern</option>
-                  <option value="River Nile">River Nile</option>
-                  <option value="Red Sea">Red Sea</option>
-                  <option value="Kassala">Kassala</option>
-                  <option value="Al Qadarif">Al Qadarif</option>
-                  <option value="Sennar">Sennar</option>
-                  <option value="North Kordofan">North Kordofan</option>
-                  <option value="South Kordofan">South Kordofan</option>
-                  <option value="West Kordofan">West Kordofan</option>
-                  <option value="Central Darfur">Central Darfur</option>
-                  <option value="North Darfur">North Darfur</option>
-                  <option value="South Darfur">South Darfur</option>
-                  <option value="East Darfur">East Darfur</option>
-                  <option value="West Darfur">West Darfur</option>
+                  {sudanStates.map(option => (
+                    <option key={option.id} value={option.id}>{option.name}</option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -519,9 +555,9 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
               >
                 <option value="">Select Complaint</option>
-                {COMPLAINT_OPTIONS.map(option => (
-                  <option key={option} value={option}>
-                    {option}
+                {complaintOptions.map(option => (
+                  <option key={option.id} value={option.id}>
+                    {option.name}
                   </option>
                 ))}
               </select>

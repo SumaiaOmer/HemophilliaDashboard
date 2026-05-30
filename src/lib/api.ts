@@ -1,4 +1,7 @@
+// src/lib/api.ts
+
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5057/api';
+
 //const API_URL = import.meta.env.VITE_API_URL || 'http://nbtc.gov.sd:5057/api';
 
 interface ApiRequestOptions extends RequestInit {
@@ -48,64 +51,37 @@ class ApiClient {
       headers: requestHeaders,
     });
 
-    if (response.status === 401) {
-      localStorage.removeItem('hemocore_token');
-      localStorage.removeItem('hemocore_user');
-      window.location.href = '/';
-      throw new Error('Unauthorized - redirecting to login');
-    }
-
+    // Handle application/server exception messages gracefully
     if (!response.ok) {
-      const errorText = await response.text();
+      let errorText = '';
       try {
+        errorText = await response.text();
         const errorJson = JSON.parse(errorText);
-        
-        // Handle validation errors (RFC 9110 Problem Details)
-        if (errorJson.errors && typeof errorJson.errors === 'object') {
-          const validationErrors: Record<string, string[]> = errorJson.errors;
-          const errorMessages = Object.entries(validationErrors)
-            .map(([field, messages]) => {
-              const msgs = Array.isArray(messages) ? messages : [messages];
-              return msgs.map(msg => `${field}: ${msg}`).join('\n');
-            })
-            .join('\n');
-          throw new Error(errorMessages);
-        }
-        
-        // Handle standard error response
-        if (errorJson.error) {
-          throw new Error(errorJson.error);
-        }
-        if (errorJson.message) {
-          throw new Error(errorJson.message);
-        }
-        if (errorJson.title) {
-          throw new Error(errorJson.title);
-        }
+        throw new Error(errorJson.message || errorJson.error || `HTTP error! Status: ${response.status}`);
       } catch (parseErr) {
-        // If parsing fails, use the raw text
-        if (parseErr instanceof Error && parseErr.message.includes('JSON')) {
-          throw new Error(errorText || `HTTP error! status: ${response.status}`);
+        if (parseErr instanceof Error && !parseErr.message.includes('HTTP error')) {
+          throw new Error(errorText || `HTTP error! Status: ${response.status}`);
         }
         throw parseErr;
       }
-      throw new Error(errorText || `HTTP error! status: ${response.status}`);
     }
 
+    // Return empty payload cleanly on HTTP 204 No Content responses (updates/deletions)
     if (response.status === 204) {
       return {} as T;
     }
 
     const responseText = await response.text();
 
-    if (!responseText) {
+    if (!responseText || responseText.trim() === '') {
       return {} as T;
     }
 
     try {
       return JSON.parse(responseText);
     } catch (err) {
-      throw new Error(`Failed to parse response as JSON: ${responseText}`);
+      // Fallback support for plain raw strings returned directly by endpoints
+      return responseText as unknown as T;
     }
   }
 
@@ -114,8 +90,6 @@ class ApiClient {
   }
 
   async post<T>(endpoint: string, data?: unknown, requiresAuth = true): Promise<T> {
-    console.log(`POST ${endpoint}`);
-    console.log('Request body:', JSON.stringify(data, null, 2));
     return this.request<T>(endpoint, {
       method: 'POST',
       body: data ? JSON.stringify(data) : undefined,

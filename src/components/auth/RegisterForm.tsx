@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { UserPlus, Eye, EyeOff, User, Lock } from 'lucide-react';
 import { RegisterRequest, Role } from '../../types/api';
 import { RolesService } from '../../services/roles';
+import { LookupsService, LookupItem } from '../../services/lookups';
 import logo1 from '../../1.jpeg';
 
-const SUDAN_STATES = [
+const DEFAULT_SUDAN_STATES = [
   'Khartoum',
   'Kassala',
   'Red Sea',
@@ -49,6 +50,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
   const [roles, setRoles] = useState<Role[]>([]);
   const [rolesLoading, setRolesLoading] = useState(false);
   const [rolesError, setRolesError] = useState<string | null>(null);
+  const [stateOptions, setStateOptions] = useState<LookupItem[]>(DEFAULT_SUDAN_STATES.map(state => ({ id: state, name: state, type: 'SudanStates' })));
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -95,6 +97,19 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
     };
 
     loadRoles();
+
+    const loadStates = async () => {
+      try {
+        const states = await LookupsService.getByType('SudanStates');
+        if (isMounted && states.length > 0) {
+          setStateOptions(states);
+        }
+      } catch (err) {
+        console.error('Failed to load Sudan states:', err);
+      }
+    };
+
+    loadStates();
 
     return () => {
       isMounted = false;
@@ -262,9 +277,9 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                 className="block w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
               >
                 <option value="">Select a state</option>
-                {SUDAN_STATES.map(state => (
-                  <option key={state} value={state}>
-                    {state}
+                {stateOptions.map(option => (
+                  <option key={option.id} value={option.id}>
+                    {option.name}
                   </option>
                 ))}
               </select>
