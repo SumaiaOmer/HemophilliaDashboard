@@ -28,9 +28,29 @@ const OCCUPATIONS = [
 
 const STATE_CITIES: Record<string, string[]> = {
   'Khartoum': ['Bahri (Khartoum North)', 'Khartoum City', 'Omdurman'],
-  'Al Jazirah': ['Al Managil', 'Wad Madani'],
+  'Gezira': ['Al Managil', 'Wad Madani'],
   'White Nile': ['Kosti', 'Rabak'],
-  'Red Sea': ['Port Sudan']
+  'Red Sea': ['Port Sudan'],
+  'North Darfur': ['El Fasher'],
+  'River Nile': ['Atbara', 'Shendi'],
+  'Sennar': ['Sennar'],
+  'South Darfur': ['Nyala'],
+  'Kassala': ['Kassala'],
+  'Blue Nile': ['Ad-Damazin']
+};
+
+// Additional mapping keyed by lookup `id` values returned by the API.
+const STATE_CITIES_BY_ID: Record<string, string[]> = {
+  'STATE_KHARTOUM': STATE_CITIES['Khartoum'],
+  'STATE_GEZIRA': STATE_CITIES['Gezira'],
+  'STATE_WHITE_NILE': STATE_CITIES['White Nile'],
+  'STATE_RED_SEA': STATE_CITIES['Red Sea'],
+  'STATE_NORTH_DARFUR': STATE_CITIES['North Darfur'],
+  'STATE_RIVER_NILE': STATE_CITIES['River Nile'],
+  'STATE_SENNAR': STATE_CITIES['Sennar'],
+  'STATE_SOUTH_DARFUR': STATE_CITIES['South Darfur'],
+  'STATE_KASSALA': STATE_CITIES['Kassala'],
+  'STATE_BLUE_NILE': STATE_CITIES['Blue Nile'],
 };
 
 const CITY_LOCALITIES: Record<string, string[]> = {
@@ -40,6 +60,26 @@ const CITY_LOCALITIES: Record<string, string[]> = {
   'Khartoum City': ['Burri', 'Al-Riyadh', 'Al-Taif'],
   'Omdurman': ['Al-Fitahab', 'Al-Thawra'],
   'Port Sudan': ['Salabona', 'Al-Thawra District']
+  ,
+  'El Fasher': ['Al-Salam', 'Al-Arab'],
+  'Atbara': ['Atbara Center', 'Atbara West'],
+  'Shendi': ['Shendi Center'],
+  'Sennar': ['Sennar Center'],
+  'Nyala': ['Nyala Center', 'Al-Salam'],
+  'Kassala': ['Kassala Center'],
+  'Ad-Damazin': ['Damazin Center']
+};
+
+const getCitiesForState = (stateValue: string): string[] => {
+  if (!stateValue) return [];
+  // If API returns an id like STATE_*, prefer id-keyed map
+  if (STATE_CITIES_BY_ID[stateValue]) return STATE_CITIES_BY_ID[stateValue];
+
+  // Otherwise try to resolve name from loaded lookups (handles id or name)
+  const stateName = getStateName(stateValue);
+  if (stateName && STATE_CITIES[stateName]) return STATE_CITIES[stateName];
+
+  return [];
 };
 
 const COUNTRIES = [
@@ -196,6 +236,11 @@ export const PatientForm: React.FC<PatientFormProps> = ({
   const [familyHistoryOptions, setFamilyHistoryOptions] = useState<LookupItem[]>(DEFAULT_FAMILY_HISTORY);
   const [diagnosisOptions, setDiagnosisOptions] = useState<LookupItem[]>(DEFAULT_DIAGNOSIS);
   const [sudanStates, setSudanStates] = useState<LookupItem[]>(DEFAULT_SUDAN_STATES);
+
+  const getStateName = (stateValue: string): string => {
+    const state = sudanStates.find(option => option.id === stateValue || option.name === stateValue);
+    return state ? state.name : stateValue;
+  };
 
   const [testDates, setTestDates] = useState<Partial<Record<TestType, { hasTaken: boolean; testDate: string; result?: 'positive' | 'negative' }>>>({
     HBV: { hasTaken: false, testDate: '', result: undefined },
@@ -564,7 +609,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
         state: value === 'OutsideSudan' ? prev.state : prev.state
       }));
     } else if (name === 'homeState') {
-      const cities = value ? STATE_CITIES[value] || [] : [];
+      const cities = getCitiesForState(value);
       const autoSelectCity = cities.length === 1 ? cities[0] : '';
       const localities = autoSelectCity ? CITY_LOCALITIES[autoSelectCity] || [] : [];
       const autoSelectLocality = localities.length === 1 ? localities[0] : '';
@@ -583,7 +628,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
         homeLocality: autoSelectLocality
       }));
     } else if (name === 'state') {
-      const cities = value ? STATE_CITIES[value] || [] : [];
+      const cities = getCitiesForState(value);
       const autoSelectCity = cities.length === 1 ? cities[0] : '';
       const localities = autoSelectCity ? CITY_LOCALITIES[autoSelectCity] || [] : [];
       const autoSelectLocality = localities.length === 1 ? localities[0] : '';
@@ -616,8 +661,10 @@ export const PatientForm: React.FC<PatientFormProps> = ({
     }
   };
 
-  const availableCities = formData.state ? STATE_CITIES[formData.state] || [] : [];
+  const availableCities = formData.state ? getCitiesForState(formData.state) : [];
   const availableLocalities = formData.cityOrTown ? CITY_LOCALITIES[formData.cityOrTown] || [] : [];
+  const availableHomeCities = formData.homeState ? getCitiesForState(formData.homeState) : [];
+  const availableHomeLocalities = formData.homeCityOrTown ? CITY_LOCALITIES[formData.homeCityOrTown] || [] : [];
 
   const handleChronicDiseaseChange = (disease: string, checked: boolean) => {
     setFormData(prev => {
@@ -790,7 +837,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
                 >
                   <option value="">{formData.homeState ? 'Select City or Town' : 'Select State First'}</option>
-                  {formData.homeState && STATE_CITIES[formData.homeState]?.map(city => (
+                  {availableHomeCities.map(city => (
                     <option key={city} value={city}>{city}</option>
                   ))}
                   <option value="Other">Other</option>
@@ -810,7 +857,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
                 >
                   <option value="">{formData.homeCityOrTown ? 'Select Local Area' : 'Select City First'}</option>
-                  {formData.homeCityOrTown && CITY_LOCALITIES[formData.homeCityOrTown]?.map(locality => (
+                  {availableHomeLocalities.map(locality => (
                     <option key={locality} value={locality}>{locality}</option>
                   ))}
                   <option value="Other">Other</option>
