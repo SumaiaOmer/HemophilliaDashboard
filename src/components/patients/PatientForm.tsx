@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
 import { Patient, PatientRequest, PatientTestDate, TestType, OtherMedicalTest } from '../../types/api';
-import { toDateInputValue } from '../../lib/dateUtils';
 import { LookupsService, LookupItem } from '../../services/lookups';
+import { toDateInputValue } from '../../lib/dateUtils';
 
 interface PatientFormProps {
   patient?: Patient | null;
@@ -13,73 +13,70 @@ interface PatientFormProps {
 const CHRONIC_DISEASES = ['DM', 'HTN', 'Asthma', 'Cardiac disease', 'Other'];
 
 const OCCUPATIONS = [
-  'Child',
-  'Doctor',
-  'Engineer',
-  'Farmer',
-  'Housewife',
-  'Nurse',
-  'Other',
-  'Retired',
   'Student',
   'Teacher',
-  'Unemployed'
+  'Doctor',
+  'Nurse',
+  'Engineer',
+  'Farmer',
+  'Business Owner',
+  'Government Employee',
+  'Private Sector Employee',
+  'Military',
+  'Police',
+  'Driver',
+  'Mechanic',
+  'Carpenter',
+  'Electrician',
+  'Retired',
+  'Unemployed',
+  'Housewife',
+  'Child',
+  'Other'
 ];
 
 const STATE_CITIES: Record<string, string[]> = {
-  'Khartoum': ['Bahri (Khartoum North)', 'Khartoum City', 'Omdurman'],
-  'Gezira': ['Al Managil', 'Wad Madani'],
-  'White Nile': ['Kosti', 'Rabak'],
-  'Red Sea': ['Port Sudan'],
-  'North Darfur': ['El Fasher'],
-  'River Nile': ['Atbara', 'Shendi'],
-  'Sennar': ['Sennar'],
-  'South Darfur': ['Nyala'],
-  'Kassala': ['Kassala'],
-  'Blue Nile': ['Ad-Damazin']
-};
-
-// Additional mapping keyed by lookup `id` values returned by the API.
-const STATE_CITIES_BY_ID: Record<string, string[]> = {
-  'STATE_KHARTOUM': STATE_CITIES['Khartoum'],
-  'STATE_GEZIRA': STATE_CITIES['Gezira'],
-  'STATE_WHITE_NILE': STATE_CITIES['White Nile'],
-  'STATE_RED_SEA': STATE_CITIES['Red Sea'],
-  'STATE_NORTH_DARFUR': STATE_CITIES['North Darfur'],
-  'STATE_RIVER_NILE': STATE_CITIES['River Nile'],
-  'STATE_SENNAR': STATE_CITIES['Sennar'],
-  'STATE_SOUTH_DARFUR': STATE_CITIES['South Darfur'],
-  'STATE_KASSALA': STATE_CITIES['Kassala'],
-  'STATE_BLUE_NILE': STATE_CITIES['Blue Nile'],
+  'Khartoum': ['Khartoum', 'Omdurman', 'Bahri (Khartoum North)', 'Shambat'],
+  'Al Jazirah': ['Wad Madani', 'Al Managil', 'Al Hasaheisa'],
+  'White Nile': ['Rabak', 'Kosti', 'Ed Dueim'],
+  'Blue Nile': ['Ad-Damazin', 'Ar Roseires'],
+  'Northern': ['Dongola', 'Karima', 'Merowe'],
+  'River Nile': ['Atbara', 'Ed Damer', 'Shendi', 'Berber'],
+  'Red Sea': ['Port Sudan', 'Suakin', 'Halaib'],
+  'Kassala': ['Kassala', 'Wad al Hilaiw'],
+  'Al Qadarif': ['Al Qadarif', 'Al Faw', 'Doka'],
+  'Sennar': ['Sennar', 'Singa'],
+  'North Kordofan': ['El Obeid', 'Bara', 'Sodiri'],
+  'South Kordofan': ['Kadugli', 'Dilling', 'Talodi'],
+  'West Kordofan': ['El Fula', 'Babanusa'],
+  'Central Darfur': ['Zalingei', 'Wadi Salih'],
+  'North Darfur': ['El Fasher', 'Kutum', 'Mellit'],
+  'South Darfur': ['Nyala', 'Ed Daein', 'Tulus'],
+  'East Darfur': ['Ed Daein', 'Yassin'],
+  'West Darfur': ['El Geneina', 'Beida']
 };
 
 const CITY_LOCALITIES: Record<string, string[]> = {
-  'Al Managil': ['Al-Daraga', 'Al-Mazad'],
-  'Wad Madani': ['Al-Daraga', 'Al-Mazad'],
-  'Bahri (Khartoum North)': ['Kafouri', 'Shambat'],
-  'Khartoum City': ['Burri', 'Al-Riyadh', 'Al-Taif'],
-  'Omdurman': ['Al-Fitahab', 'Al-Thawra'],
-  'Port Sudan': ['Salabona', 'Al-Thawra District']
-  ,
-  'El Fasher': ['Al-Salam', 'Al-Arab'],
-  'Atbara': ['Atbara Center', 'Atbara West'],
-  'Shendi': ['Shendi Center'],
-  'Sennar': ['Sennar Center'],
-  'Nyala': ['Nyala Center', 'Al-Salam'],
-  'Kassala': ['Kassala Center'],
-  'Ad-Damazin': ['Damazin Center']
-};
-
-const getCitiesForState = (stateValue: string): string[] => {
-  if (!stateValue) return [];
-  // If API returns an id like STATE_*, prefer id-keyed map
-  if (STATE_CITIES_BY_ID[stateValue]) return STATE_CITIES_BY_ID[stateValue];
-
-  // Otherwise try to resolve name from loaded lookups (handles id or name)
-  const stateName = getStateName(stateValue);
-  if (stateName && STATE_CITIES[stateName]) return STATE_CITIES[stateName];
-
-  return [];
+  'Khartoum': ['Al Riyadh', 'Al Amarat', 'Al Manshiya', 'Al Daim', 'Burri', 'Kalakla', 'Soba', 'Al Muhandiseen', 'Al Sahafa', 'Jabra'],
+  'Omdurman': ['Al Thawra', 'Al Murada', 'Wad Nubawi', 'Umbada', 'Al Abbasiya', 'Karari'],
+  'Bahri (Khartoum North)': ['Shambat', 'Halfaya', 'Al Haj Yousif', 'Al Azhari', 'Dar El Salam', 'Al Kadaro'],
+  'Wad Madani': ['Central Wad Madani', 'Al Andalus', 'Al Muwaylih'],
+  'Port Sudan': ['Central Port Sudan', 'Deim Al Arab', 'Al Malaab'],
+  'Kassala': ['Central Kassala', 'Al Khatmiya', 'Toteel'],
+  'El Obeid': ['Central El Obeid', 'Al Ibaydiya', 'Al Suq'],
+  'Nyala': ['Central Nyala', 'Al Wahda', 'Al Jeer'],
+  'El Fasher': ['Central El Fasher', 'Al Fasher South'],
+  'El Geneina': ['Central El Geneina', 'Riyad'],
+  'Atbara': ['Central Atbara', 'Al Girf'],
+  'Al Qadarif': ['Central Al Qadarif', 'Al Suq'],
+  'Kosti': ['Central Kosti', 'Al Hilla'],
+  'Ad-Damazin': ['Central Ad-Damazin'],
+  'Sennar': ['Central Sennar'],
+  'Dongola': ['Central Dongola', 'New Dongola'],
+  'Shendi': ['Central Shendi'],
+  'Merowe': ['Central Merowe'],
+  'Rabak': ['Central Rabak'],
+  'Zalingei': ['Central Zalingei']
 };
 
 const COUNTRIES = [
@@ -111,17 +108,53 @@ const PHONE_CODE_OPTIONS = [
   { country: 'Australia', code: '+61' }
 ];
 
-const makeLookupItems = (items: string[], type: string): LookupItem[] =>
-  items.map(item => ({ id: item, name: item, type }));
+const DEFAULT_SUDAN_STATES = Object.keys(STATE_CITIES);
 
-const DEFAULT_MARITAL_STATUS = makeLookupItems(['single', 'married', 'divorced', 'widow', 'widower', 'child'], 'MaritalStatus');
-const DEFAULT_BLOOD_GROUPS = makeLookupItems(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'], 'BloodGroups');
-const DEFAULT_GENDERS = makeLookupItems(['male', 'female'], 'Genders');
-const DEFAULT_SEVERITIES = makeLookupItems(['mild', 'moderate', 'severe', 'unknown'], 'Severities');
-const DEFAULT_VITAL_STATUS = makeLookupItems(['Alive', 'Died', 'Unknown'], 'VitalStatus');
-const DEFAULT_FAMILY_HISTORY = makeLookupItems(['first_degree', 'second_degree', 'third_degree'], 'FamilyHistory');
-const DEFAULT_DIAGNOSIS = makeLookupItems(['Hemophilia A', 'Hemophilia B', 'Hemophilia A carrier', 'Hemophilia B carrier', 'Acquired hemophilia', 'Von Willebrand Disease', 'Afibrinogenemia', 'Hypofibrinogenemia', 'Dysfibrinogenemia', 'Platelete dysfunction', 'Bernard Soulier syndrome', 'Glanzmann thrombasthenia', 'Prothrombin deficiency', 'Factor V deficiency', 'Combined factor V and VIII deficiency', 'Factor VII deficiency', 'Factor X deficiency', 'Factor XI deficiency', 'Factor XII deficiency', 'Factor XIII deficiency', 'Vitamin K dependent factor deficiency', 'Other bleeding disorder'], 'Diagnoses');
-const DEFAULT_SUDAN_STATES = makeLookupItems(Object.keys(STATE_CITIES), 'SudanStates');
+const DEFAULT_RESIDENCE_TYPE_OPTIONS: LookupItem[] = [
+  { id: 'InsideSudan', name: 'Inside Sudan', type: 'ResidenceType' },
+  { id: 'OutsideSudan', name: 'Outside Sudan', type: 'ResidenceType' }
+];
+
+const DEFAULT_MARITAL_STATUS_OPTIONS: LookupItem[] = [
+  { id: 'single', name: 'Single', type: 'MaritalStatus' },
+  { id: 'married', name: 'Married', type: 'MaritalStatus' },
+  { id: 'divorced', name: 'Divorced', type: 'MaritalStatus' },
+  { id: 'widow', name: 'Widow', type: 'MaritalStatus' },
+  { id: 'widower', name: 'Widower', type: 'MaritalStatus' },
+  { id: 'child', name: 'Child', type: 'MaritalStatus' }
+];
+
+const DEFAULT_OCCUPATION_OPTIONS: LookupItem[] = OCCUPATIONS.map(item => ({ id: item, name: item, type: 'Occupation' }));
+
+const DEFAULT_VITAL_STATUS_OPTIONS: LookupItem[] = [
+  { id: 'Alive', name: 'Alive', type: 'VitalStatus' },
+  { id: 'Died', name: 'Died', type: 'VitalStatus' },
+  { id: 'Unknown', name: 'Unknown', type: 'VitalStatus' }
+];
+
+const DEFAULT_BLOOD_GROUP_OPTIONS: LookupItem[] = [
+  { id: 'A+', name: 'A+', type: 'BloodGroup' },
+  { id: 'A-', name: 'A-', type: 'BloodGroup' },
+  { id: 'B+', name: 'B+', type: 'BloodGroup' },
+  { id: 'B-', name: 'B-', type: 'BloodGroup' },
+  { id: 'AB+', name: 'AB+', type: 'BloodGroup' },
+  { id: 'AB-', name: 'AB-', type: 'BloodGroup' },
+  { id: 'O+', name: 'O+', type: 'BloodGroup' },
+  { id: 'O-', name: 'O-', type: 'BloodGroup' }
+];
+
+const DEFAULT_SEVERITY_OPTIONS: LookupItem[] = [
+  { id: 'mild', name: 'Mild', type: 'Severity' },
+  { id: 'moderate', name: 'Moderate', type: 'Severity' },
+  { id: 'severe', name: 'Severe', type: 'Severity' },
+  { id: 'unknown', name: 'Unknown', type: 'Severity' }
+];
+
+const DEFAULT_FAMILY_HISTORY_OPTIONS: LookupItem[] = [
+  { id: 'first_degree', name: 'First Degree', type: 'FamilyHistory' },
+  { id: 'second_degree', name: 'Second Degree', type: 'FamilyHistory' },
+  { id: 'third_degree', name: 'Third Degree', type: 'FamilyHistory' }
+];
 
 const normalizePhoneValue = (value?: string): { code: string; number: string } => {
   if (!value) return { code: '+249', number: '' };
@@ -227,20 +260,14 @@ export const PatientForm: React.FC<PatientFormProps> = ({
   const [hasFactorLevel, setHasFactorLevel] = useState(false);
   const [factorTestDate, setFactorTestDate] = useState('');
   const [hasFamilyHistory, setHasFamilyHistory] = useState(false);
-  const [occupationOptions, setOccupationOptions] = useState<LookupItem[]>(makeLookupItems(OCCUPATIONS, 'Occupations'));
-  const [maritalStatusOptions, setMaritalStatusOptions] = useState<LookupItem[]>(DEFAULT_MARITAL_STATUS);
-  const [bloodGroupOptions, setBloodGroupOptions] = useState<LookupItem[]>(DEFAULT_BLOOD_GROUPS);
-  const [genderOptions, setGenderOptions] = useState<LookupItem[]>(DEFAULT_GENDERS);
-  const [severityOptions, setSeverityOptions] = useState<LookupItem[]>(DEFAULT_SEVERITIES);
-  const [vitalStatusOptions, setVitalStatusOptions] = useState<LookupItem[]>(DEFAULT_VITAL_STATUS);
-  const [familyHistoryOptions, setFamilyHistoryOptions] = useState<LookupItem[]>(DEFAULT_FAMILY_HISTORY);
-  const [diagnosisOptions, setDiagnosisOptions] = useState<LookupItem[]>(DEFAULT_DIAGNOSIS);
-  const [sudanStates, setSudanStates] = useState<LookupItem[]>(DEFAULT_SUDAN_STATES);
-
-  const getStateName = (stateValue: string): string => {
-    const state = sudanStates.find(option => option.id === stateValue || option.name === stateValue);
-    return state ? state.name : stateValue;
-  };
+  const [sudanStates, setSudanStates] = useState<LookupItem[]>(DEFAULT_SUDAN_STATES.map(state => ({ id: state, name: state, type: 'SudanStates' })));
+  const [residenceTypeOptions, setResidenceTypeOptions] = useState<LookupItem[]>(DEFAULT_RESIDENCE_TYPE_OPTIONS);
+  const [maritalStatusOptions, setMaritalStatusOptions] = useState<LookupItem[]>(DEFAULT_MARITAL_STATUS_OPTIONS);
+  const [occupationOptions, setOccupationOptions] = useState<LookupItem[]>(DEFAULT_OCCUPATION_OPTIONS);
+  const [vitalStatusOptions, setVitalStatusOptions] = useState<LookupItem[]>(DEFAULT_VITAL_STATUS_OPTIONS);
+  const [bloodGroupOptions, setBloodGroupOptions] = useState<LookupItem[]>(DEFAULT_BLOOD_GROUP_OPTIONS);
+  const [severityOptions, setSeverityOptions] = useState<LookupItem[]>(DEFAULT_SEVERITY_OPTIONS);
+  const [familyHistoryOptions, setFamilyHistoryOptions] = useState<LookupItem[]>(DEFAULT_FAMILY_HISTORY_OPTIONS);
 
   const [testDates, setTestDates] = useState<Partial<Record<TestType, { hasTaken: boolean; testDate: string; result?: 'positive' | 'negative' }>>>({
     HBV: { hasTaken: false, testDate: '', result: undefined },
@@ -248,6 +275,41 @@ export const PatientForm: React.FC<PatientFormProps> = ({
     HIV: { hasTaken: false, testDate: '', result: undefined },
     Other: { hasTaken: false, testDate: '' },
   });
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadLookupOptions = async () => {
+      try {
+        const [states, residenceTypes, maritalStatuses, occupations, vitalStatuses, bloodGroups, severities, familyHistories] = await Promise.all([
+          LookupsService.getByType('SudanStates'),
+          LookupsService.getByType('ResidenceType'),
+          LookupsService.getByType('MaritalStatuses'),
+          LookupsService.getByType('Occupations'),
+          LookupsService.getByType('VitalStatuses'),
+          LookupsService.getByType('BloodGroups'),
+          LookupsService.getByType('Severities'),
+          LookupsService.getByType('FamilyHistories'),
+        ]);
+
+        if (!isMounted) return;
+        if (states.length > 0) setSudanStates(states);
+        if (residenceTypes.length > 0) setResidenceTypeOptions(residenceTypes);
+        if (maritalStatuses.length > 0) setMaritalStatusOptions(maritalStatuses);
+        if (occupations.length > 0) setOccupationOptions(occupations);
+        if (vitalStatuses.length > 0) setVitalStatusOptions(vitalStatuses);
+        if (bloodGroups.length > 0) setBloodGroupOptions(bloodGroups);
+        if (severities.length > 0) setSeverityOptions(severities);
+        if (familyHistories.length > 0) setFamilyHistoryOptions(familyHistories);
+      } catch (error) {
+        console.error('Failed to load patient lookup options:', error);
+      }
+    };
+
+    loadLookupOptions();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const [hasOtherTests, setHasOtherTests] = useState(false);
   const [otherTests, setOtherTests] = useState<OtherMedicalTest[]>([]);
@@ -400,60 +462,6 @@ export const PatientForm: React.FC<PatientFormProps> = ({
     }
   }, [patient]);
 
-  useEffect(() => {
-    const loadLookupOptions = async () => {
-      const [occupationsLookup, maritalStatusLookup, bloodGroupLookup, genderLookup, severityLookup, vitalStatusLookup, familyHistoryLookup, diagnosisLookup, sudanStatesLookup] = await Promise.all([
-        LookupsService.getByType('Occupations'),
-        LookupsService.getByType('MaritalStatus'),
-        LookupsService.getByType('BloodGroups'),
-        LookupsService.getByType('Genders'),
-        LookupsService.getByType('Severities'),
-        LookupsService.getByType('VitalStatus'),
-        LookupsService.getByType('FamilyHistory'),
-        LookupsService.getByType('Diagnoses'),
-        LookupsService.getByType('SudanStates'),
-      ]);
-
-      if (occupationsLookup.length > 0) {
-        setOccupationOptions(occupationsLookup);
-      }
-
-      if (maritalStatusLookup.length > 0) {
-        setMaritalStatusOptions(maritalStatusLookup);
-      }
-
-      if (bloodGroupLookup.length > 0) {
-        setBloodGroupOptions(bloodGroupLookup);
-      }
-
-      if (genderLookup.length > 0) {
-        setGenderOptions(genderLookup);
-      }
-
-      if (severityLookup.length > 0) {
-        setSeverityOptions(severityLookup);
-      }
-
-      if (vitalStatusLookup.length > 0) {
-        setVitalStatusOptions(vitalStatusLookup);
-      }
-
-      if (familyHistoryLookup.length > 0) {
-        setFamilyHistoryOptions(familyHistoryLookup);
-      }
-
-      if (diagnosisLookup.length > 0) {
-        setDiagnosisOptions(diagnosisLookup);
-      }
-
-      if (sudanStatesLookup.length > 0) {
-        setSudanStates(sudanStatesLookup);
-      }
-    };
-
-    loadLookupOptions();
-  }, []);
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -573,8 +581,10 @@ export const PatientForm: React.FC<PatientFormProps> = ({
     if (formData.hasInhibitors) submitData.hasInhibitors = formData.hasInhibitors;
     if (formData.inhibitorLevel) submitData.inhibitorLevel = formData.inhibitorLevel;
     if (formData.inhibitorScreeningDate) submitData.inhibitorScreeningDate = formData.inhibitorScreeningDate;
-    if (chronicDiseaseString) submitData.chronicDiseases = chronicDiseasesArray;
+    if (chronicDiseaseString) submitData.chronicDiseases = chronicDiseaseString;
     if (formData.chronicDiseaseOther) submitData.chronicDiseaseOther = formData.chronicDiseaseOther;
+    if (otherTests.length > 0) submitData.otherMedicalTests = otherTests;
+    if (formData.inhibitors && formData.inhibitors.length > 0) submitData.inhibitorTests = formData.inhibitors;
     if (formData.hasHBVVaccination) submitData.hasHBVVaccination = formData.hasHBVVaccination;
     if (formData.hasHealthInsurance) submitData.hasHealthInsurance = formData.hasHealthInsurance;
     submitData.insuranceProvider = formData.insuranceProvider || '';
@@ -587,7 +597,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
     } else if (formData.residenceType === 'OutsideSudan') {
       submitData.residenceRegion = formData.state;
       submitData.residenceCityOrTown = formData.cityOrTown;
-      submitData.country = formData.country;
+      submitData.residenceCountry = formData.country;
     }
 
     onSave(submitData);
@@ -609,9 +619,9 @@ export const PatientForm: React.FC<PatientFormProps> = ({
         state: value === 'OutsideSudan' ? prev.state : prev.state
       }));
     } else if (name === 'homeState') {
-      const cities = getCitiesForState(value);
+      const cities = value ? getCitiesForState(value) : [];
       const autoSelectCity = cities.length === 1 ? cities[0] : '';
-      const localities = autoSelectCity ? CITY_LOCALITIES[autoSelectCity] || [] : [];
+      const localities = autoSelectCity ? getLocalitiesForCity(autoSelectCity) : [];
       const autoSelectLocality = localities.length === 1 ? localities[0] : '';
       setFormData(prev => ({
         ...prev,
@@ -620,7 +630,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
         homeLocality: autoSelectLocality
       }));
     } else if (name === 'homeCityOrTown') {
-      const localities = value ? CITY_LOCALITIES[value] || [] : [];
+      const localities = value ? getLocalitiesForCity(value) : [];
       const autoSelectLocality = localities.length === 1 ? localities[0] : '';
       setFormData(prev => ({
         ...prev,
@@ -628,9 +638,9 @@ export const PatientForm: React.FC<PatientFormProps> = ({
         homeLocality: autoSelectLocality
       }));
     } else if (name === 'state') {
-      const cities = getCitiesForState(value);
+      const cities = value ? getCitiesForState(value) : [];
       const autoSelectCity = cities.length === 1 ? cities[0] : '';
-      const localities = autoSelectCity ? CITY_LOCALITIES[autoSelectCity] || [] : [];
+      const localities = autoSelectCity ? getLocalitiesForCity(autoSelectCity) : [];
       const autoSelectLocality = localities.length === 1 ? localities[0] : '';
       setFormData(prev => ({
         ...prev,
@@ -639,7 +649,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
         locality: autoSelectLocality
       }));
     } else if (name === 'cityOrTown') {
-      const localities = value ? CITY_LOCALITIES[value] || [] : [];
+      const localities = value ? getLocalitiesForCity(value) : [];
       const autoSelectLocality = localities.length === 1 ? localities[0] : '';
       setFormData(prev => ({
         ...prev,
@@ -661,10 +671,24 @@ export const PatientForm: React.FC<PatientFormProps> = ({
     }
   };
 
+  const stateOptions = sudanStates.length > 0
+    ? sudanStates
+    : DEFAULT_SUDAN_STATES.map(state => ({ id: state, name: state, type: 'SudanStates' }));
+
+  const getStateName = (value: string) => {
+    const match = sudanStates.find(item => item.id === value || item.name === value);
+    return match ? match.name : value;
+  };
+
+  const getCitiesForState = (stateValue: string) => {
+    const normalizedState = getStateName(stateValue);
+    return STATE_CITIES[normalizedState] || [];
+  };
+
+  const getLocalitiesForCity = (cityValue: string) => CITY_LOCALITIES[cityValue] || [];
+
   const availableCities = formData.state ? getCitiesForState(formData.state) : [];
-  const availableLocalities = formData.cityOrTown ? CITY_LOCALITIES[formData.cityOrTown] || [] : [];
-  const availableHomeCities = formData.homeState ? getCitiesForState(formData.homeState) : [];
-  const availableHomeLocalities = formData.homeCityOrTown ? CITY_LOCALITIES[formData.homeCityOrTown] || [] : [];
+  const availableLocalities = formData.cityOrTown ? getLocalitiesForCity(formData.cityOrTown) : [];
 
   const handleChronicDiseaseChange = (disease: string, checked: boolean) => {
     setFormData(prev => {
@@ -798,9 +822,8 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                 >
                   <option value="">Select Gender</option>
-                  {genderOptions.map(option => (
-                    <option key={option.id} value={option.id}>{option.name}</option>
-                  ))}
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
                 </select>
               </div>
             </div>
@@ -818,8 +841,8 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                 >
                   <option value="">Select State</option>
-                  {sudanStates.map(option => (
-                    <option key={option.id} value={option.id}>{option.name}</option>
+                  {stateOptions.map(state => (
+                    <option key={state.id} value={state.id}>{state.name}</option>
                   ))}
                 </select>
               </div>
@@ -837,7 +860,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
                 >
                   <option value="">{formData.homeState ? 'Select City or Town' : 'Select State First'}</option>
-                  {availableHomeCities.map(city => (
+                  {formData.homeState && STATE_CITIES[formData.homeState]?.map(city => (
                     <option key={city} value={city}>{city}</option>
                   ))}
                   <option value="Other">Other</option>
@@ -857,7 +880,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
                 >
                   <option value="">{formData.homeCityOrTown ? 'Select Local Area' : 'Select City First'}</option>
-                  {availableHomeLocalities.map(locality => (
+                  {formData.homeCityOrTown && CITY_LOCALITIES[formData.homeCityOrTown]?.map(locality => (
                     <option key={locality} value={locality}>{locality}</option>
                   ))}
                   <option value="Other">Other</option>
@@ -877,8 +900,9 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
               >
                 <option value="">Select Residence</option>
-                <option value="InsideSudan">Inside Sudan</option>
-                <option value="OutsideSudan">Outside Sudan</option>
+                {residenceTypeOptions.map(option => (
+                  <option key={option.id} value={option.id}>{option.name}</option>
+                ))}
               </select>
             </div>
 
@@ -896,8 +920,8 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                   >
                     <option value="">Select State</option>
-                    {sudanStates.map(option => (
-                      <option key={option.id} value={option.id}>{option.name}</option>
+                    {stateOptions.map(state => (
+                      <option key={state.id} value={state.id}>{state.name}</option>
                     ))}
                   </select>
                 </div>
@@ -1087,7 +1111,6 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                 required
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
               >
-                <option value="">Select Vital Status</option>
                 {vitalStatusOptions.map(option => (
                   <option key={option.id} value={option.id}>{option.name}</option>
                 ))}
@@ -1142,9 +1165,28 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                 >
                   <option value="">Select Diagnosis</option>
-                  {diagnosisOptions.map(option => (
-                    <option key={option.id} value={option.id}>{option.name}</option>
-                  ))}
+                  <option value="Hemophilia A">Hemophilia A</option>
+                  <option value="Hemophilia B">Hemophilia B</option>
+                  <option value="Hemophilia A carrier">Hemophilia A carrier</option>
+                  <option value="Hemophilia B carrier">Hemophilia B carrier</option>
+                  <option value="Acquired hemophilia">Acquired hemophilia</option>
+                  <option value="Von Willebrand Disease">Von Willebrand Disease</option>
+                  <option value="Afibrinogenemia">Afibrinogenemia</option>
+                  <option value="Hypofibrinogenemia">Hypofibrinogenemia</option>
+                  <option value="Dysfibrinogenemia">Dysfibrinogenemia</option>
+                  <option value="Platelete dysfunction">Platelete dysfunction</option>
+                  <option value="Bernard Soulier syndrome">Bernard Soulier syndrome</option>
+                  <option value="Glanzmann thrombasthenia">Glanzmann thrombasthenia</option>
+                  <option value="Prothrombin deficiency">Prothrombin deficiency</option>
+                  <option value="Factor V deficiency">Factor V deficiency</option>
+                  <option value="Combined factor V and VIII deficiency">Combined factor V and VIII deficiency</option>
+                  <option value="Factor VII deficiency">Factor VII deficiency</option>
+                  <option value="Factor X deficiency">Factor X deficiency</option>
+                  <option value="Factor XI deficiency">Factor XI deficiency</option>
+                  <option value="Factor XII deficiency">Factor XII deficiency</option>
+                  <option value="Factor XIII deficiency">Factor XIII deficiency</option>
+                  <option value="Vitamin K dependent factor deficiency">Vitamin K dependent factor deficiency</option>
+                  <option value="Other bleeding disorder">Other bleeding disorder</option>
                 </select>
               </div>
               <div>

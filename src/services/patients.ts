@@ -149,6 +149,16 @@ export class PatientsService {
   }
 
   private static transformPatientForAPI(patient: PatientRequest): any {
+    const chronicDiseasesValue = patient.chronicDiseases
+      ? Array.isArray(patient.chronicDiseases)
+        ? patient.chronicDiseases.join(', ')
+        : patient.chronicDiseases
+      : null;
+
+    const inhibitorTests = (patient as any).inhibitorTests || (patient as any).inhibitors || null;
+    const otherMedicalTests = (patient as any).otherMedicalTests || null;
+    const residenceCountry = (patient as any).residenceCountry || (patient as any).country || null;
+
     const transformed: any = {
       FullName: patient.fullName,
       NationalIdNumber: patient.nationalIdNumber,
@@ -176,12 +186,18 @@ export class PatientsService {
       ResidenceType: patient.residenceType || 'InsideSudan',
       ResidenceState: patient.residenceState || null,
       ResidenceCityOrTown: patient.residenceCityOrTown || null,
+      ResidenceCountry: residenceCountry,
       ResidenceLocalArea: patient.residenceLocalArea || null,
       ResidenceRegion: patient.residenceRegion || null,
       HasHBVVaccination: patient.hasHBVVaccination || false,
+      HbvVaccinationDate: (patient as any).hbvVaccinationDate || null,
       HasHealthInsurance: patient.hasHealthInsurance || false,
       InsuranceProvider: patient.insuranceProvider || null,
       IsCircumcised: patient.isCircumcised || false,
+      ChronicDiseases: chronicDiseasesValue,
+      ChronicDiseaseOther: patient.chronicDiseaseOther || null,
+      InhibitorTests: inhibitorTests,
+      OtherMedicalTests: otherMedicalTests,
     };
 
     return transformed;

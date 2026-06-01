@@ -114,6 +114,30 @@ export interface FactorRequest {
 
 // --- Patient Demographics & Clinical Baselines ---
 export interface Patient {
+  HasChronicDiseases: undefined;
+  inhibitorScreeningDate(inhibitorScreeningDate: any): unknown;
+  incidenceDate(incidenceDate: any): unknown;
+  factorPercent: undefined;
+  factorPercentDate(factorPercentDate: any): unknown;
+  contactNumber1: any;
+  contactNumber: any;
+  contactNumber2(contactNumber2: any): unknown;
+  fullName: string;
+  nationalIdNumber: string;
+  age: string;
+  state: string | undefined;
+  cityOrTown: string | undefined;
+  locality: string | undefined;
+  country: string;
+  hemophiliaCenterId: string;
+  diagnosis: string;
+  diagnosisYear: any;
+  familyHistory: any;
+  HasInhibitors: boolean;
+  inhibitor: boolean;
+  inhibitors: never[];
+  otherMedicalTests: boolean;
+  testDates: boolean;
   id: number;
   hospitalNo?: string;
   name: string;
@@ -152,24 +176,30 @@ export interface Patient {
 
 export interface PatientRequest {
   hospitalNo?: string;
-  name: string;
+  fullName: string;
   gender: string;
   dateOfBirth: string;
-  nationalId?: string;
-  phoneNumber?: string;
-  relativePhoneNumber?: string;
+  nationalIdNumber?: string;
+  contactNumber1?: string;
+  contactNumber2?: string;
   occupation?: string;
   educationalLevel?: string;
   maritalStatus?: string;
   bloodGroup?: string;
   rhFactor?: string;
   diagnosisType: string;
+  diagnosis?: string;
+  diagnosisYear?: number;
+  hemophiliaCenterId?: string;
   severity: string;
-  factorLevel?: number;
+  factorPercent?: number;
   hasInhibitors: boolean;
   inhibitorLevel?: number;
+  inhibitorScreeningDate?: string;
+  inhibitors?: InhibitorTest[];
   chronicDiseases: string | string[];
   chronicDiseaseOther?: string;
+  familyHistory?: string;
   vitalStatus: string;
   homeState?: string;
   homeCityOrTown?: string;
@@ -179,10 +209,14 @@ export interface PatientRequest {
   residenceCityOrTown?: string;
   residenceLocalArea?: string;
   residenceRegion?: string;
+  residenceCountry?: string;
   hasHBVVaccination: boolean;
+  hbvVaccinationDate?: string;
   hasHealthInsurance: boolean;
   insuranceProvider?: string;
   isCircumcised: boolean;
+  otherMedicalTests?: OtherMedicalTest[];
+  inhibitorTests?: InhibitorTest[];
 }
 
 export interface PatientTestDate {

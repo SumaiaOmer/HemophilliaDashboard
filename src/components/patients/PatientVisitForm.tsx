@@ -54,6 +54,28 @@ const STATE_CENTERS: Record<string, string[]> = {
   'West Darfur': ['El Geneina Hospital']
 };
 
+// Mapping keyed by lookup `id` values for API lookups
+const STATE_CENTERS_BY_ID: Record<string, string[]> = {
+  'STATE_KHARTOUM': STATE_CENTERS['Khartoum'],
+  'STATE_AL_JAZIRAH': STATE_CENTERS['Al Jazirah'],
+  'STATE_WHITE_NILE': STATE_CENTERS['White Nile'],
+  'STATE_BLUE_NILE': STATE_CENTERS['Blue Nile'],
+  'STATE_NORTHERN': STATE_CENTERS['Northern'],
+  'STATE_RIVER_NILE': STATE_CENTERS['River Nile'],
+  'STATE_RED_SEA': STATE_CENTERS['Red Sea'],
+  'STATE_KASSALA': STATE_CENTERS['Kassala'],
+  'STATE_AL_QADARIF': STATE_CENTERS['Al Qadarif'],
+  'STATE_SENNAR': STATE_CENTERS['Sennar'],
+  'STATE_NORTH_KORDOFAN': STATE_CENTERS['North Kordofan'],
+  'STATE_SOUTH_KORDOFAN': STATE_CENTERS['South Kordofan'],
+  'STATE_WEST_KORDOFAN': STATE_CENTERS['West Kordofan'],
+  'STATE_CENTRAL_DARFUR': STATE_CENTERS['Central Darfur'],
+  'STATE_NORTH_DARFUR': STATE_CENTERS['North Darfur'],
+  'STATE_SOUTH_DARFUR': STATE_CENTERS['South Darfur'],
+  'STATE_EAST_DARFUR': STATE_CENTERS['East Darfur'],
+  'STATE_WEST_DARFUR': STATE_CENTERS['West Darfur']
+};
+
 export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
   visit,
   patients,
@@ -102,11 +124,27 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
     { id: 'hospital_admission', name: 'Hospital Admission', type: 'ServiceTypes' }
   ]);
   const [complaintOptions, setComplaintOptions] = useState<LookupItem[]>(COMPLAINT_OPTIONS.map(option => ({ id: option, name: option, type: 'Complaints' })));
-  const [sudanStates, setSudanStates] = useState<string[]>([
-    'Khartoum', 'Al Jazirah', 'White Nile', 'Blue Nile', 'Northern', 'River Nile', 'Red Sea', 'Kassala',
-    'Al Qadarif', 'Sennar', 'North Kordofan', 'South Kordofan', 'West Kordofan', 'Central Darfur',
-    'North Darfur', 'South Darfur', 'East Darfur', 'West Darfur'
-  ]);
+  const DEFAULT_SUDAN_STATES = [
+    { id: 'Khartoum', name: 'Khartoum', type: 'SudanStates' },
+    { id: 'Al Jazirah', name: 'Al Jazirah', type: 'SudanStates' },
+    { id: 'White Nile', name: 'White Nile', type: 'SudanStates' },
+    { id: 'Blue Nile', name: 'Blue Nile', type: 'SudanStates' },
+    { id: 'Northern', name: 'Northern', type: 'SudanStates' },
+    { id: 'River Nile', name: 'River Nile', type: 'SudanStates' },
+    { id: 'Red Sea', name: 'Red Sea', type: 'SudanStates' },
+    { id: 'Kassala', name: 'Kassala', type: 'SudanStates' },
+    { id: 'Al Qadarif', name: 'Al Qadarif', type: 'SudanStates' },
+    { id: 'Sennar', name: 'Sennar', type: 'SudanStates' },
+    { id: 'North Kordofan', name: 'North Kordofan', type: 'SudanStates' },
+    { id: 'South Kordofan', name: 'South Kordofan', type: 'SudanStates' },
+    { id: 'West Kordofan', name: 'West Kordofan', type: 'SudanStates' },
+    { id: 'Central Darfur', name: 'Central Darfur', type: 'SudanStates' },
+    { id: 'North Darfur', name: 'North Darfur', type: 'SudanStates' },
+    { id: 'South Darfur', name: 'South Darfur', type: 'SudanStates' },
+    { id: 'East Darfur', name: 'East Darfur', type: 'SudanStates' },
+    { id: 'West Darfur', name: 'West Darfur', type: 'SudanStates' }
+  ];
+  const [sudanStates, setSudanStates] = useState<LookupItem[]>(DEFAULT_SUDAN_STATES);
 
   useEffect(() => {
     if (visit) {
@@ -498,7 +536,7 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
                 >
                   <option value="">Select State</option>
                   {sudanStates.map(state => (
-                    <option key={state} value={state}>{state}</option>
+                    <option key={state.id} value={state.id}>{state.name}</option>
                   ))}
                 </select>
               </div>

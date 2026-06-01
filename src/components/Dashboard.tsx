@@ -36,20 +36,41 @@ export const Dashboard: React.FC = () => {
   useEffect(() => {
     const loadDashboardData = async () => {
       try {
-        const [patients, companies, factors, distributions] = await Promise.all([
-          PatientsService.getAll(),
-          CompaniesService.getAll(),
-          FactorsService.getAll(),
-          MedicineDistributionService.getAll(),
+        // Individual catch statements prevent one failing endpoint (like Companies 404) from breaking Promise.all
+        const [patientsRes, companiesRes, factorsRes, distributionsRes]: any[] = await Promise.all([
+          PatientsService.getAll().catch(err => {
+            console.error("Patients service failed:", err);
+            return [];
+          }),
+          CompaniesService.getAll().catch(err => {
+            console.error("Companies service failed (404/Not Found):", err);
+            return [];
+          }),
+          FactorsService.getAll().catch(err => {
+            console.error("Factors service failed:", err);
+            return [];
+          }),
+          MedicineDistributionService.getAll().catch(err => {
+            console.error("Medicine Distribution service failed:", err);
+            return [];
+          }),
         ]);
 
-        const pendingCount = distributions.filter(d => !d.deliveryDate).length;
-        const deliveredCount = distributions.filter(d => d.deliveryDate).length;
+        // Safely extract arrays whether they are wrapped in an object (.data) or returned as a raw array
+        const patients = Array.isArray(patientsRes) ? patientsRes : (patientsRes?.data || []);
+        const companies = Array.isArray(companiesRes) ? companiesRes : (companiesRes?.data || []);
+        const factors = Array.isArray(factorsRes) ? factorsRes : (factorsRes?.data || []);
+        const distributions = Array.isArray(distributionsRes) ? distributionsRes : (distributionsRes?.data || []);
 
-        const lowStock = factors.filter(f => f.quantity < 10);
+        // Process distributions status
+        const pendingCount = distributions.filter((d: any) => !d.deliveryDate).length;
+        const deliveredCount = distributions.filter((d: any) => d.deliveryDate).length;
+
+        // Process stock alerts
+        const lowStock = factors.filter((f: Factor) => f.quantity < 10);
         const thirtyDaysFromNow = new Date();
         thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
-        const expiring = factors.filter(f => new Date(f.expiryDate) <= thirtyDaysFromNow);
+        const expiring = factors.filter((f: Factor) => new Date(f.expiryDate) <= thirtyDaysFromNow);
 
         setLowStockDrugs(lowStock);
         setExpiringDrugs(expiring);
@@ -58,13 +79,13 @@ export const Dashboard: React.FC = () => {
           totalPatients: patients.length,
           totalCompanies: companies.length,
           totalFactors: factors.length,
-          totalTreatments: 0,
+          totalTreatments: 0, // Hardcoded for now until connected to a treatments endpoint
           totalDistributions: distributions.length,
           pendingDistributions: pendingCount,
           deliveredDistributions: deliveredCount,
         });
       } catch (error) {
-        console.error('Error loading dashboard data:', error);
+        console.error('Critical dashboard execution layout error:', error);
       } finally {
         setLoading(false);
       }

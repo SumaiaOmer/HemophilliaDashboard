@@ -3,8 +3,10 @@ import { MedicineDistribution, MedicineDistributionRequest } from '../types/api'
 
 export class MedicineDistributionService {
   static async getAll(): Promise<MedicineDistribution[]> {
-    const response = await apiClient.get<MedicineDistribution[]>('/DrugDistributions');
-    return response;
+    const response = await apiClient.get<any>('/DrugDistributions');
+    if (Array.isArray(response)) return response;
+    if (response && Array.isArray(response.data)) return response.data;
+    return [];
   }
 
   static async getById(id: number): Promise<MedicineDistribution> {

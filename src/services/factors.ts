@@ -3,8 +3,10 @@ import { Factor, FactorRequest } from '../types/api';
 
 export class FactorsService {
   static async getAll(): Promise<Factor[]> {
-    const response = await apiClient.get<Factor[]>('/Factors');
-    return response;
+    const response = await apiClient.get<any>('/Factors');
+    if (Array.isArray(response)) return response;
+    if (response && Array.isArray(response.data)) return response.data;
+    return [];
   }
 
   static async getById(id: number): Promise<Factor> {
