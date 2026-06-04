@@ -68,6 +68,7 @@ export interface Patient {
   inhibitorLevel?: number;
   inhibitorScreeningDate?: string;
   inhibitors?: InhibitorEntry[];
+  inhibitorHistory?: InhibitorHistory[];
   HasChronicDiseases?: boolean;
   chronicDiseases?: string[];
   chronicDiseaseOther?: string;
@@ -150,6 +151,12 @@ export interface PatientRequest {
 export interface InhibitorEntry {
   inhibitorLevel?: number;
   inhibitorScreeningDate?: string;
+}
+
+export interface InhibitorHistory {
+  id?: number;
+  testDate: string;
+  level: number;
 }
 
 export interface VisitDrug {

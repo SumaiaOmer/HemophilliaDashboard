@@ -3,13 +3,13 @@ import { PatientVisit, PatientVisitRequest } from '../types/api';
 
 export class PatientVisitsService {
   static async getAll(): Promise<PatientVisit[]> {
-    const data = await apiClient.get<PatientVisit[]>('/patientVisits');
+    const data = await apiClient.get<PatientVisit[]>('/PatientVisits');
     const visits = (Array.isArray(data) ? data : []).map(this.normalizeVisit);
     return visits.sort((a, b) => new Date(b.visitDate).getTime() - new Date(a.visitDate).getTime());
   }
 
   static async getById(id: number): Promise<PatientVisit> {
-    const data = await apiClient.get<PatientVisit>(`/patientVisits/${id}`);
+    const data = await apiClient.get<PatientVisit>(`/PatientVisits/${id}`);
     return this.normalizeVisit(data);
   }
 
@@ -81,13 +81,13 @@ export class PatientVisitsService {
 
   static async create(visit: PatientVisitRequest): Promise<PatientVisit> {
     const transformed = this.transformForAPI(visit);
-    const data = await apiClient.post<PatientVisit>('/patientVisits', transformed);
+    const data = await apiClient.post<PatientVisit>('/PatientVisits', transformed);
     return this.normalizeVisit(data);
   }
 
   static async update(id: number, visit: PatientVisitRequest): Promise<void> {
     const transformed = this.transformForAPI(visit);
-    await apiClient.put(`/patientVisits/${id}`, transformed);
+    await apiClient.put(`/PatientVisits/${id}`, transformed);
   }
 
   static async delete(id: number): Promise<void> {

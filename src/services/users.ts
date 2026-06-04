@@ -27,7 +27,7 @@ export interface Screen {
 
 export class UsersService {
   static async getAllUsers(): Promise<User[]> {
-    const result = await apiClient.get<any>('/users');
+    const result = await apiClient.get<any>('/Users');
     if (Array.isArray(result)) {
       return result.map(user => ({
         id: user.id || user.Id || 0,
@@ -43,12 +43,12 @@ export class UsersService {
 
   static async createUser(userData: { username: string; passwordHash?: string; role?: string; state?: string }, roleId?: number): Promise<User> {
     const params = roleId ? `?roleId=${roleId}` : '';
-    const result = await apiClient.post<any>(`/users${params}`, userData);
+    const result = await apiClient.post<any>(`/Users${params}`, userData);
     return result || { id: 0, username: userData.username };
   }
 
   static async getUserById(userId: number): Promise<User> {
-    const result = await apiClient.get<any>(`/users/${userId}`);
+    const result = await apiClient.get<any>(`/Users/${userId}`);
     const user = result || { id: userId, username: '' };
     return {
       id: user.id || user.Id || userId,
@@ -61,7 +61,7 @@ export class UsersService {
   }
 
   static async getUserRoles(userId: number): Promise<UserRole[]> {
-    const result = await apiClient.get<any>(`/users/${userId}/roles`);
+    const result = await apiClient.get<any>(`/Users/${userId}/roles`);
     if (Array.isArray(result)) {
       return result;
     }
@@ -69,7 +69,7 @@ export class UsersService {
   }
 
   static async getMyScreens(): Promise<Screen[]> {
-    const result = await apiClient.get<any>('/users/my-screens');
+    const result = await apiClient.get<any>('/Users/my-screens');
     if (Array.isArray(result)) {
       return result.map(screen => ({
         id: screen.id || screen.Id || 0,

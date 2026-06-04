@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
-import { Patient, PatientRequest, PatientTestDate, TestType, OtherMedicalTest } from '../../types/api';
+import { Patient, PatientRequest, PatientTestDate, TestType, OtherMedicalTest, InhibitorEntry } from '../../types/api';
 import { toDateInputValue } from '../../lib/dateUtils';
 
 interface PatientFormProps {
@@ -225,6 +225,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
     testName: '',
     testResult: ''
   });
+  const [inhibitorHistory, setInhibitorHistory] = useState<Array<{id?: number; testDate: string; level: number}>>([]);
 
   useEffect(() => {
     if (patient) {
@@ -332,6 +333,12 @@ export const PatientForm: React.FC<PatientFormProps> = ({
       } else {
         setOtherTests([]);
         setHasOtherTests(false);
+      }
+
+      if (patient.inhibitorHistory && patient.inhibitorHistory.length > 0) {
+        setInhibitorHistory(patient.inhibitorHistory);
+      } else {
+        setInhibitorHistory([]);
       }
 
       if (patient.testDates && Array.isArray(patient.testDates)) {
@@ -464,6 +471,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
       nationalIdNumber: formData.nationalIdNumber,
       dateOfBirth: formData.dateOfBirth,
       gender: formData.gender,
+      age: formData.age,
       maritalStatus: maritalStatusMap[formData.maritalStatus] || capitalizeFirstLetter(formData.maritalStatus),
       occupation: formData.occupation,
       contactNumber1: resolvedContactNumber1,
@@ -1354,6 +1362,30 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                   )}
                 </div>
               </>
+            )}
+
+            {inhibitorHistory && inhibitorHistory.length > 0 && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <h4 className="text-lg font-semibold text-blue-900 mb-4">Inhibitor History</h4>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-blue-200 bg-blue-100">
+                        <th className="px-4 py-2 text-left font-semibold text-blue-900">Test Date</th>
+                        <th className="px-4 py-2 text-left font-semibold text-blue-900">Level</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {inhibitorHistory.map((entry, index) => (
+                        <tr key={index} className="border-b border-blue-100 hover:bg-blue-50">
+                          <td className="px-4 py-2 text-gray-700">{entry.testDate}</td>
+                          <td className="px-4 py-2 text-gray-700">{entry.level}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             )}
 
             <div className="mb-4">

@@ -99,7 +99,7 @@ export class PatientsService {
     return {
       id: patient.id || patient.Id,
       fullName: patient.FullName || patient.fullName || patient.full_name || '',
-      nationalIdNumber: patient.NationalIdNumber || patient.nationalIdNumber || patient.national_id_number || '',
+      nationalIdNumber: patient.NationalIdNumber || patient.NationalIDNumber || patient.nationalIdNumber || patient.nationalId || patient.national_id_number || patient.national_id || '',
       dateOfBirth: patient.DateOfBirth || patient.dateOfBirth || patient.date_of_birth || '',
       gender: patient.Gender || patient.gender || '',
       age: patient.Age || patient.age || '',
@@ -133,27 +133,34 @@ export class PatientsService {
       chronicDiseases: chronicDiseases,
       chronicDiseaseOther: patient.ChronicDiseaseOther || patient.chronicDiseaseOther || patient.chronic_disease_other || '',
       bloodGroup: patient.BloodGroup || patient.bloodGroup || patient.blood_group || '',
+      hasHBVVaccination: patient.HasHBVVaccination === true || patient.hasHBVVaccination === true || patient.HasHBVVaccination === 'true' || patient.hasHBVVaccination === 'true',
+      hasHealthInsurance: patient.HasHealthInsurance === true || patient.hasHealthInsurance === true || patient.HasHealthInsurance === 'true' || patient.hasHealthInsurance === 'true',
+      insuranceProvider: patient.InsuranceProvider || patient.insuranceProvider || patient.insurance_provider || '',
+      isCircumcised: patient.IsCircumcised === true || patient.isCircumcised === true || patient.IsCircumcised === 'true' || patient.isCircumcised === 'true',
       longTermMedication: patient.LongTermMedication === true || patient.longTermMedication === true || patient.longTermMedication === 'true' || patient.LongTermMedication === 'true',
-      testDates: testDates.length > 0 ? testDates : undefined
+      testDates: testDates.length > 0 ? testDates : undefined,
+      inhibitorHistory: patient.inhibitorHistory && Array.isArray(patient.inhibitorHistory) ? patient.inhibitorHistory : undefined,
+      otherMedicalTests: patient.otherMedicalTests && Array.isArray(patient.otherMedicalTests) ? patient.otherMedicalTests : undefined
     };
   }
 
   static async getAll(): Promise<Patient[]> {
-    const data = await apiClient.get<Patient[]>('/patients');
+    const data = await apiClient.get<Patient[]>('/Patients');
     return (Array.isArray(data) ? data : []).map(p => this.normalizePatient(p));
   }
 
   static async getById(id: number): Promise<Patient> {
-    const data = await apiClient.get<Patient>(`/patients/${id}`);
+    const data = await apiClient.get<Patient>(`/Patients/${id}`);
     return this.normalizePatient(data);
   }
 
   private static transformPatientForAPI(patient: PatientRequest): any {
     const transformed: any = {
       FullName: patient.fullName,
-      NationalIdNumber: patient.nationalIdNumber,
+      NationalIdNumber: patient.nationalIdNumber || patient.nationalId || null,
       DateOfBirth: patient.dateOfBirth,
       Gender: patient.gender,
+      Age: patient.age || null,
 
       BloodGroup: patient.bloodGroup || null,
       MaritalStatus: patient.maritalStatus || null,
@@ -192,13 +199,13 @@ export class PatientsService {
     const transformed = this.transformPatientForAPI(patient);
     console.log('Transformed data for API:', JSON.stringify(transformed, null, 2));
 
-    const data = await apiClient.post<Patient>('/patients', transformed);
+    const data = await apiClient.post<Patient>('/Patients', transformed);
     return this.normalizePatient(data);
   }
 
   static async update(id: number, patient: PatientRequest): Promise<void> {
     const transformed = this.transformPatientForAPI(patient);
-    await apiClient.put(`/patients/${id}`, transformed);
+    await apiClient.put(`/Patients/${id}`, transformed);
   }
 
   static async delete(id: number): Promise<void> {
