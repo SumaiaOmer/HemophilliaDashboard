@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
-import { Patient, PatientRequest, PatientTestDate, TestType, OtherMedicalTest } from '../../types/api';
-import { LookupsService, LookupItem } from '../../services/lookups';
+import { Patient, PatientRequest, PatientTestDate, TestType, OtherMedicalTest, InhibitorEntry } from '../../types/api';
 import { toDateInputValue } from '../../lib/dateUtils';
 
 interface PatientFormProps {
@@ -108,54 +107,6 @@ const PHONE_CODE_OPTIONS = [
   { country: 'Australia', code: '+61' }
 ];
 
-const DEFAULT_SUDAN_STATES = Object.keys(STATE_CITIES);
-
-const DEFAULT_RESIDENCE_TYPE_OPTIONS: LookupItem[] = [
-  { id: 'InsideSudan', name: 'Inside Sudan', type: 'ResidenceType' },
-  { id: 'OutsideSudan', name: 'Outside Sudan', type: 'ResidenceType' }
-];
-
-const DEFAULT_MARITAL_STATUS_OPTIONS: LookupItem[] = [
-  { id: 'single', name: 'Single', type: 'MaritalStatus' },
-  { id: 'married', name: 'Married', type: 'MaritalStatus' },
-  { id: 'divorced', name: 'Divorced', type: 'MaritalStatus' },
-  { id: 'widow', name: 'Widow', type: 'MaritalStatus' },
-  { id: 'widower', name: 'Widower', type: 'MaritalStatus' },
-  { id: 'child', name: 'Child', type: 'MaritalStatus' }
-];
-
-const DEFAULT_OCCUPATION_OPTIONS: LookupItem[] = OCCUPATIONS.map(item => ({ id: item, name: item, type: 'Occupation' }));
-
-const DEFAULT_VITAL_STATUS_OPTIONS: LookupItem[] = [
-  { id: 'Alive', name: 'Alive', type: 'VitalStatus' },
-  { id: 'Died', name: 'Died', type: 'VitalStatus' },
-  { id: 'Unknown', name: 'Unknown', type: 'VitalStatus' }
-];
-
-const DEFAULT_BLOOD_GROUP_OPTIONS: LookupItem[] = [
-  { id: 'A+', name: 'A+', type: 'BloodGroup' },
-  { id: 'A-', name: 'A-', type: 'BloodGroup' },
-  { id: 'B+', name: 'B+', type: 'BloodGroup' },
-  { id: 'B-', name: 'B-', type: 'BloodGroup' },
-  { id: 'AB+', name: 'AB+', type: 'BloodGroup' },
-  { id: 'AB-', name: 'AB-', type: 'BloodGroup' },
-  { id: 'O+', name: 'O+', type: 'BloodGroup' },
-  { id: 'O-', name: 'O-', type: 'BloodGroup' }
-];
-
-const DEFAULT_SEVERITY_OPTIONS: LookupItem[] = [
-  { id: 'mild', name: 'Mild', type: 'Severity' },
-  { id: 'moderate', name: 'Moderate', type: 'Severity' },
-  { id: 'severe', name: 'Severe', type: 'Severity' },
-  { id: 'unknown', name: 'Unknown', type: 'Severity' }
-];
-
-const DEFAULT_FAMILY_HISTORY_OPTIONS: LookupItem[] = [
-  { id: 'first_degree', name: 'First Degree', type: 'FamilyHistory' },
-  { id: 'second_degree', name: 'Second Degree', type: 'FamilyHistory' },
-  { id: 'third_degree', name: 'Third Degree', type: 'FamilyHistory' }
-];
-
 const normalizePhoneValue = (value?: string): { code: string; number: string } => {
   if (!value) return { code: '+249', number: '' };
   const trimmed = value.trim();
@@ -260,14 +211,6 @@ export const PatientForm: React.FC<PatientFormProps> = ({
   const [hasFactorLevel, setHasFactorLevel] = useState(false);
   const [factorTestDate, setFactorTestDate] = useState('');
   const [hasFamilyHistory, setHasFamilyHistory] = useState(false);
-  const [sudanStates, setSudanStates] = useState<LookupItem[]>(DEFAULT_SUDAN_STATES.map(state => ({ id: state, name: state, type: 'SudanStates' })));
-  const [residenceTypeOptions, setResidenceTypeOptions] = useState<LookupItem[]>(DEFAULT_RESIDENCE_TYPE_OPTIONS);
-  const [maritalStatusOptions, setMaritalStatusOptions] = useState<LookupItem[]>(DEFAULT_MARITAL_STATUS_OPTIONS);
-  const [occupationOptions, setOccupationOptions] = useState<LookupItem[]>(DEFAULT_OCCUPATION_OPTIONS);
-  const [vitalStatusOptions, setVitalStatusOptions] = useState<LookupItem[]>(DEFAULT_VITAL_STATUS_OPTIONS);
-  const [bloodGroupOptions, setBloodGroupOptions] = useState<LookupItem[]>(DEFAULT_BLOOD_GROUP_OPTIONS);
-  const [severityOptions, setSeverityOptions] = useState<LookupItem[]>(DEFAULT_SEVERITY_OPTIONS);
-  const [familyHistoryOptions, setFamilyHistoryOptions] = useState<LookupItem[]>(DEFAULT_FAMILY_HISTORY_OPTIONS);
 
   const [testDates, setTestDates] = useState<Partial<Record<TestType, { hasTaken: boolean; testDate: string; result?: 'positive' | 'negative' }>>>({
     HBV: { hasTaken: false, testDate: '', result: undefined },
@@ -276,47 +219,13 @@ export const PatientForm: React.FC<PatientFormProps> = ({
     Other: { hasTaken: false, testDate: '' },
   });
 
-  useEffect(() => {
-    let isMounted = true;
-    const loadLookupOptions = async () => {
-      try {
-        const [states, residenceTypes, maritalStatuses, occupations, vitalStatuses, bloodGroups, severities, familyHistories] = await Promise.all([
-          LookupsService.getByType('SudanStates'),
-          LookupsService.getByType('ResidenceType'),
-          LookupsService.getByType('MaritalStatuses'),
-          LookupsService.getByType('Occupations'),
-          LookupsService.getByType('VitalStatuses'),
-          LookupsService.getByType('BloodGroups'),
-          LookupsService.getByType('Severities'),
-          LookupsService.getByType('FamilyHistories'),
-        ]);
-
-        if (!isMounted) return;
-        if (states.length > 0) setSudanStates(states);
-        if (residenceTypes.length > 0) setResidenceTypeOptions(residenceTypes);
-        if (maritalStatuses.length > 0) setMaritalStatusOptions(maritalStatuses);
-        if (occupations.length > 0) setOccupationOptions(occupations);
-        if (vitalStatuses.length > 0) setVitalStatusOptions(vitalStatuses);
-        if (bloodGroups.length > 0) setBloodGroupOptions(bloodGroups);
-        if (severities.length > 0) setSeverityOptions(severities);
-        if (familyHistories.length > 0) setFamilyHistoryOptions(familyHistories);
-      } catch (error) {
-        console.error('Failed to load patient lookup options:', error);
-      }
-    };
-
-    loadLookupOptions();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
   const [hasOtherTests, setHasOtherTests] = useState(false);
   const [otherTests, setOtherTests] = useState<OtherMedicalTest[]>([]);
   const [currentTest, setCurrentTest] = useState({
     testName: '',
     testResult: ''
   });
+  const [inhibitorHistory, setInhibitorHistory] = useState<Array<{id?: number; testDate: string; level: number}>>([]);
 
   useEffect(() => {
     if (patient) {
@@ -424,6 +333,12 @@ export const PatientForm: React.FC<PatientFormProps> = ({
       } else {
         setOtherTests([]);
         setHasOtherTests(false);
+      }
+
+      if (patient.inhibitorHistory && patient.inhibitorHistory.length > 0) {
+        setInhibitorHistory(patient.inhibitorHistory);
+      } else {
+        setInhibitorHistory([]);
       }
 
       if (patient.testDates && Array.isArray(patient.testDates)) {
@@ -556,6 +471,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
       nationalIdNumber: formData.nationalIdNumber,
       dateOfBirth: formData.dateOfBirth,
       gender: formData.gender,
+      age: formData.age,
       maritalStatus: maritalStatusMap[formData.maritalStatus] || capitalizeFirstLetter(formData.maritalStatus),
       occupation: formData.occupation,
       contactNumber1: resolvedContactNumber1,
@@ -581,10 +497,8 @@ export const PatientForm: React.FC<PatientFormProps> = ({
     if (formData.hasInhibitors) submitData.hasInhibitors = formData.hasInhibitors;
     if (formData.inhibitorLevel) submitData.inhibitorLevel = formData.inhibitorLevel;
     if (formData.inhibitorScreeningDate) submitData.inhibitorScreeningDate = formData.inhibitorScreeningDate;
-    if (chronicDiseaseString) submitData.chronicDiseases = chronicDiseaseString;
+    if (chronicDiseaseString) submitData.chronicDiseases = chronicDiseasesArray;
     if (formData.chronicDiseaseOther) submitData.chronicDiseaseOther = formData.chronicDiseaseOther;
-    if (otherTests.length > 0) submitData.otherMedicalTests = otherTests;
-    if (formData.inhibitors && formData.inhibitors.length > 0) submitData.inhibitorTests = formData.inhibitors;
     if (formData.hasHBVVaccination) submitData.hasHBVVaccination = formData.hasHBVVaccination;
     if (formData.hasHealthInsurance) submitData.hasHealthInsurance = formData.hasHealthInsurance;
     submitData.insuranceProvider = formData.insuranceProvider || '';
@@ -597,7 +511,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
     } else if (formData.residenceType === 'OutsideSudan') {
       submitData.residenceRegion = formData.state;
       submitData.residenceCityOrTown = formData.cityOrTown;
-      submitData.residenceCountry = formData.country;
+      submitData.country = formData.country;
     }
 
     onSave(submitData);
@@ -619,9 +533,9 @@ export const PatientForm: React.FC<PatientFormProps> = ({
         state: value === 'OutsideSudan' ? prev.state : prev.state
       }));
     } else if (name === 'homeState') {
-      const cities = value ? getCitiesForState(value) : [];
+      const cities = value ? STATE_CITIES[value] || [] : [];
       const autoSelectCity = cities.length === 1 ? cities[0] : '';
-      const localities = autoSelectCity ? getLocalitiesForCity(autoSelectCity) : [];
+      const localities = autoSelectCity ? CITY_LOCALITIES[autoSelectCity] || [] : [];
       const autoSelectLocality = localities.length === 1 ? localities[0] : '';
       setFormData(prev => ({
         ...prev,
@@ -630,7 +544,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
         homeLocality: autoSelectLocality
       }));
     } else if (name === 'homeCityOrTown') {
-      const localities = value ? getLocalitiesForCity(value) : [];
+      const localities = value ? CITY_LOCALITIES[value] || [] : [];
       const autoSelectLocality = localities.length === 1 ? localities[0] : '';
       setFormData(prev => ({
         ...prev,
@@ -638,9 +552,9 @@ export const PatientForm: React.FC<PatientFormProps> = ({
         homeLocality: autoSelectLocality
       }));
     } else if (name === 'state') {
-      const cities = value ? getCitiesForState(value) : [];
+      const cities = value ? STATE_CITIES[value] || [] : [];
       const autoSelectCity = cities.length === 1 ? cities[0] : '';
-      const localities = autoSelectCity ? getLocalitiesForCity(autoSelectCity) : [];
+      const localities = autoSelectCity ? CITY_LOCALITIES[autoSelectCity] || [] : [];
       const autoSelectLocality = localities.length === 1 ? localities[0] : '';
       setFormData(prev => ({
         ...prev,
@@ -649,7 +563,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
         locality: autoSelectLocality
       }));
     } else if (name === 'cityOrTown') {
-      const localities = value ? getLocalitiesForCity(value) : [];
+      const localities = value ? CITY_LOCALITIES[value] || [] : [];
       const autoSelectLocality = localities.length === 1 ? localities[0] : '';
       setFormData(prev => ({
         ...prev,
@@ -671,24 +585,8 @@ export const PatientForm: React.FC<PatientFormProps> = ({
     }
   };
 
-  const stateOptions = sudanStates.length > 0
-    ? sudanStates
-    : DEFAULT_SUDAN_STATES.map(state => ({ id: state, name: state, type: 'SudanStates' }));
-
-  const getStateName = (value: string) => {
-    const match = sudanStates.find(item => item.id === value || item.name === value);
-    return match ? match.name : value;
-  };
-
-  const getCitiesForState = (stateValue: string) => {
-    const normalizedState = getStateName(stateValue);
-    return STATE_CITIES[normalizedState] || [];
-  };
-
-  const getLocalitiesForCity = (cityValue: string) => CITY_LOCALITIES[cityValue] || [];
-
-  const availableCities = formData.state ? getCitiesForState(formData.state) : [];
-  const availableLocalities = formData.cityOrTown ? getLocalitiesForCity(formData.cityOrTown) : [];
+  const availableCities = formData.state ? STATE_CITIES[formData.state] || [] : [];
+  const availableLocalities = formData.cityOrTown ? CITY_LOCALITIES[formData.cityOrTown] || [] : [];
 
   const handleChronicDiseaseChange = (disease: string, checked: boolean) => {
     setFormData(prev => {
@@ -841,9 +739,24 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                 >
                   <option value="">Select State</option>
-                  {stateOptions.map(state => (
-                    <option key={state.id} value={state.id}>{state.name}</option>
-                  ))}
+                  <option value="Khartoum">Khartoum</option>
+                  <option value="Al Jazirah">Al Jazirah</option>
+                  <option value="White Nile">White Nile</option>
+                  <option value="Blue Nile">Blue Nile</option>
+                  <option value="Northern">Northern</option>
+                  <option value="River Nile">River Nile</option>
+                  <option value="Red Sea">Red Sea</option>
+                  <option value="Kassala">Kassala</option>
+                  <option value="Al Qadarif">Al Qadarif</option>
+                  <option value="Sennar">Sennar</option>
+                  <option value="North Kordofan">North Kordofan</option>
+                  <option value="South Kordofan">South Kordofan</option>
+                  <option value="West Kordofan">West Kordofan</option>
+                  <option value="Central Darfur">Central Darfur</option>
+                  <option value="North Darfur">North Darfur</option>
+                  <option value="South Darfur">South Darfur</option>
+                  <option value="East Darfur">East Darfur</option>
+                  <option value="West Darfur">West Darfur</option>
                 </select>
               </div>
 
@@ -900,9 +813,8 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
               >
                 <option value="">Select Residence</option>
-                {residenceTypeOptions.map(option => (
-                  <option key={option.id} value={option.id}>{option.name}</option>
-                ))}
+                <option value="InsideSudan">Inside Sudan</option>
+                <option value="OutsideSudan">Outside Sudan</option>
               </select>
             </div>
 
@@ -920,9 +832,24 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                   >
                     <option value="">Select State</option>
-                    {stateOptions.map(state => (
-                      <option key={state.id} value={state.id}>{state.name}</option>
-                    ))}
+                    <option value="Khartoum">Khartoum</option>
+                    <option value="Al Jazirah">Al Jazirah</option>
+                    <option value="White Nile">White Nile</option>
+                    <option value="Blue Nile">Blue Nile</option>
+                    <option value="Northern">Northern</option>
+                    <option value="River Nile">River Nile</option>
+                    <option value="Red Sea">Red Sea</option>
+                    <option value="Kassala">Kassala</option>
+                    <option value="Al Qadarif">Al Qadarif</option>
+                    <option value="Sennar">Sennar</option>
+                    <option value="North Kordofan">North Kordofan</option>
+                    <option value="South Kordofan">South Kordofan</option>
+                    <option value="West Kordofan">West Kordofan</option>
+                    <option value="Central Darfur">Central Darfur</option>
+                    <option value="North Darfur">North Darfur</option>
+                    <option value="South Darfur">South Darfur</option>
+                    <option value="East Darfur">East Darfur</option>
+                    <option value="West Darfur">West Darfur</option>
                   </select>
                 </div>
 
@@ -1014,9 +941,12 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                 >
                   <option value="">Select Status</option>
-                  {maritalStatusOptions.map(option => (
-                    <option key={option.id} value={option.id}>{option.name}</option>
-                  ))}
+                  <option value="single">Single</option>
+                  <option value="married">Married</option>
+                  <option value="divorced">Divorced</option>
+                  <option value="widow">Widow</option>
+                  <option value="widower">Widower</option>
+                  <option value="child">Child</option>
                 </select>
               </div>
 
@@ -1032,8 +962,8 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                 >
                   <option value="">Select Occupation</option>
-                  {occupationOptions.map(option => (
-                    <option key={option.id} value={option.id}>{option.name}</option>
+                  {OCCUPATIONS.map(occupation => (
+                    <option key={occupation} value={occupation}>{occupation}</option>
                   ))}
                 </select>
               </div>
@@ -1111,9 +1041,9 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                 required
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
               >
-                {vitalStatusOptions.map(option => (
-                  <option key={option.id} value={option.id}>{option.name}</option>
-                ))}
+                <option value="Alive">Alive</option>
+                <option value="Died">Died</option>
+                <option value="Unknown">Unknown</option>
               </select>
             </div>
 
@@ -1235,9 +1165,14 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
               >
                 <option value="">Select Blood Group</option>
-                {bloodGroupOptions.map(option => (
-                  <option key={option.id} value={option.id}>{option.name}</option>
-                ))}
+                <option value="A+">A+</option>
+                <option value="A-">A-</option>
+                <option value="B+">B+</option>
+                <option value="B-">B-</option>
+                <option value="AB+">AB+</option>
+                <option value="AB-">AB-</option>
+                <option value="O+">O+</option>
+                <option value="O-">O-</option>
               </select>
             </div>
 
@@ -1253,9 +1188,10 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
               >
                 <option value="">Select Severity</option>
-                {severityOptions.map(option => (
-                  <option key={option.id} value={option.id}>{option.name}</option>
-                ))}
+                <option value="mild">Mild</option>
+                <option value="moderate">Moderate</option>
+                <option value="severe">Severe</option>
+                <option value="unknown">Unknown</option>
               </select>
             </div>
 
@@ -1428,6 +1364,30 @@ export const PatientForm: React.FC<PatientFormProps> = ({
               </>
             )}
 
+            {inhibitorHistory && inhibitorHistory.length > 0 && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <h4 className="text-lg font-semibold text-blue-900 mb-4">Inhibitor History</h4>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-blue-200 bg-blue-100">
+                        <th className="px-4 py-2 text-left font-semibold text-blue-900">Test Date</th>
+                        <th className="px-4 py-2 text-left font-semibold text-blue-900">Level</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {inhibitorHistory.map((entry, index) => (
+                        <tr key={index} className="border-b border-blue-100 hover:bg-blue-50">
+                          <td className="px-4 py-2 text-gray-700">{entry.testDate}</td>
+                          <td className="px-4 py-2 text-gray-700">{entry.level}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
             <div className="mb-4">
               <div className="mb-3">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1531,9 +1491,9 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                 >
                   <option value="">Select Family History</option>
-                  {familyHistoryOptions.map(option => (
-                    <option key={option.id} value={option.id}>{option.name}</option>
-                  ))}
+                  <option value="first_degree">First Degree</option>
+                  <option value="second_degree">Second Degree</option>
+                  <option value="third_degree">Third Degree</option>
                 </select>
               </div>
             )}

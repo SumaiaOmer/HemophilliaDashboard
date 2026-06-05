@@ -1,7 +1,4 @@
-// src/lib/api.ts
-
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5057/api';
-
 //const API_URL = import.meta.env.VITE_API_URL || 'http://nbtc.gov.sd:5057/api';
 
 interface ApiRequestOptions extends RequestInit {
@@ -51,38 +48,91 @@ class ApiClient {
       headers: requestHeaders,
     });
 
-    // Handle application/server exception messages gracefully
+    if (response.status === 401) {
+      localStorage.removeItem('hemocore_token');
+      localStorage.removeItem('hemocore_user');
+      window.location.href = '/';
+      throw new Error('Unauthorized - redirecting to login');
+    }
+
     if (!response.ok) {
-      let errorText = '';
+      const errorText = await response.text();
       try {
-        errorText = await response.text();
         const errorJson = JSON.parse(errorText);
-        throw new Error(errorJson.message || errorJson.error || `HTTP error! Status: ${response.status}`);
+
+        // Handle validation errors (RFC 9110 Problem Details)
+        if (errorJson.errors && typeof errorJson.errors === 'object') {
+          const validationErrors: Record<string, string[]> = errorJson.errors;
+          const errorMessages = Object.entries(validationErrors)
+            .map(([field, messages]) => {
+              const msgs = Array.isArray(messages) ? messages : [messages];
+              return msgs.map(msg => `${field}: ${msg}`).join('\n');
+            })
+            .join('\n');
+          throw new Error(errorMessages);
+        }
+
+        // Handle standard error response
+        if (errorJson.error) {
+          throw new Error(errorJson.error);
+        }
+        if (errorJson.message) {
+          throw new Error(errorJson.message);
+        }
+        if (errorJson.title) {
+          throw new Error(errorJson.title);
+        }
       } catch (parseErr) {
-        if (parseErr instanceof Error && !parseErr.message.includes('HTTP error')) {
-          throw new Error(errorText || `HTTP error! Status: ${response.status}`);
+        // If parsing fails, use the raw text
+        if (parseErr instanceof Error && parseErr.message.includes('JSON')) {
+          throw new Error(errorText || `HTTP error! status: ${response.status}`);
         }
         throw parseErr;
       }
+      throw new Error(errorText || `HTTP error! status: ${response.status}`);
     }
 
-    // Return empty payload cleanly on HTTP 204 No Content responses (updates/deletions)
     if (response.status === 204) {
       return {} as T;
     }
 
     const responseText = await response.text();
 
-    if (!responseText || responseText.trim() === '') {
+    if (!responseText) {
       return {} as T;
     }
 
     try {
-      return JSON.parse(responseText);
+      const parsed = JSON.parse(responseText);
+      return this.extractResponsePayload(parsed);
     } catch (err) {
-      // Fallback support for plain raw strings returned directly by endpoints
-      return responseText as unknown as T;
+      throw new Error(`Failed to parse response as JSON: ${responseText}`);
     }
+  }
+
+  private extractResponsePayload<T>(parsed: any): T {
+    if (parsed && typeof parsed === 'object') {
+      if ('success' in parsed && 'data' in parsed) {
+        parsed = parsed.data;
+      }
+
+      if (parsed && typeof parsed === 'object') {
+        if ('result' in parsed) {
+          parsed = parsed.result;
+        } else if ('items' in parsed && Object.keys(parsed).length === 1) {
+          parsed = parsed.items;
+        } else if (
+          'data' in parsed &&
+          parsed.data &&
+          typeof parsed.data === 'object' &&
+          'items' in parsed.data
+        ) {
+          parsed = parsed.data.items;
+        }
+      }
+    }
+
+    return parsed as T;
   }
 
   async get<T>(endpoint: string, requiresAuth = true): Promise<T> {
@@ -90,6 +140,8 @@ class ApiClient {
   }
 
   async post<T>(endpoint: string, data?: unknown, requiresAuth = true): Promise<T> {
+    console.log(`POST ${endpoint}`);
+    console.log('Request body:', JSON.stringify(data, null, 2));
     return this.request<T>(endpoint, {
       method: 'POST',
       body: data ? JSON.stringify(data) : undefined,

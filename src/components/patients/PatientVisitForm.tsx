@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, Search, Plus, Trash2 } from 'lucide-react';
 import { PatientVisit, PatientVisitRequest, Patient, Factor, VisitDrug } from '../../types/api';
 import { toDateInputValue } from '../../lib/dateUtils';
-import { LookupsService, LookupItem } from '../../services/lookups';
+
 interface PatientVisitFormProps {
   visit?: PatientVisit | null;
   patients: Patient[];
@@ -54,28 +54,6 @@ const STATE_CENTERS: Record<string, string[]> = {
   'West Darfur': ['El Geneina Hospital']
 };
 
-// Mapping keyed by lookup `id` values for API lookups
-const STATE_CENTERS_BY_ID: Record<string, string[]> = {
-  'STATE_KHARTOUM': STATE_CENTERS['Khartoum'],
-  'STATE_AL_JAZIRAH': STATE_CENTERS['Al Jazirah'],
-  'STATE_WHITE_NILE': STATE_CENTERS['White Nile'],
-  'STATE_BLUE_NILE': STATE_CENTERS['Blue Nile'],
-  'STATE_NORTHERN': STATE_CENTERS['Northern'],
-  'STATE_RIVER_NILE': STATE_CENTERS['River Nile'],
-  'STATE_RED_SEA': STATE_CENTERS['Red Sea'],
-  'STATE_KASSALA': STATE_CENTERS['Kassala'],
-  'STATE_AL_QADARIF': STATE_CENTERS['Al Qadarif'],
-  'STATE_SENNAR': STATE_CENTERS['Sennar'],
-  'STATE_NORTH_KORDOFAN': STATE_CENTERS['North Kordofan'],
-  'STATE_SOUTH_KORDOFAN': STATE_CENTERS['South Kordofan'],
-  'STATE_WEST_KORDOFAN': STATE_CENTERS['West Kordofan'],
-  'STATE_CENTRAL_DARFUR': STATE_CENTERS['Central Darfur'],
-  'STATE_NORTH_DARFUR': STATE_CENTERS['North Darfur'],
-  'STATE_SOUTH_DARFUR': STATE_CENTERS['South Darfur'],
-  'STATE_EAST_DARFUR': STATE_CENTERS['East Darfur'],
-  'STATE_WEST_DARFUR': STATE_CENTERS['West Darfur']
-};
-
 export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
   visit,
   patients,
@@ -109,42 +87,6 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const patientSearchRef = useRef<HTMLDivElement>(null);
-  const [vitalStatusOptions, setVitalStatusOptions] = useState<LookupItem[]>([
-    { id: 'Alive', name: 'Alive', type: 'VitalStatuses' },
-    { id: 'Died', name: 'Died', type: 'VitalStatuses' },
-    { id: 'Unknown', name: 'Unknown', type: 'VitalStatuses' }
-  ]);
-  const [visitTypeOptions, setVisitTypeOptions] = useState<LookupItem[]>([
-    { id: 'telephone_consultation', name: 'Telephone Consultation', type: 'VisitTypes' },
-    { id: 'center_visit', name: 'Center Visit', type: 'VisitTypes' }
-  ]);
-  const [serviceTypeOptions, setServiceTypeOptions] = useState<LookupItem[]>([
-    { id: 'new_visit', name: 'New Visit', type: 'ServiceTypes' },
-    { id: 'followup', name: 'Follow-up', type: 'ServiceTypes' },
-    { id: 'hospital_admission', name: 'Hospital Admission', type: 'ServiceTypes' }
-  ]);
-  const [complaintOptions, setComplaintOptions] = useState<LookupItem[]>(COMPLAINT_OPTIONS.map(option => ({ id: option, name: option, type: 'Complaints' })));
-  const DEFAULT_SUDAN_STATES = [
-    { id: 'Khartoum', name: 'Khartoum', type: 'SudanStates' },
-    { id: 'Al Jazirah', name: 'Al Jazirah', type: 'SudanStates' },
-    { id: 'White Nile', name: 'White Nile', type: 'SudanStates' },
-    { id: 'Blue Nile', name: 'Blue Nile', type: 'SudanStates' },
-    { id: 'Northern', name: 'Northern', type: 'SudanStates' },
-    { id: 'River Nile', name: 'River Nile', type: 'SudanStates' },
-    { id: 'Red Sea', name: 'Red Sea', type: 'SudanStates' },
-    { id: 'Kassala', name: 'Kassala', type: 'SudanStates' },
-    { id: 'Al Qadarif', name: 'Al Qadarif', type: 'SudanStates' },
-    { id: 'Sennar', name: 'Sennar', type: 'SudanStates' },
-    { id: 'North Kordofan', name: 'North Kordofan', type: 'SudanStates' },
-    { id: 'South Kordofan', name: 'South Kordofan', type: 'SudanStates' },
-    { id: 'West Kordofan', name: 'West Kordofan', type: 'SudanStates' },
-    { id: 'Central Darfur', name: 'Central Darfur', type: 'SudanStates' },
-    { id: 'North Darfur', name: 'North Darfur', type: 'SudanStates' },
-    { id: 'South Darfur', name: 'South Darfur', type: 'SudanStates' },
-    { id: 'East Darfur', name: 'East Darfur', type: 'SudanStates' },
-    { id: 'West Darfur', name: 'West Darfur', type: 'SudanStates' }
-  ];
-  const [sudanStates, setSudanStates] = useState<LookupItem[]>(DEFAULT_SUDAN_STATES);
 
   useEffect(() => {
     if (visit) {
@@ -195,35 +137,6 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  useEffect(() => {
-    const loadLookupOptions = async () => {
-      const [vitalStatusLookup, visitTypeLookup, serviceTypeLookup, complaintsLookup, sudanStatesLookup] = await Promise.all([
-        LookupsService.getByType('VitalStatuses'),
-        LookupsService.getByType('VisitTypes'),
-        LookupsService.getByType('ServiceTypes'),
-        LookupsService.getByType('Complaints'),
-        LookupsService.getByType('SudanStates'),
-      ]);
-
-      if (vitalStatusLookup.length > 0) {
-        setVitalStatusOptions(vitalStatusLookup);
-      }
-      if (visitTypeLookup.length > 0) {
-        setVisitTypeOptions(visitTypeLookup);
-      }
-      if (serviceTypeLookup.length > 0) {
-        setServiceTypeOptions(serviceTypeLookup);
-      }
-      if (complaintsLookup.length > 0) {
-        setComplaintOptions(complaintsLookup);
-      }
-      if (sudanStatesLookup.length > 0) {
-        setSudanStates(sudanStatesLookup.map(item => item.name).filter(Boolean));
-      }
-    };
-    loadLookupOptions();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -477,10 +390,9 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
                     onChange={handleChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
                   >
-                    <option value="">Select Status</option>
-                    {vitalStatusOptions.map(option => (
-                      <option key={option.id} value={option.id}>{option.name}</option>
-                    ))}
+                    <option value="Alive">Alive</option>
+                    <option value="Died">Died</option>
+                    <option value="Unknown">Unknown</option>
                   </select>
                 </div>
               )}
@@ -497,9 +409,8 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
                 >
                   <option value="">Select Visit Type</option>
-                  {visitTypeOptions.map(option => (
-                    <option key={option.id} value={option.id}>{option.name}</option>
-                  ))}
+                  <option value="telephone_consultation">Telephone Consultation</option>
+                  <option value="center_visit">Center Visit</option>
                 </select>
               </div>
             </div>
@@ -516,10 +427,9 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
                 >
-                  <option value="">Select Service Type</option>
-                  {serviceTypeOptions.map(option => (
-                    <option key={option.id} value={option.id}>{option.name}</option>
-                  ))}
+                  <option value="new_visit">New Visit</option>
+                  <option value="followup">Follow-up</option>
+                  <option value="hospital_admission">Hospital Admission</option>
                 </select>
               </div>
 
@@ -535,9 +445,24 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
                 >
                   <option value="">Select State</option>
-                  {sudanStates.map(state => (
-                    <option key={state.id} value={state.id}>{state.name}</option>
-                  ))}
+                  <option value="Khartoum">Khartoum</option>
+                  <option value="Al Jazirah">Al Jazirah</option>
+                  <option value="White Nile">White Nile</option>
+                  <option value="Blue Nile">Blue Nile</option>
+                  <option value="Northern">Northern</option>
+                  <option value="River Nile">River Nile</option>
+                  <option value="Red Sea">Red Sea</option>
+                  <option value="Kassala">Kassala</option>
+                  <option value="Al Qadarif">Al Qadarif</option>
+                  <option value="Sennar">Sennar</option>
+                  <option value="North Kordofan">North Kordofan</option>
+                  <option value="South Kordofan">South Kordofan</option>
+                  <option value="West Kordofan">West Kordofan</option>
+                  <option value="Central Darfur">Central Darfur</option>
+                  <option value="North Darfur">North Darfur</option>
+                  <option value="South Darfur">South Darfur</option>
+                  <option value="East Darfur">East Darfur</option>
+                  <option value="West Darfur">West Darfur</option>
                 </select>
               </div>
             </div>
@@ -594,9 +519,9 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
               >
                 <option value="">Select Complaint</option>
-                {complaintOptions.map(option => (
-                  <option key={option.id} value={option.id}>
-                    {option.name}
+                {COMPLAINT_OPTIONS.map(option => (
+                  <option key={option} value={option}>
+                    {option}
                   </option>
                 ))}
               </select>

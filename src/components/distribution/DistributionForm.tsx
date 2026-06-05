@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { X, AlertTriangle } from 'lucide-react';
 import { MedicineDistribution, MedicineDistributionRequest, Factor } from '../../types/api';
 import { toDateInputValue } from '../../lib/dateUtils';
-import { LookupsService, LookupItem } from '../../services/lookups';
 
 interface DistributionFormProps {
   distribution?: MedicineDistribution | null;
@@ -30,36 +29,6 @@ export const DistributionForm: React.FC<DistributionFormProps> = ({
   });
 
   const [selectedFactor, setSelectedFactor] = useState<Factor | null>(null);
-  const [sudanStates, setSudanStates] = useState<LookupItem[]>([
-    { id: 'Khartoum', name: 'Khartoum', type: 'SudanStates' },
-    { id: 'Gezira', name: 'Gezira', type: 'SudanStates' },
-    { id: 'White Nile', name: 'White Nile', type: 'SudanStates' },
-    { id: 'Blue Nile', name: 'Blue Nile', type: 'SudanStates' },
-    { id: 'Northern', name: 'Northern', type: 'SudanStates' },
-    { id: 'River Nile', name: 'River Nile', type: 'SudanStates' },
-    { id: 'Red Sea', name: 'Red Sea', type: 'SudanStates' },
-    { id: 'Kassala', name: 'Kassala', type: 'SudanStates' },
-    { id: 'Gedaref', name: 'Gedaref', type: 'SudanStates' },
-    { id: 'Sennar', name: 'Sennar', type: 'SudanStates' },
-    { id: 'North Kordofan', name: 'North Kordofan', type: 'SudanStates' },
-    { id: 'South Kordofan', name: 'South Kordofan', type: 'SudanStates' },
-    { id: 'West Kordofan', name: 'West Kordofan', type: 'SudanStates' },
-    { id: 'North Darfur', name: 'North Darfur', type: 'SudanStates' },
-    { id: 'South Darfur', name: 'South Darfur', type: 'SudanStates' },
-    { id: 'West Darfur', name: 'West Darfur', type: 'SudanStates' },
-    { id: 'East Darfur', name: 'East Darfur', type: 'SudanStates' },
-    { id: 'Central Darfur', name: 'Central Darfur', type: 'SudanStates' }
-  ]);
-
-  useEffect(() => {
-    const loadLookupOptions = async () => {
-      const sudanStatesLookup = await LookupsService.getByType('SudanStates');
-      if (sudanStatesLookup.length > 0) {
-        setSudanStates(sudanStatesLookup);
-      }
-    };
-    loadLookupOptions();
-  }, []);
 
   useEffect(() => {
     if (distribution) {
@@ -134,6 +103,27 @@ export const DistributionForm: React.FC<DistributionFormProps> = ({
       [name]: parsedValue,
     }));
   };
+
+  const states = [
+    'Khartoum',
+    'Gezira',
+    'White Nile',
+    'Blue Nile',
+    'Northern',
+    'River Nile',
+    'Red Sea',
+    'Kassala',
+    'Gedaref',
+    'Sennar',
+    'North Kordofan',
+    'South Kordofan',
+    'West Kordofan',
+    'North Darfur',
+    'South Darfur',
+    'West Darfur',
+    'East Darfur',
+    'Central Darfur'
+  ];
 
   return (
     <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-auto shadow-xl max-h-screen overflow-y-auto">
@@ -218,9 +208,9 @@ export const DistributionForm: React.FC<DistributionFormProps> = ({
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
             >
               <option value="">Select Sudan state</option>
-              {sudanStates.map(option => (
-                <option key={option.id} value={option.id}>
-                  {option.name}
+              {states.map(state => (
+                <option key={state} value={state}>
+                  {state}
                 </option>
               ))}
             </select>

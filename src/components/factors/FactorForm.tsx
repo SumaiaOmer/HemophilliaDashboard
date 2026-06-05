@@ -5,7 +5,7 @@ import { toDateInputValue, toISOStringFromDateInput } from '../../lib/dateUtils'
 
 interface FactorFormProps {
   factor?: Factor | null;
-  onSave: (payload: FactorRequest) => Promise<void>;
+  onSave: (factor: FactorRequest) => Promise<void>;
   onCancel: () => void;
 }
 
@@ -28,6 +28,7 @@ export const FactorForm: React.FC<FactorFormProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+
   useEffect(() => {
     if (factor) {
       setFormData({
@@ -43,27 +44,17 @@ export const FactorForm: React.FC<FactorFormProps> = ({
     }
   }, [factor]);
 
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setIsSubmitting(true);
 
     try {
-      // Format date to strict YYYY-MM-DD for .NET's DateOnly struct parsing
-      const isoString = toISOStringFromDateInput(formData.expiryDate);
-      const pureDateOnly = isoString.split('T')[0];
-
-      const submitData: FactorRequest = {
-        name: formData.name,
-        lotNo: formData.lotNo,
-        quantity: formData.quantity,
-        expiryDate: pureDateOnly,
-        mg: formData.mg,
-        drugType: formData.drugType,
-        supplierName: formData.supplierName,
-        companyName: formData.companyName || formData.supplierName,
+      const submitData = {
+        ...formData,
+        expiryDate: toISOStringFromDateInput(formData.expiryDate),
       };
-
       await onSave(submitData);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to save drug';
@@ -82,15 +73,15 @@ export const FactorForm: React.FC<FactorFormProps> = ({
   };
 
   const categories = [
-    'Factor VIII',
-    'Combined Factor VIII +VWF',
-    'Factor IX',
-    'Factor X',
-    'Factor XIII',
-    'Fibrinogen',
-    'FEIBA',
-    'Tranexamic acid',
-    'Factor VIIa'
+   'Factor VIII',
+'Combined Factor VIII +VWF',
+'Factor IX',
+'Factor X',
+'Factor XIII',
+'Fibrinogen',
+'FEIBA',
+'Tranexamic acid',
+'Factor VIIa'
   ];
 
   return (
