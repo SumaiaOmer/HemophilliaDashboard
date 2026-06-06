@@ -21,7 +21,7 @@ export const DistributionForm: React.FC<DistributionFormProps> = ({
     state: '',
     quantity: 1,
     quantityDistributed: 0,
-    distributionDate: new Date().toISOString().split('T')[0],
+    distributionDate: toDateInputValue(new Date().toISOString()),
     expiryDate: '',
     mg: 0,
     companyName: '',
@@ -78,8 +78,8 @@ export const DistributionForm: React.FC<DistributionFormProps> = ({
     e.preventDefault();
     const submitData = {
       ...formData,
-      distributionDate: formData.distributionDate ? new Date(formData.distributionDate + 'T00:00:00').toISOString() : '',
-      expiryDate: formData.expiryDate ? new Date(formData.expiryDate + 'T00:00:00').toISOString() : '',
+      distributionDate: formData.distributionDate,
+      expiryDate: formData.expiryDate,
     };
     onSave(submitData);
   };

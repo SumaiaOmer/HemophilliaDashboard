@@ -160,11 +160,14 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
 
       const submitData: PatientVisitRequest = {
         patientId: formData.patientId,
-        visitDate: new Date(formData.visitDate).toISOString(),
+        visitDate: formData.visitDate,
         diagnosis: formData.diagnosis || undefined,
         diagnosisType: formData.diagnosisType || undefined,
         visitType: formData.visitType,
+        serviceType: formData.serviceType,
         complaint: formData.complaint || undefined,
+        complaintOther: formData.complaintOther || undefined,
+        complaintDetails: formData.complaintDetails || undefined,
         centerState: formData.centerState || undefined,
         state: formData.state || undefined,
         centerName: formData.centerName || undefined,

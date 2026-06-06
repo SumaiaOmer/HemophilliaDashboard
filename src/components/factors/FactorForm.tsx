@@ -53,7 +53,7 @@ export const FactorForm: React.FC<FactorFormProps> = ({
     try {
       const submitData = {
         ...formData,
-        expiryDate: toISOStringFromDateInput(formData.expiryDate),
+        expiryDate: formData.expiryDate,
       };
       await onSave(submitData);
     } catch (err) {
