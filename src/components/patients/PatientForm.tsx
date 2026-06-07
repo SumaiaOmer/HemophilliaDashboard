@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
 import { Patient, PatientRequest, PatientTestDate, TestType, OtherMedicalTest, InhibitorEntry } from '../../types/api';
 import { toDateInputValue } from '../../lib/dateUtils';
+import { LookupsService, LookupItem } from '../../services/lookups';
 
 interface PatientFormProps {
   patient?: Patient | null;
@@ -133,6 +134,31 @@ export const PatientForm: React.FC<PatientFormProps> = ({
   onSave,
   onCancel,
 }) => {
+  // Lookup data from API
+  const [lookupDiagnoses, setLookupDiagnoses] = useState<LookupItem[]>([]);
+  const [lookupOccupations, setLookupOccupations] = useState<LookupItem[]>([]);
+  const [lookupSudanStates, setLookupSudanStates] = useState<LookupItem[]>([]);
+  const [lookupMaritalStatuses, setLookupMaritalStatuses] = useState<LookupItem[]>([]);
+  const [lookupChronicDiseases, setLookupChronicDiseases] = useState<LookupItem[]>([]);
+
+  useEffect(() => {
+    const loadLookups = async () => {
+      const [diagnoses, occupations, sudanStates, maritalStatuses, chronicDiseases] = await Promise.all([
+        LookupsService.getByType('DiagnosisOptions').catch(() => []),
+        LookupsService.getByType('Occupations').catch(() => []),
+        LookupsService.getByType('SudanStates').catch(() => []),
+        LookupsService.getByType('MaritalStatusOptions').catch(() => []),
+        LookupsService.getByType('ChronicDiseaseOptions').catch(() => []),
+      ]);
+      setLookupDiagnoses(diagnoses);
+      setLookupOccupations(occupations);
+      setLookupSudanStates(sudanStates);
+      setLookupMaritalStatuses(maritalStatuses);
+      setLookupChronicDiseases(chronicDiseases);
+    };
+    loadLookups();
+  }, []);
+
   const getInitialChronicDiseases = () => {
     if (!patient) return false;
 
@@ -739,24 +765,16 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                 >
                   <option value="">Select State</option>
-                  <option value="Khartoum">Khartoum</option>
-                  <option value="Al Jazirah">Al Jazirah</option>
-                  <option value="White Nile">White Nile</option>
-                  <option value="Blue Nile">Blue Nile</option>
-                  <option value="Northern">Northern</option>
-                  <option value="River Nile">River Nile</option>
-                  <option value="Red Sea">Red Sea</option>
-                  <option value="Kassala">Kassala</option>
-                  <option value="Al Qadarif">Al Qadarif</option>
-                  <option value="Sennar">Sennar</option>
-                  <option value="North Kordofan">North Kordofan</option>
-                  <option value="South Kordofan">South Kordofan</option>
-                  <option value="West Kordofan">West Kordofan</option>
-                  <option value="Central Darfur">Central Darfur</option>
-                  <option value="North Darfur">North Darfur</option>
-                  <option value="South Darfur">South Darfur</option>
-                  <option value="East Darfur">East Darfur</option>
-                  <option value="West Darfur">West Darfur</option>
+                  {(lookupSudanStates.length > 0 ? lookupSudanStates : [
+                    { id: '1', name: 'Khartoum' }, { id: '2', name: 'Al Jazirah' }, { id: '3', name: 'White Nile' },
+                    { id: '4', name: 'Blue Nile' }, { id: '5', name: 'Northern' }, { id: '6', name: 'River Nile' },
+                    { id: '7', name: 'Red Sea' }, { id: '8', name: 'Kassala' }, { id: '9', name: 'Al Qadarif' },
+                    { id: '10', name: 'Sennar' }, { id: '11', name: 'North Kordofan' }, { id: '12', name: 'South Kordofan' },
+                    { id: '13', name: 'West Kordofan' }, { id: '14', name: 'Central Darfur' }, { id: '15', name: 'North Darfur' },
+                    { id: '16', name: 'South Darfur' }, { id: '17', name: 'East Darfur' }, { id: '18', name: 'West Darfur' }
+                  ]).map(s => (
+                    <option key={s.id} value={s.name}>{s.name}</option>
+                  ))}
                 </select>
               </div>
 
@@ -832,24 +850,16 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                   >
                     <option value="">Select State</option>
-                    <option value="Khartoum">Khartoum</option>
-                    <option value="Al Jazirah">Al Jazirah</option>
-                    <option value="White Nile">White Nile</option>
-                    <option value="Blue Nile">Blue Nile</option>
-                    <option value="Northern">Northern</option>
-                    <option value="River Nile">River Nile</option>
-                    <option value="Red Sea">Red Sea</option>
-                    <option value="Kassala">Kassala</option>
-                    <option value="Al Qadarif">Al Qadarif</option>
-                    <option value="Sennar">Sennar</option>
-                    <option value="North Kordofan">North Kordofan</option>
-                    <option value="South Kordofan">South Kordofan</option>
-                    <option value="West Kordofan">West Kordofan</option>
-                    <option value="Central Darfur">Central Darfur</option>
-                    <option value="North Darfur">North Darfur</option>
-                    <option value="South Darfur">South Darfur</option>
-                    <option value="East Darfur">East Darfur</option>
-                    <option value="West Darfur">West Darfur</option>
+                    {(lookupSudanStates.length > 0 ? lookupSudanStates : [
+                      { id: '1', name: 'Khartoum' }, { id: '2', name: 'Al Jazirah' }, { id: '3', name: 'White Nile' },
+                      { id: '4', name: 'Blue Nile' }, { id: '5', name: 'Northern' }, { id: '6', name: 'River Nile' },
+                      { id: '7', name: 'Red Sea' }, { id: '8', name: 'Kassala' }, { id: '9', name: 'Al Qadarif' },
+                      { id: '10', name: 'Sennar' }, { id: '11', name: 'North Kordofan' }, { id: '12', name: 'South Kordofan' },
+                      { id: '13', name: 'West Kordofan' }, { id: '14', name: 'Central Darfur' }, { id: '15', name: 'North Darfur' },
+                      { id: '16', name: 'South Darfur' }, { id: '17', name: 'East Darfur' }, { id: '18', name: 'West Darfur' }
+                    ]).map(s => (
+                      <option key={s.id} value={s.name}>{s.name}</option>
+                    ))}
                   </select>
                 </div>
 
@@ -941,12 +951,12 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                 >
                   <option value="">Select Status</option>
-                  <option value="single">Single</option>
-                  <option value="married">Married</option>
-                  <option value="divorced">Divorced</option>
-                  <option value="widow">Widow</option>
-                  <option value="widower">Widower</option>
-                  <option value="child">Child</option>
+                  {(lookupMaritalStatuses.length > 0 ? lookupMaritalStatuses : [
+                    { id: '1', name: 'Single' }, { id: '2', name: 'Married' }, { id: '3', name: 'Divorced' },
+                    { id: '4', name: 'Widow' }, { id: '5', name: 'Widower' }, { id: '6', name: 'Child' }
+                  ]).map(s => (
+                    <option key={s.id} value={s.name.toLowerCase()}>{s.name}</option>
+                  ))}
                 </select>
               </div>
 
@@ -962,8 +972,8 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                 >
                   <option value="">Select Occupation</option>
-                  {OCCUPATIONS.map(occupation => (
-                    <option key={occupation} value={occupation}>{occupation}</option>
+                  {(lookupOccupations.length > 0 ? lookupOccupations : OCCUPATIONS.map((name, i) => ({ id: String(i + 1), name, type: 'Occupations' }))).map(o => (
+                    <option key={o.id} value={o.name}>{o.name}</option>
                   ))}
                 </select>
               </div>
@@ -1095,28 +1105,21 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                 >
                   <option value="">Select Diagnosis</option>
-                  <option value="Hemophilia A">Hemophilia A</option>
-                  <option value="Hemophilia B">Hemophilia B</option>
-                  <option value="Hemophilia A carrier">Hemophilia A carrier</option>
-                  <option value="Hemophilia B carrier">Hemophilia B carrier</option>
-                  <option value="Acquired hemophilia">Acquired hemophilia</option>
-                  <option value="Von Willebrand Disease">Von Willebrand Disease</option>
-                  <option value="Afibrinogenemia">Afibrinogenemia</option>
-                  <option value="Hypofibrinogenemia">Hypofibrinogenemia</option>
-                  <option value="Dysfibrinogenemia">Dysfibrinogenemia</option>
-                  <option value="Platelete dysfunction">Platelete dysfunction</option>
-                  <option value="Bernard Soulier syndrome">Bernard Soulier syndrome</option>
-                  <option value="Glanzmann thrombasthenia">Glanzmann thrombasthenia</option>
-                  <option value="Prothrombin deficiency">Prothrombin deficiency</option>
-                  <option value="Factor V deficiency">Factor V deficiency</option>
-                  <option value="Combined factor V and VIII deficiency">Combined factor V and VIII deficiency</option>
-                  <option value="Factor VII deficiency">Factor VII deficiency</option>
-                  <option value="Factor X deficiency">Factor X deficiency</option>
-                  <option value="Factor XI deficiency">Factor XI deficiency</option>
-                  <option value="Factor XII deficiency">Factor XII deficiency</option>
-                  <option value="Factor XIII deficiency">Factor XIII deficiency</option>
-                  <option value="Vitamin K dependent factor deficiency">Vitamin K dependent factor deficiency</option>
-                  <option value="Other bleeding disorder">Other bleeding disorder</option>
+                  {(lookupDiagnoses.length > 0 ? lookupDiagnoses : [
+                    { id: '1', name: 'Hemophilia A' }, { id: '2', name: 'Hemophilia B' },
+                    { id: '3', name: 'Hemophilia A carrier' }, { id: '4', name: 'Hemophilia B carrier' },
+                    { id: '5', name: 'Acquired hemophilia' }, { id: '6', name: 'Von Willebrand Disease' },
+                    { id: '7', name: 'Afibrinogenemia' }, { id: '8', name: 'Hypofibrinogenemia' },
+                    { id: '9', name: 'Dysfibrinogenemia' }, { id: '10', name: 'Platelete dysfunction' },
+                    { id: '11', name: 'Bernard Soulier syndrome' }, { id: '12', name: 'Glanzmann thrombasthenia' },
+                    { id: '13', name: 'Prothrombin deficiency' }, { id: '14', name: 'Factor V deficiency' },
+                    { id: '15', name: 'Combined factor V and VIII deficiency' }, { id: '16', name: 'Factor VII deficiency' },
+                    { id: '17', name: 'Factor X deficiency' }, { id: '18', name: 'Factor XI deficiency' },
+                    { id: '19', name: 'Factor XII deficiency' }, { id: '20', name: 'Factor XIII deficiency' },
+                    { id: '21', name: 'Vitamin K dependent factor deficiency' }, { id: '22', name: 'Other bleeding disorder' }
+                  ]).map(d => (
+                    <option key={d.id} value={d.name}>{d.name}</option>
+                  ))}
                 </select>
               </div>
               <div>
@@ -1426,18 +1429,18 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                     Select Chronic Diseases
                   </label>
                   <div className="space-y-2">
-                    {CHRONIC_DISEASES.map(disease => {
+                    {(lookupChronicDiseases.length > 0 ? lookupChronicDiseases : CHRONIC_DISEASES.map((name, i) => ({ id: String(i + 1), name, type: 'ChronicDiseaseOptions' }))).map(disease => {
                       const chronicDiseasesArray = Array.isArray(formData.chronicDiseases) ? formData.chronicDiseases : [];
-                      const isChecked = chronicDiseasesArray.includes(disease);
+                      const isChecked = chronicDiseasesArray.includes(disease.name);
                       return (
-                        <label key={disease} className="flex items-center cursor-pointer">
+                        <label key={disease.id} className="flex items-center cursor-pointer">
                           <input
                             type="checkbox"
                             checked={isChecked}
-                            onChange={(e) => handleChronicDiseaseChange(disease, e.target.checked)}
+                            onChange={(e) => handleChronicDiseaseChange(disease.name, e.target.checked)}
                             className="mr-2 h-4 w-4 cursor-pointer"
                           />
-                          {disease}
+                          {disease.name}
                         </label>
                       );
                     })}
