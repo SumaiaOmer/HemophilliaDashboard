@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, Search, Plus, Trash2 } from 'lucide-react';
 import { PatientVisit, PatientVisitRequest, Patient, Factor, VisitDrug } from '../../types/api';
 import { toDateInputValue } from '../../lib/dateUtils';
+import { LookupsService, LookupItem } from '../../services/lookups';
 
 interface PatientVisitFormProps {
   visit?: PatientVisit | null;
@@ -11,7 +12,7 @@ interface PatientVisitFormProps {
   onCancel: () => void;
 }
 
-const COMPLAINT_OPTIONS = [
+const FALLBACK_COMPLAINT_OPTIONS = [
   'Joint hemarthrosis',
   'Intracranial hemorrhage',
   'Iliopsoas hematoma',
@@ -33,7 +34,7 @@ const COMPLAINT_OPTIONS = [
   'Other',
 ];
 
-const STATE_CENTERS: Record<string, string[]> = {
+const FALLBACK_STATE_CENTERS: Record<string, string[]> = {
   'Khartoum': ['Khartoum Teaching Hospital', 'Omdurman Hospital', 'Bahri Hospital', 'Ibn Sina Hospital', 'Royal Care Hospital'],
   'Al Jazirah': ['Wad Madani Teaching Hospital', 'Al Managil Hospital'],
   'White Nile': ['Rabak Hospital', 'Kosti Hospital'],
@@ -53,6 +54,15 @@ const STATE_CENTERS: Record<string, string[]> = {
   'East Darfur': ['Ed Daein Hospital'],
   'West Darfur': ['El Geneina Hospital']
 };
+
+const FALLBACK_SUDAN_STATES = [
+  { id: '1', name: 'Khartoum' }, { id: '2', name: 'Al Jazirah' }, { id: '3', name: 'White Nile' },
+  { id: '4', name: 'Blue Nile' }, { id: '5', name: 'Northern' }, { id: '6', name: 'River Nile' },
+  { id: '7', name: 'Red Sea' }, { id: '8', name: 'Kassala' }, { id: '9', name: 'Al Qadarif' },
+  { id: '10', name: 'Sennar' }, { id: '11', name: 'North Kordofan' }, { id: '12', name: 'South Kordofan' },
+  { id: '13', name: 'West Kordofan' }, { id: '14', name: 'Central Darfur' }, { id: '15', name: 'North Darfur' },
+  { id: '16', name: 'South Darfur' }, { id: '17', name: 'East Darfur' }, { id: '18', name: 'West Darfur' }
+];
 
 export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
   visit,
@@ -88,6 +98,50 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const patientSearchRef = useRef<HTMLDivElement>(null);
+
+  // Lookup data from API
+  const [lookupComplaints, setLookupComplaints] = useState<LookupItem[]>([]);
+  const [lookupSudanStates, setLookupSudanStates] = useState<LookupItem[]>([]);
+  const [lookupStateCenters, setLookupStateCenters] = useState<Record<string, string[]>>(FALLBACK_STATE_CENTERS);
+
+  const complaintOptions = lookupComplaints.length > 0
+    ? lookupComplaints.map(c => c.name)
+    : FALLBACK_COMPLAINT_OPTIONS;
+
+  const sudanStates = lookupSudanStates.length > 0 ? lookupSudanStates : FALLBACK_SUDAN_STATES;
+
+  useEffect(() => {
+    const loadLookups = async () => {
+      const [complaints, sudanStates, centers] = await Promise.all([
+        LookupsService.getByType('ComplaintOptions').catch(() => []),
+        LookupsService.getByType('SudanStates').catch(() => []),
+        LookupsService.getByType('StateCenters').catch(() => []),
+      ]);
+      setLookupComplaints(complaints);
+      setLookupSudanStates(sudanStates);
+
+      // Build state->centers map from lookup if available
+      if (centers.length > 0) {
+        const centersMap: Record<string, string[]> = {};
+        centers.forEach(item => {
+          const parts = item.name.split('|');
+          if (parts.length >= 2) {
+            const state = parts[0].trim();
+            const center = parts[1].trim();
+            if (!centersMap[state]) centersMap[state] = [];
+            centersMap[state].push(center);
+          } else {
+            if (!centersMap[item.type]) centersMap[item.type] = [];
+            centersMap[item.type].push(item.name);
+          }
+        });
+        if (Object.keys(centersMap).length > 0) {
+          setLookupStateCenters(centersMap);
+        }
+      }
+    };
+    loadLookups();
+  }, []);
 
   useEffect(() => {
     if (visit) {
@@ -271,7 +325,7 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
     });
   };
 
-  const availableCenters = formData.centerState ? STATE_CENTERS[formData.centerState] || [] : [];
+  const availableCenters = formData.centerState ? lookupStateCenters[formData.centerState] || [] : [];
 
   const toggleComplaint = (option: string) => {
     setSelectedComplaints(prev => {
@@ -472,24 +526,9 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
                 >
                   <option value="">Select State</option>
-                  <option value="Khartoum">Khartoum</option>
-                  <option value="Al Jazirah">Al Jazirah</option>
-                  <option value="White Nile">White Nile</option>
-                  <option value="Blue Nile">Blue Nile</option>
-                  <option value="Northern">Northern</option>
-                  <option value="River Nile">River Nile</option>
-                  <option value="Red Sea">Red Sea</option>
-                  <option value="Kassala">Kassala</option>
-                  <option value="Al Qadarif">Al Qadarif</option>
-                  <option value="Sennar">Sennar</option>
-                  <option value="North Kordofan">North Kordofan</option>
-                  <option value="South Kordofan">South Kordofan</option>
-                  <option value="West Kordofan">West Kordofan</option>
-                  <option value="Central Darfur">Central Darfur</option>
-                  <option value="North Darfur">North Darfur</option>
-                  <option value="South Darfur">South Darfur</option>
-                  <option value="East Darfur">East Darfur</option>
-                  <option value="West Darfur">West Darfur</option>
+                  {sudanStates.map(s => (
+                    <option key={s.id} value={s.name}>{s.name}</option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -540,7 +579,7 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
                 Complaints <span className="text-gray-400 font-normal">(select all that apply)</span>
               </label>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 bg-white rounded-lg border border-green-200 p-3 max-h-64 overflow-y-auto">
-                {COMPLAINT_OPTIONS.map(option => (
+                {complaintOptions.map(option => (
                   <label
                     key={option}
                     className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors duration-150 ${

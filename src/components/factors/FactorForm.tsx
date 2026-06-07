@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Factor, FactorRequest } from '../../types/api';
 import { toDateInputValue, toISOStringFromDateInput } from '../../lib/dateUtils';
+import { LookupsService, LookupItem } from '../../services/lookups';
 
 interface FactorFormProps {
   factor?: Factor | null;
@@ -27,6 +28,22 @@ export const FactorForm: React.FC<FactorFormProps> = ({
 
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [lookupCategories, setLookupCategories] = useState<LookupItem[]>([]);
+
+  const FALLBACK_CATEGORIES = [
+    'Factor VIII', 'Combined Factor VIII +VWF', 'Factor IX', 'Factor X',
+    'Factor XIII', 'Fibrinogen', 'FEIBA', 'Tranexamic acid', 'Factor VIIa'
+  ];
+
+  const categories = lookupCategories.length > 0
+    ? lookupCategories.map(c => c.name)
+    : FALLBACK_CATEGORIES;
+
+  useEffect(() => {
+    LookupsService.getByType('DrugTypeOptions')
+      .then(result => { if (result.length > 0) setLookupCategories(result); })
+      .catch(() => {});
+  }, []);
 
 
   useEffect(() => {
@@ -71,18 +88,6 @@ export const FactorForm: React.FC<FactorFormProps> = ({
       [name]: type === 'number' ? parseFloat(value) : value,
     }));
   };
-
-  const categories = [
-   'Factor VIII',
-'Combined Factor VIII +VWF',
-'Factor IX',
-'Factor X',
-'Factor XIII',
-'Fibrinogen',
-'FEIBA',
-'Tranexamic acid',
-'Factor VIIa'
-  ];
 
   return (
     <div className="bg-white rounded-lg p-6 w-full max-w-lg mx-auto shadow-xl max-h-screen overflow-y-auto">

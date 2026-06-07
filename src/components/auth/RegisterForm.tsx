@@ -2,29 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { UserPlus, Eye, EyeOff, User, Lock } from 'lucide-react';
 import { RegisterRequest, Role } from '../../types/api';
 import { RolesService } from '../../services/roles';
+import { LookupsService, LookupItem } from '../../services/lookups';
 import logo1 from '../../1.jpeg';
 
-const SUDAN_STATES = [
-  'Khartoum',
-  'Kassala',
-  'Red Sea',
-  'Gezira',
-  'White Nile',
-  'Sennar',
-  'Blue Nile',
-  'Gadarif',
-  'North Darfur',
-  'South Darfur',
-  'East Darfur',
-  'West Darfur',
-  'Central Darfur',
-  'North Kordofan',
-  'South Kordofan',
-  'West Kordofan',
-  'North State',
-  'River Nile',
-  'Gedaref',
-  'Dumazin',
+const FALLBACK_SUDAN_STATES = [
+  { id: '1', name: 'Khartoum' }, { id: '2', name: 'Kassala' }, { id: '3', name: 'Red Sea' },
+  { id: '4', name: 'Gezira' }, { id: '5', name: 'White Nile' }, { id: '6', name: 'Sennar' },
+  { id: '7', name: 'Blue Nile' }, { id: '8', name: 'Gadarif' }, { id: '9', name: 'North Darfur' },
+  { id: '10', name: 'South Darfur' }, { id: '11', name: 'East Darfur' }, { id: '12', name: 'West Darfur' },
+  { id: '13', name: 'Central Darfur' }, { id: '14', name: 'North Kordofan' }, { id: '15', name: 'South Kordofan' },
+  { id: '16', name: 'West Kordofan' }, { id: '17', name: 'North State' }, { id: '18', name: 'River Nile' },
+  { id: '19', name: 'Gedaref' }, { id: '20', name: 'Dumazin' },
 ];
 
 interface RegisterFormProps {
@@ -52,6 +40,9 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [lookupStates, setLookupStates] = useState<LookupItem[]>([]);
+
+  const sudanStates = lookupStates.length > 0 ? lookupStates : FALLBACK_SUDAN_STATES;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,13 +65,17 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
   useEffect(() => {
     let isMounted = true;
 
-    const loadRoles = async () => {
+    const loadRolesAndStates = async () => {
       setRolesLoading(true);
       setRolesError(null);
       try {
-        const result = await RolesService.getAllRoles();
+        const [rolesResult, statesResult] = await Promise.all([
+          RolesService.getAllRoles(),
+          LookupsService.getByType('SudanStates').catch(() => []),
+        ]);
         if (isMounted) {
-          setRoles(result);
+          setRoles(rolesResult);
+          setLookupStates(statesResult);
         }
       } catch (err) {
         console.error('Failed to load roles:', err);
@@ -94,7 +89,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
       }
     };
 
-    loadRoles();
+    loadRolesAndStates();
 
     return () => {
       isMounted = false;
@@ -262,9 +257,9 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                 className="block w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
               >
                 <option value="">Select a state</option>
-                {SUDAN_STATES.map(state => (
-                  <option key={state} value={state}>
-                    {state}
+                {sudanStates.map(state => (
+                  <option key={state.id} value={state.name}>
+                    {state.name}
                   </option>
                 ))}
               </select>

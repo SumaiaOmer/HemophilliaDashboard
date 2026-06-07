@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, AlertTriangle } from 'lucide-react';
 import { MedicineDistribution, MedicineDistributionRequest, Factor } from '../../types/api';
 import { toDateInputValue } from '../../lib/dateUtils';
+import { LookupsService, LookupItem } from '../../services/lookups';
 
 interface DistributionFormProps {
   distribution?: MedicineDistribution | null;
@@ -29,6 +30,24 @@ export const DistributionForm: React.FC<DistributionFormProps> = ({
   });
 
   const [selectedFactor, setSelectedFactor] = useState<Factor | null>(null);
+  const [lookupStates, setLookupStates] = useState<LookupItem[]>([]);
+
+  const FALLBACK_STATES = [
+    { id: '1', name: 'Khartoum' }, { id: '2', name: 'Gezira' }, { id: '3', name: 'White Nile' },
+    { id: '4', name: 'Blue Nile' }, { id: '5', name: 'Northern' }, { id: '6', name: 'River Nile' },
+    { id: '7', name: 'Red Sea' }, { id: '8', name: 'Kassala' }, { id: '9', name: 'Gedaref' },
+    { id: '10', name: 'Sennar' }, { id: '11', name: 'North Kordofan' }, { id: '12', name: 'South Kordofan' },
+    { id: '13', name: 'West Kordofan' }, { id: '14', name: 'Central Darfur' }, { id: '15', name: 'North Darfur' },
+    { id: '16', name: 'South Darfur' }, { id: '17', name: 'West Darfur' }, { id: '18', name: 'East Darfur' }
+  ];
+
+  const states = lookupStates.length > 0 ? lookupStates : FALLBACK_STATES;
+
+  useEffect(() => {
+    LookupsService.getByType('SudanStates')
+      .then(result => { if (result.length > 0) setLookupStates(result); })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (distribution) {
@@ -103,27 +122,6 @@ export const DistributionForm: React.FC<DistributionFormProps> = ({
       [name]: parsedValue,
     }));
   };
-
-  const states = [
-    'Khartoum',
-    'Gezira',
-    'White Nile',
-    'Blue Nile',
-    'Northern',
-    'River Nile',
-    'Red Sea',
-    'Kassala',
-    'Gedaref',
-    'Sennar',
-    'North Kordofan',
-    'South Kordofan',
-    'West Kordofan',
-    'North Darfur',
-    'South Darfur',
-    'West Darfur',
-    'East Darfur',
-    'Central Darfur'
-  ];
 
   return (
     <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-auto shadow-xl max-h-screen overflow-y-auto">
@@ -209,8 +207,8 @@ export const DistributionForm: React.FC<DistributionFormProps> = ({
             >
               <option value="">Select Sudan state</option>
               {states.map(state => (
-                <option key={state} value={state}>
-                  {state}
+                <option key={state.id} value={state.name}>
+                  {state.name}
                 </option>
               ))}
             </select>
