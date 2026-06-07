@@ -209,11 +209,19 @@ export const PatientVisitsManager: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {visit.complaint && (
           <div>
-            <p className="text-xs font-medium text-gray-500 mb-1">Complaint</p>
-            <p className="text-sm text-gray-800 bg-gray-50 p-2 rounded border border-gray-100">
-              {visit.complaint}
-              {visit.complaint === 'Other' && visit.complaintOther && ` - ${visit.complaintOther}`}
-            </p>
+            <p className="text-xs font-medium text-gray-500 mb-1">Complaints</p>
+            <div className="flex flex-wrap gap-1">
+              {visit.complaint.split(',').map((c, i) => {
+                const trimmed = c.trim();
+                if (!trimmed) return null;
+                return (
+                  <span key={i} className="inline-block px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-800 font-medium">
+                    {trimmed}
+                    {trimmed === 'Other' && visit.complaintOther && ` - ${visit.complaintOther}`}
+                  </span>
+                );
+              })}
+            </div>
           </div>
         )}
         {visit.diagnosis && (
@@ -481,7 +489,9 @@ export const PatientVisitsManager: React.FC = () => {
                               )}
                               {renderDrugBadges(visit.drugs)}
                               {visit.complaint && (
-                                <span className="text-xs text-gray-500 truncate max-w-[200px]">{visit.complaint}</span>
+                                <span className="text-xs text-gray-500 truncate max-w-[200px]">
+                                  {visit.complaint.split(',').map(c => c.trim()).filter(c => c).join(', ')}
+                                </span>
                               )}
                               {visit.centerName && (
                                 <span className="flex items-center gap-1 text-xs text-gray-400">

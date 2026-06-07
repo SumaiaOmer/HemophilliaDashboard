@@ -84,6 +84,7 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
   const [followUpDate, setFollowUpDate] = useState('');
   const [patientSearch, setPatientSearch] = useState('');
   const [showPatientDropdown, setShowPatientDropdown] = useState(false);
+  const [selectedComplaints, setSelectedComplaints] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const patientSearchRef = useRef<HTMLDivElement>(null);
@@ -125,6 +126,14 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
       if (patient) {
         setPatientSearch(`${patient.fullName} - ${patient.nationalIdNumber}`);
       }
+
+      // Parse existing complaints into array
+      if (visit.complaint) {
+        const parsed = visit.complaint.split(',').map(c => c.trim()).filter(c => c.length > 0);
+        setSelectedComplaints(parsed);
+      }
+    } else {
+      setSelectedComplaints([]);
     }
   }, [visit, patients]);
 
@@ -158,6 +167,10 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
           }))
         : undefined;
 
+      const complaintString = selectedComplaints.length > 0
+        ? selectedComplaints.join(', ')
+        : undefined;
+
       const submitData: PatientVisitRequest = {
         patientId: formData.patientId,
         visitDate: formData.visitDate,
@@ -165,7 +178,7 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
         diagnosisType: formData.diagnosisType || undefined,
         visitType: formData.visitType,
         serviceType: formData.serviceType,
-        complaint: formData.complaint || undefined,
+        complaint: complaintString,
         complaintOther: formData.complaintOther || undefined,
         complaintDetails: formData.complaintDetails || undefined,
         centerState: formData.centerState || undefined,
@@ -259,6 +272,17 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
   };
 
   const availableCenters = formData.centerState ? STATE_CENTERS[formData.centerState] || [] : [];
+
+  const toggleComplaint = (option: string) => {
+    setSelectedComplaints(prev => {
+      if (prev.includes(option)) {
+        return prev.filter(c => c !== option);
+      }
+      return [...prev, option];
+    });
+  };
+
+  const hasOtherComplaint = selectedComplaints.includes('Other');
   const selectedPatient = patients.find(p => p.id === formData.patientId);
 
   const filteredPatients = patients.filter(patient => {
@@ -513,27 +537,50 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
 
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Complaint
+                Complaints <span className="text-gray-400 font-normal">(select all that apply)</span>
               </label>
-              <select
-                name="complaint"
-                value={formData.complaint || ''}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
-              >
-                <option value="">Select Complaint</option>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 bg-white rounded-lg border border-green-200 p-3 max-h-64 overflow-y-auto">
                 {COMPLAINT_OPTIONS.map(option => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
+                  <label
+                    key={option}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors duration-150 ${
+                      selectedComplaints.includes(option)
+                        ? 'bg-green-100 border border-green-300'
+                        : 'hover:bg-gray-50 border border-transparent'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedComplaints.includes(option)}
+                      onChange={() => toggleComplaint(option)}
+                      className="w-4 h-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                    />
+                    <span className="text-sm text-gray-800">{option}</span>
+                  </label>
                 ))}
-              </select>
+              </div>
+              {selectedComplaints.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {selectedComplaints.map(c => (
+                    <span key={c} className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-600 text-white text-xs rounded-full">
+                      {c}
+                      <button
+                        type="button"
+                        onClick={() => toggleComplaint(c)}
+                        className="hover:bg-green-700 rounded-full"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
-            {formData.complaint === 'Other' && (
+            {hasOtherComplaint && (
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Please specify complaint
+                  Please specify other complaint
                 </label>
                 <input
                   type="text"
