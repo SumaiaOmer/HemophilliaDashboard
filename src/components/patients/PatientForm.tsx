@@ -140,21 +140,65 @@ export const PatientForm: React.FC<PatientFormProps> = ({
   const [lookupSudanStates, setLookupSudanStates] = useState<LookupItem[]>([]);
   const [lookupMaritalStatuses, setLookupMaritalStatuses] = useState<LookupItem[]>([]);
   const [lookupChronicDiseases, setLookupChronicDiseases] = useState<LookupItem[]>([]);
+  const [lookupStateCities, setLookupStateCities] = useState<Record<string, string[]>>(STATE_CITIES);
+  const [lookupCityLocalities, setLookupCityLocalities] = useState<Record<string, string[]>>(CITY_LOCALITIES);
+
+  // Resolved state->cities and city->localities maps (prefer lookup, fallback to hardcoded)
+  const stateCitiesMap = lookupStateCities;
+  const cityLocalitiesMap = lookupCityLocalities;
 
   useEffect(() => {
     const loadLookups = async () => {
-      const [diagnoses, occupations, sudanStates, maritalStatuses, chronicDiseases] = await Promise.all([
+      const [diagnoses, occupations, sudanStates, maritalStatuses, chronicDiseases, citiesLookup, localitiesLookup] = await Promise.all([
         LookupsService.getByType('DiagnosisOptions').catch(() => []),
         LookupsService.getByType('Occupations').catch(() => []),
         LookupsService.getByType('SudanStates').catch(() => []),
         LookupsService.getByType('MaritalStatusOptions').catch(() => []),
         LookupsService.getByType('ChronicDiseaseOptions').catch(() => []),
+        LookupsService.getByType('StateCities').catch(() => []),
+        LookupsService.getByType('CityLocalities').catch(() => []),
       ]);
       setLookupDiagnoses(diagnoses);
       setLookupOccupations(occupations);
       setLookupSudanStates(sudanStates);
       setLookupMaritalStatuses(maritalStatuses);
       setLookupChronicDiseases(chronicDiseases);
+
+      // Build state->cities map from lookup if available
+      if (citiesLookup.length > 0) {
+        const citiesMap: Record<string, string[]> = { ...STATE_CITIES };
+        citiesLookup.forEach(item => {
+          const parts = item.name.split('|');
+          if (parts.length >= 2) {
+            const state = parts[0].trim();
+            const city = parts[1].trim();
+            if (!citiesMap[state]) citiesMap[state] = [];
+            if (!citiesMap[state].includes(city)) citiesMap[state].push(city);
+          } else if (item.type) {
+            if (!citiesMap[item.type]) citiesMap[item.type] = [];
+            if (!citiesMap[item.type].includes(item.name)) citiesMap[item.type].push(item.name);
+          }
+        });
+        setLookupStateCities(citiesMap);
+      }
+
+      // Build city->localities map from lookup if available
+      if (localitiesLookup.length > 0) {
+        const localitiesMap: Record<string, string[]> = { ...CITY_LOCALITIES };
+        localitiesLookup.forEach(item => {
+          const parts = item.name.split('|');
+          if (parts.length >= 2) {
+            const city = parts[0].trim();
+            const locality = parts[1].trim();
+            if (!localitiesMap[city]) localitiesMap[city] = [];
+            if (!localitiesMap[city].includes(locality)) localitiesMap[city].push(locality);
+          } else if (item.type) {
+            if (!localitiesMap[item.type]) localitiesMap[item.type] = [];
+            if (!localitiesMap[item.type].includes(item.name)) localitiesMap[item.type].push(item.name);
+          }
+        });
+        setLookupCityLocalities(localitiesMap);
+      }
     };
     loadLookups();
   }, []);
@@ -559,9 +603,9 @@ export const PatientForm: React.FC<PatientFormProps> = ({
         state: value === 'OutsideSudan' ? prev.state : prev.state
       }));
     } else if (name === 'homeState') {
-      const cities = value ? STATE_CITIES[value] || [] : [];
+      const cities = value ? stateCitiesMap[value] || [] : [];
       const autoSelectCity = cities.length === 1 ? cities[0] : '';
-      const localities = autoSelectCity ? CITY_LOCALITIES[autoSelectCity] || [] : [];
+      const localities = autoSelectCity ? cityLocalitiesMap[autoSelectCity] || [] : [];
       const autoSelectLocality = localities.length === 1 ? localities[0] : '';
       setFormData(prev => ({
         ...prev,
@@ -570,7 +614,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
         homeLocality: autoSelectLocality
       }));
     } else if (name === 'homeCityOrTown') {
-      const localities = value ? CITY_LOCALITIES[value] || [] : [];
+      const localities = value ? cityLocalitiesMap[value] || [] : [];
       const autoSelectLocality = localities.length === 1 ? localities[0] : '';
       setFormData(prev => ({
         ...prev,
@@ -578,9 +622,9 @@ export const PatientForm: React.FC<PatientFormProps> = ({
         homeLocality: autoSelectLocality
       }));
     } else if (name === 'state') {
-      const cities = value ? STATE_CITIES[value] || [] : [];
+      const cities = value ? stateCitiesMap[value] || [] : [];
       const autoSelectCity = cities.length === 1 ? cities[0] : '';
-      const localities = autoSelectCity ? CITY_LOCALITIES[autoSelectCity] || [] : [];
+      const localities = autoSelectCity ? cityLocalitiesMap[autoSelectCity] || [] : [];
       const autoSelectLocality = localities.length === 1 ? localities[0] : '';
       setFormData(prev => ({
         ...prev,
@@ -589,7 +633,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
         locality: autoSelectLocality
       }));
     } else if (name === 'cityOrTown') {
-      const localities = value ? CITY_LOCALITIES[value] || [] : [];
+      const localities = value ? cityLocalitiesMap[value] || [] : [];
       const autoSelectLocality = localities.length === 1 ? localities[0] : '';
       setFormData(prev => ({
         ...prev,
@@ -611,8 +655,8 @@ export const PatientForm: React.FC<PatientFormProps> = ({
     }
   };
 
-  const availableCities = formData.state ? STATE_CITIES[formData.state] || [] : [];
-  const availableLocalities = formData.cityOrTown ? CITY_LOCALITIES[formData.cityOrTown] || [] : [];
+  const availableCities = formData.state ? stateCitiesMap[formData.state] || [] : [];
+  const availableLocalities = formData.cityOrTown ? cityLocalitiesMap[formData.cityOrTown] || [] : [];
 
   const handleChronicDiseaseChange = (disease: string, checked: boolean) => {
     setFormData(prev => {
@@ -791,7 +835,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
                 >
                   <option value="">{formData.homeState ? 'Select City or Town' : 'Select State First'}</option>
-                  {formData.homeState && STATE_CITIES[formData.homeState]?.map(city => (
+                  {formData.homeState && stateCitiesMap[formData.homeState]?.map(city => (
                     <option key={city} value={city}>{city}</option>
                   ))}
                   <option value="Other">Other</option>
@@ -811,7 +855,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
                 >
                   <option value="">{formData.homeCityOrTown ? 'Select Local Area' : 'Select City First'}</option>
-                  {formData.homeCityOrTown && CITY_LOCALITIES[formData.homeCityOrTown]?.map(locality => (
+                  {formData.homeCityOrTown && cityLocalitiesMap[formData.homeCityOrTown]?.map(locality => (
                     <option key={locality} value={locality}>{locality}</option>
                   ))}
                   <option value="Other">Other</option>
