@@ -31,6 +31,8 @@ interface ReportData {
 interface StateStatistics {
   state: string;
   patientCount: number;
+  treatmentCount: number;
+  factorConsumption: number;
 }
 
 interface CompanyStatistics {
@@ -79,15 +81,17 @@ export const ReportsManager: React.FC = () => {
     const stateMap = new Map<string, StateStatistics>();
 
     reportData.patients.forEach(patient => {
-      if (!stateMap.has(patient.residenceState || '')) {
-        const state = patient.residenceState || 'Unknown';
-        stateMap.set(state, {
-          state,
-          patientCount: 0
+      const stateKey = patient.residenceState || patient.state || 'Unknown';
+      if (!stateMap.has(stateKey)) {
+        stateMap.set(stateKey, {
+          state: stateKey,
+          patientCount: 0,
+          treatmentCount: 0,
+          factorConsumption: 0,
         });
       }
-      const stat = stateMap.get(patient.residenceState || '');
-      if (stat) stat.patientCount++;
+      const stat = stateMap.get(stateKey)!;
+      stat.patientCount++;
     });
 
     return Array.from(stateMap.values()).sort((a, b) => b.patientCount - a.patientCount);
@@ -109,8 +113,8 @@ export const ReportsManager: React.FC = () => {
       const stat = companyMap.get(factor.companyName)!;
       stat.factorCount++;
       stat.totalQuantity += factor.quantity;
-      if (!stat.categories.includes(factor.category)) {
-        stat.categories.push(factor.category);
+      if (!stat.categories.includes(factor.drugType)) {
+        stat.categories.push(factor.drugType);
       }
     });
 
@@ -244,74 +248,102 @@ export const ReportsManager: React.FC = () => {
 
           {/* Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Monthly Treatments */}
+            {/* Drug Type Distribution */}
             <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Monthly Treatment Trends</h3>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Drug Type Distribution</h3>
               <div className="mb-4">
                 <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
-                  <span>Month</span>
-                  <span>Treatments</span>
+                  <span>Drug Type</span>
+                  <span>Quantity</span>
                 </div>
               </div>
               <div className="space-y-3">
-                {monthlyTreatments.slice(0, 6).map((item, index) => (
-                  <div key={index} className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">{item.month}</span>
-                    <div className="flex items-center space-x-2">
-                      <div className="w-32 bg-gray-200 rounded-full h-2">
-                        <div
-                          className="bg-blue-600 h-2 rounded-full"
-                          style={{
-                            width: `${Math.max(10, (item.count / Math.max(...monthlyTreatments.map(t => t.count))) * 100)}%`
-                          }}
-                        />
+                {(() => {
+                  const typeMap = new Map<string, number>();
+                  reportData.factors.forEach(f => {
+                    typeMap.set(f.drugType, (typeMap.get(f.drugType) || 0) + f.quantity);
+                  });
+                  const items = Array.from(typeMap.entries())
+                    .map(([type, count]) => ({ type, count }))
+                    .sort((a, b) => b.count - a.count)
+                    .slice(0, 6);
+                  const maxCount = Math.max(...items.map(i => i.count), 1);
+                  return items.length > 0 ? items.map((item, index) => (
+                    <div key={index} className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600 truncate max-w-[140px]">{item.type}</span>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-32 bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-blue-600 h-2 rounded-full"
+                            style={{ width: `${Math.max(10, (item.count / maxCount) * 100)}%` }}
+                          />
+                        </div>
+                        <span className="text-sm font-medium text-gray-800 min-w-[2rem] text-right">
+                          {item.count.toLocaleString()}
+                        </span>
                       </div>
-                      <span className="text-sm font-medium text-gray-800 min-w-[2rem] text-right">
-                        {item.count}
-                      </span>
                     </div>
-                  </div>
-                ))}
+                  )) : (
+                    <p className="text-sm text-gray-400 text-center py-4">No drug data available</p>
+                  );
+                })()}
               </div>
               <div className="mt-4 pt-4 border-t border-gray-200">
                 <div className="text-xs text-gray-500">
-                  Total Treatments: {monthlyTreatments.reduce((sum, item) => sum + item.count, 0)}
+                  Total Drug Types: {new Set(reportData.factors.map(f => f.drugType)).size}
                 </div>
               </div>
             </div>
 
-            {/* Treatment Types */}
+            {/* Patient Severity Distribution */}
             <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Treatment Type Distribution</h3>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Patient Severity Distribution</h3>
               <div className="mb-4">
                 <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
-                  <span>Treatment Type</span>
+                  <span>Severity</span>
                   <span>Count</span>
                 </div>
               </div>
               <div className="space-y-3">
-                {treatmentTypes.map((item, index) => (
-                  <div key={index} className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">{item.type}</span>
-                    <div className="flex items-center space-x-2">
-                      <div className="w-32 bg-gray-200 rounded-full h-2">
-                        <div
-                          className="bg-green-600 h-2 rounded-full"
-                          style={{
-                            width: `${Math.max(10, (item.count / Math.max(...treatmentTypes.map(t => t.count))) * 100)}%`
-                          }}
-                        />
+                {(() => {
+                  const severityMap = new Map<string, number>();
+                  reportData.patients.forEach(p => {
+                    const sev = p.severity || 'unknown';
+                    severityMap.set(sev, (severityMap.get(sev) || 0) + 1);
+                  });
+                  const items = Array.from(severityMap.entries())
+                    .map(([type, count]) => ({ type, count }))
+                    .sort((a, b) => b.count - a.count);
+                  const maxCount = Math.max(...items.map(i => i.count), 1);
+                  const colorMap: Record<string, string> = {
+                    severe: 'bg-red-600',
+                    moderate: 'bg-yellow-500',
+                    mild: 'bg-green-500',
+                    unknown: 'bg-gray-400',
+                  };
+                  return items.length > 0 ? items.map((item, index) => (
+                    <div key={index} className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600 capitalize">{item.type}</span>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-32 bg-gray-200 rounded-full h-2">
+                          <div
+                            className={`${colorMap[item.type] || 'bg-gray-500'} h-2 rounded-full`}
+                            style={{ width: `${Math.max(10, (item.count / maxCount) * 100)}%` }}
+                          />
+                        </div>
+                        <span className="text-sm font-medium text-gray-800 min-w-[2rem] text-right">
+                          {item.count}
+                        </span>
                       </div>
-                      <span className="text-sm font-medium text-gray-800 min-w-[2rem] text-right">
-                        {item.count}
-                      </span>
                     </div>
-                  </div>
-                ))}
+                  )) : (
+                    <p className="text-sm text-gray-400 text-center py-4">No patient data available</p>
+                  );
+                })()}
               </div>
               <div className="mt-4 pt-4 border-t border-gray-200">
                 <div className="text-xs text-gray-500">
-                  Total Types: {treatmentTypes.length} | Total Treatments: {treatmentTypes.reduce((sum, item) => sum + item.count, 0)}
+                  Total Patients: {reportData.patients.length}
                 </div>
               </div>
             </div>
@@ -572,7 +604,7 @@ export const ReportsManager: React.FC = () => {
                 {(() => {
                   const categoryMap = new Map();
                   reportData.factors.forEach(factor => {
-                    categoryMap.set(factor.category, (categoryMap.get(factor.category) || 0) + 1);
+                    categoryMap.set(factor.drugType, (categoryMap.get(factor.drugType) || 0) + 1);
                   });
                   const categories = Array.from(categoryMap.entries()).map(([category, count]) => ({ category, count }));
                   const maxCount = Math.max(...categories.map(c => c.count));
@@ -700,7 +732,7 @@ export const ReportsManager: React.FC = () => {
                     return (
                       <tr key={factor.id}>
                         <td className="px-6 py-4 text-sm text-gray-900">{factor.name}</td>
-                        <td className="px-6 py-4 text-sm text-gray-900">{factor.category}</td>
+                        <td className="px-6 py-4 text-sm text-gray-900">{factor.drugType}</td>
                         <td className="px-6 py-4 text-sm text-gray-900">{factor.quantity}</td>
                         <td className="px-6 py-4 text-sm text-gray-900">{factor.companyName}</td>
                         <td className="px-6 py-4 text-sm text-gray-900">{formatDate(factor.expiryDate)}</td>

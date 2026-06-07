@@ -160,8 +160,12 @@ export interface InhibitorHistory {
 }
 
 export interface VisitDrug {
-  drugId: number;
+  drugId?: number;
+  factorId?: number;
+  drugType: string;
+  concentration: number;
   quantity: number;
+  lotNumber?: string;
 }
 
 export interface PatientVisit {
@@ -210,10 +214,6 @@ export interface VisitTestRequest {
 }
 
 export interface VisitDrugRequest {
-  factorId: number;
-  drugType: string | number | readonly string[] | undefined;
-  concentration: string | number | readonly string[] | undefined;
-  lotNumber: string;
   drugId: number;
   quantity: number;
 }

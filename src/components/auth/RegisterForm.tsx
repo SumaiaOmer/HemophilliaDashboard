@@ -200,7 +200,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   className={`block w-full pl-10 pr-10 py-3 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none ${
                     confirmPassword && formData.password !== confirmPassword
-                      ? 'border-red-300'
+                      ? 'border-red-500 bg-red-50'
                       : 'border-red-300'
                   }`}
                   placeholder="Confirm your password"
