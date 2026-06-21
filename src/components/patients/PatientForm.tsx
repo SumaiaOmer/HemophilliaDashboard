@@ -233,6 +233,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
     nationalIdNumber: '',
     dateOfBirth: '',
     gender: '',
+    age: '',
     contactNumber1: '',
     contactNumber1CountryCode: '+249',
     homeState: '',
@@ -272,6 +273,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
     chronicDiseaseOther: '',
     bloodGroup: '',
     hasHBVVaccination: false,
+    hbvVaccinationDate: '',
     hasHealthInsurance: false,
     insuranceProvider: '',
     isCircumcised: false,
@@ -386,6 +388,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
         chronicDiseaseOther: patient.chronicDiseaseOther || '',
         bloodGroup: patient.bloodGroup || '',
         hasHBVVaccination: patient.hasHBVVaccination || false,
+        hbvVaccinationDate: patient.hbvVaccinationDate || '',
         hasHealthInsurance: patient.hasHealthInsurance || false,
         insuranceProvider: patient.insuranceProvider || '',
         isCircumcised: patient.isCircumcised || false,
@@ -570,9 +573,23 @@ export const PatientForm: React.FC<PatientFormProps> = ({
     if (chronicDiseaseString) submitData.chronicDiseases = chronicDiseasesArray;
     if (formData.chronicDiseaseOther) submitData.chronicDiseaseOther = formData.chronicDiseaseOther;
     if (formData.hasHBVVaccination) submitData.hasHBVVaccination = formData.hasHBVVaccination;
+    if (formData.hbvVaccinationDate) submitData.hbvVaccinationDate = formData.hbvVaccinationDate;
     if (formData.hasHealthInsurance) submitData.hasHealthInsurance = formData.hasHealthInsurance;
     submitData.insuranceProvider = formData.insuranceProvider || '';
     if (formData.isCircumcised) submitData.isCircumcised = formData.isCircumcised;
+
+    // Include test dates if any are taken
+    if (testDatesArray.length > 0) submitData.testDates = testDatesArray;
+
+    // Include inhibitor records if any
+    if (formData.inhibitors && formData.inhibitors.length > 0) {
+      submitData.inhibitors = formData.inhibitors;
+    }
+
+    // Include other medical tests if any
+    if (otherTests.length > 0) {
+      submitData.otherMedicalTests = otherTests;
+    }
 
     if (formData.residenceType === 'InsideSudan') {
       submitData.residenceState = formData.state;
@@ -1562,6 +1579,16 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                   />
                   Has HBV Vaccination
                 </label>
+                {formData.hasHBVVaccination && (
+                  <input
+                    type="date"
+                    name="hbvVaccinationDate"
+                    value={formData.hbvVaccinationDate || ''}
+                    onChange={handleChange}
+                    placeholder="Vaccination Date"
+                    className="mt-2 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
+                  />
+                )}
               </div>
 
               <div>
