@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
-import { Patient, PatientRequest, PatientTestDate, TestType, OtherMedicalTest, InhibitorEntry } from '../../types/api';
+import { Patient, PatientRequest, PatientTestDate, TestType, OtherMedicalTest, InhibitorEntry, InhibitorHistory } from '../../types/api';
 import { toDateInputValue } from '../../lib/dateUtils';
 import { LookupsService, LookupItem } from '../../services/lookups';
 
@@ -736,6 +736,19 @@ export const PatientForm: React.FC<PatientFormProps> = ({
     }));
   };
 
+  // Inhibitor History management
+  const addInhibitorHistoryEntry = () => {
+    setInhibitorHistory(prev => [...prev, { testDate: new Date().toISOString().split('T')[0], level: 0 }]);
+  };
+
+  const removeInhibitorHistoryEntry = (index: number) => {
+    setInhibitorHistory(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const updateInhibitorHistoryEntry = (index: number, field: 'testDate' | 'level', value: any) => {
+    setInhibitorHistory(prev => prev.map((entry, i) => i === index ? { ...entry, [field]: value } : entry));
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
       <div className="bg-white rounded-lg w-full max-w-4xl my-8 shadow-xl">
@@ -1435,29 +1448,62 @@ export const PatientForm: React.FC<PatientFormProps> = ({
               </>
             )}
 
-            {inhibitorHistory && inhibitorHistory.length > 0 && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                <h4 className="text-lg font-semibold text-blue-900 mb-4">Inhibitor History</h4>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-blue-200 bg-blue-100">
-                        <th className="px-4 py-2 text-left font-semibold text-blue-900">Test Date</th>
-                        <th className="px-4 py-2 text-left font-semibold text-blue-900">Level</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {inhibitorHistory.map((entry, index) => (
-                        <tr key={index} className="border-b border-blue-100 hover:bg-blue-50">
-                          <td className="px-4 py-2 text-gray-700">{entry.testDate}</td>
-                          <td className="px-4 py-2 text-gray-700">{entry.level}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+            {/* Inhibitor History Management */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="text-lg font-semibold text-blue-900">Inhibitor History</h4>
+                <button
+                  type="button"
+                  onClick={addInhibitorHistoryEntry}
+                  className="flex items-center space-x-1 px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 text-sm"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Add Entry</span>
+                </button>
               </div>
-            )}
+
+              {inhibitorHistory && inhibitorHistory.length > 0 ? (
+                <div className="space-y-3">
+                  {inhibitorHistory.map((entry, index) => (
+                    <div key={index} className="bg-white p-3 rounded-lg border border-blue-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-blue-800">Entry #{index + 1}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeInhibitorHistoryEntry(index)}
+                          className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors duration-200"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs text-gray-600 mb-1">Test Date</label>
+                          <input
+                            type="date"
+                            value={entry.testDate || ''}
+                            onChange={(e) => updateInhibitorHistoryEntry(index, 'testDate', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-600 mb-1">Level</label>
+                          <input
+                            type="number"
+                            value={entry.level || 0}
+                            onChange={(e) => updateInhibitorHistoryEntry(index, 'level', parseFloat(e.target.value) || 0)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
+                            placeholder="Inhibitor level"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 text-center py-4">No inhibitor history entries. Click "Add Entry" to add one.</p>
+              )}
+            </div>
 
             <div className="mb-4">
               <div className="mb-3">
@@ -1908,7 +1954,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                     {otherTests.map((test, index) => (
                       <div key={index} className="bg-white p-3 rounded-lg border border-purple-200">
                         <div className="flex justify-between items-start">
-                          <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                          <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
                             <div>
                               <span className="font-medium text-gray-600">Test:</span>
                               <span className="ml-1 text-gray-900">{test.testName}</span>
@@ -1916,6 +1962,10 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                             <div>
                               <span className="font-medium text-gray-600">Result:</span>
                               <span className="ml-1 text-gray-900">{test.testResult}</span>
+                            </div>
+                            <div>
+                              <span className="font-medium text-gray-600">Date:</span>
+                              <span className="ml-1 text-gray-900">{test.testDate || 'N/A'}</span>
                             </div>
                           </div>
                           <button
