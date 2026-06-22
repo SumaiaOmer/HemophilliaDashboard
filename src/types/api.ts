@@ -44,6 +44,11 @@ export interface Patient {
   homeCityOrTown?: string;
   homeLocality?: string;
   residenceType?: 'InsideSudan' | 'OutsideSudan';
+  residenceState?: string;
+  residenceCityOrTown?: string;
+  residenceLocalArea?: string;
+  residenceRegion?: string;
+  residenceCountry?: string;
   country?: string;
   cityOrTown?: string;
   locality?: string;
@@ -53,6 +58,7 @@ export interface Patient {
   contactNumber?: string;
   contactNumber1?: string;
   contactNumber2?: string;
+  contactRelation?: string;
   vitalStatus?: 'Alive' | 'Died' | 'Unknown';
   hemophiliaCenterId?: string;
   diagnosis?: string;
@@ -69,6 +75,8 @@ export interface Patient {
   inhibitorScreeningDate?: string;
   inhibitors?: InhibitorEntry[];
   inhibitorHistory?: InhibitorHistory[];
+  latestInhibitorLevel?: number;
+  latestInhibitorTestDate?: string;
   HasChronicDiseases?: boolean;
   chronicDiseases?: string[];
   chronicDiseaseOther?: string;
@@ -104,12 +112,13 @@ export interface PatientRequest {
   nationalIdNumber: string;
   dateOfBirth: string;
   gender: string;
-  age:string;
+  age?: string;
   contactNumber1: string;
   bloodGroup?: string;
   maritalStatus?: string;
   occupation?: string;
-  contactNumber2?: string; 
+  contactNumber2?: string;
+  contactRelation?: string;
   hemophiliaCenterId?: string;
   diagnosis?: string;
   diagnosisType?: string;
@@ -128,6 +137,7 @@ export interface PatientRequest {
   residenceCityOrTown?: string;
   residenceLocalArea?: string;
   residenceRegion?: string;
+  residenceCountry?: string;
   state?: string;
   cityOrTown?: string;
   locality?: string;
@@ -137,6 +147,7 @@ export interface PatientRequest {
   inhibitorLevel?: number;
   inhibitorScreeningDate?: string;
   inhibitors?: InhibitorEntry[];
+  inhibitorHistory?: InhibitorHistory[];
   HasChronicDiseases?: boolean;
   chronicDiseases?: string[];
   chronicDiseaseOther?: string;

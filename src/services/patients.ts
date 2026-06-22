@@ -107,6 +107,11 @@ export class PatientsService {
       homeCityOrTown: patient.HomeCityOrTown || patient.homeCityOrTown || patient.home_city_or_town || '',
       homeLocality: patient.HomeLocality || patient.homeLocality || patient.home_locality || '',
       residenceType,
+      residenceState: patient.ResidenceState || patient.residenceState || patient.residence_state || '',
+      residenceCityOrTown: patient.ResidenceCityOrTown || patient.residenceCityOrTown || patient.residence_city_or_town || '',
+      residenceLocalArea: patient.ResidenceLocalArea || patient.residenceLocalArea || patient.residence_local_area || '',
+      residenceRegion: patient.ResidenceRegion || patient.residenceRegion || patient.residence_region || '',
+      residenceCountry: patient.ResidenceCountry || patient.residenceCountry || patient.residence_country || '',
       state,
       cityOrTown,
       locality,
@@ -116,6 +121,7 @@ export class PatientsService {
       contactNumber: patient.ContactNumber1 || patient.ContactNumber || patient.contactNumber || patient.contact_number || '',
       contactNumber1: patient.ContactNumber1 || patient.contactNumber1 || patient.contact_number1 || patient.ContactNumber || patient.contactNumber || patient.contact_number || '',
       contactNumber2: patient.ContactNumber2 || patient.contactNumber2 || patient.contact_number2 || '',
+      contactRelation: patient.ContactRelation || patient.contactRelation || patient.contact_relation || '',
       vitalStatus: patient.VitalStatus || patient.vitalStatus || patient.vital_status || 'Alive',
       hemophiliaCenterId: patient.HemophiliaCenterId || patient.hemophiliaCenterId || patient.hemophilia_center_id || '',
       diagnosis: patient.Diagnosis || patient.diagnosis || patient.DiagnosisType || '',
@@ -129,18 +135,21 @@ export class PatientsService {
       inhibitorLevel: patient.InhibitorLevel || patient.inhibitorLevel || patient.inhibitor_level,
       inhibitorScreeningDate: patient.InhibitorScreeningDate || patient.inhibitorScreeningDate || patient.inhibitor_screening_date,
       inhibitors: inhibitors.length > 0 ? inhibitors : undefined,
+      latestInhibitorLevel: patient.LatestInhibitorLevel || patient.latestInhibitorLevel || patient.latest_inhibitor_level,
+      latestInhibitorTestDate: patient.LatestInhibitorTestDate || patient.latestInhibitorTestDate || patient.latest_inhibitor_test_date,
       HasChronicDiseases: hasChronicDiseases,
       chronicDiseases: chronicDiseases,
       chronicDiseaseOther: patient.ChronicDiseaseOther || patient.chronicDiseaseOther || patient.chronic_disease_other || '',
       bloodGroup: patient.BloodGroup || patient.bloodGroup || patient.blood_group || '',
       hasHBVVaccination: patient.HasHBVVaccination === true || patient.hasHBVVaccination === true || patient.HasHBVVaccination === 'true' || patient.hasHBVVaccination === 'true',
+      hbvVaccinationDate: patient.HBVVaccinationDate || patient.hbvVaccinationDate || patient.hbv_vaccination_date || '',
       hasHealthInsurance: patient.HasHealthInsurance === true || patient.hasHealthInsurance === true || patient.HasHealthInsurance === 'true' || patient.hasHealthInsurance === 'true',
       insuranceProvider: patient.InsuranceProvider || patient.insuranceProvider || patient.insurance_provider || '',
       isCircumcised: patient.IsCircumcised === true || patient.isCircumcised === true || patient.IsCircumcised === 'true' || patient.isCircumcised === 'true',
       longTermMedication: patient.LongTermMedication === true || patient.longTermMedication === true || patient.longTermMedication === 'true' || patient.LongTermMedication === 'true',
       testDates: testDates.length > 0 ? testDates : undefined,
-      inhibitorHistory: patient.inhibitorHistory && Array.isArray(patient.inhibitorHistory) ? patient.inhibitorHistory : undefined,
-      otherMedicalTests: patient.otherMedicalTests && Array.isArray(patient.otherMedicalTests) ? patient.otherMedicalTests : undefined
+      inhibitorHistory: patient.InhibitorHistory || patient.inhibitorHistory || (patient.inhibitorHistory && Array.isArray(patient.inhibitorHistory) ? patient.inhibitorHistory : undefined),
+      otherMedicalTests: patient.OtherMedicalTests || patient.otherMedicalTests || (patient.otherMedicalTests && Array.isArray(patient.otherMedicalTests) ? patient.otherMedicalTests : undefined)
     };
   }
 
@@ -157,16 +166,16 @@ export class PatientsService {
   private static transformPatientForAPI(patient: PatientRequest): any {
     const transformed: any = {
       FullName: patient.fullName,
-      NationalIdNumber: patient.nationalIdNumber || patient.nationalId || null,
+      NationalIdNumber: patient.nationalIdNumber || null,
       DateOfBirth: patient.dateOfBirth,
       Gender: patient.gender,
       Age: patient.age || null,
-
       BloodGroup: patient.bloodGroup || null,
       MaritalStatus: patient.maritalStatus || null,
       Occupation: patient.occupation || null,
       ContactNumber1: patient.contactNumber1,
       ContactNumber2: patient.contactNumber2 || null,
+      ContactRelation: patient.contactRelation || null,
       HemophiliaCenterId: patient.hemophiliaCenterId || null,
       Diagnosis: patient.diagnosis || null,
       DiagnosisType: patient.diagnosisType || null,
@@ -174,7 +183,7 @@ export class PatientsService {
       Severity: patient.severity || null,
       FactorPercent: patient.factorPercent || null,
       FactorPercentDate: patient.factorPercentDate || null,
-      HasInhibitors: patient.hasInhibitors || false,
+      HasInhibitors: patient.hasInhibitors || patient.HasInhibitors || false,
       FamilyHistory: patient.familyHistory || null,
       VitalStatus: patient.vitalStatus || 'Alive',
       HomeState: patient.homeState || null,
@@ -185,11 +194,32 @@ export class PatientsService {
       ResidenceCityOrTown: patient.residenceCityOrTown || null,
       ResidenceLocalArea: patient.residenceLocalArea || null,
       ResidenceRegion: patient.residenceRegion || null,
+      ResidenceCountry: patient.residenceCountry || patient.country || null,
+      HasChronicDiseases: patient.HasChronicDiseases || (patient.chronicDiseases && patient.chronicDiseases.length > 0) || false,
+      ChronicDiseases: patient.chronicDiseases && patient.chronicDiseases.length > 0 ? patient.chronicDiseases : null,
+      ChronicDiseaseOther: patient.chronicDiseaseOther || null,
       HasHBVVaccination: patient.hasHBVVaccination || false,
+      HBVVaccinationDate: patient.hbvVaccinationDate || null,
       HasHealthInsurance: patient.hasHealthInsurance || false,
       InsuranceProvider: patient.insuranceProvider || null,
       IsCircumcised: patient.isCircumcised || false,
     };
+
+    if (patient.inhibitorHistory && patient.inhibitorHistory.length > 0) {
+      transformed.InhibitorHistory = patient.inhibitorHistory.map(h => ({
+        Id: h.id || 0,
+        TestDate: h.testDate,
+        Level: h.level
+      }));
+    }
+
+    if (patient.otherMedicalTests && patient.otherMedicalTests.length > 0) {
+      transformed.OtherMedicalTests = patient.otherMedicalTests.map(t => ({
+        TestName: t.testName,
+        TestResult: t.testResult,
+        TestDate: t.testDate
+      }));
+    }
 
     return transformed;
   }

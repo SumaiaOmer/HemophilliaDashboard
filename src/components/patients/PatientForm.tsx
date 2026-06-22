@@ -295,7 +295,8 @@ export const PatientForm: React.FC<PatientFormProps> = ({
   const [otherTests, setOtherTests] = useState<OtherMedicalTest[]>([]);
   const [currentTest, setCurrentTest] = useState({
     testName: '',
-    testResult: ''
+    testResult: '',
+    testDate: ''
   });
   const [inhibitorHistory, setInhibitorHistory] = useState<Array<{id?: number; testDate: string; level: number}>>([]);
 
@@ -591,6 +592,11 @@ export const PatientForm: React.FC<PatientFormProps> = ({
       submitData.otherMedicalTests = otherTests;
     }
 
+    // Include inhibitor history if any
+    if (inhibitorHistory.length > 0) {
+      submitData.inhibitorHistory = inhibitorHistory;
+    }
+
     if (formData.residenceType === 'InsideSudan') {
       submitData.residenceState = formData.state;
       submitData.residenceCityOrTown = formData.cityOrTown;
@@ -695,10 +701,11 @@ export const PatientForm: React.FC<PatientFormProps> = ({
 
   const addOtherTest = () => {
     if (currentTest.testName.trim() && currentTest.testResult.trim()) {
-      setOtherTests([...otherTests, { ...currentTest }]);
+      setOtherTests([...otherTests, { ...currentTest, testDate: currentTest.testDate || new Date().toISOString().split('T')[0] }]);
       setCurrentTest({
         testName: '',
-        testResult: ''
+        testResult: '',
+        testDate: ''
       });
     }
   };
@@ -1808,7 +1815,8 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                       setOtherTests([]);
                       setCurrentTest({
                         testName: '',
-                        testResult: ''
+                        testResult: '',
+                        testDate: ''
                       });
                     }
                   }}
@@ -1827,7 +1835,8 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                     setOtherTests([]);
                     setCurrentTest({
                       testName: '',
-                      testResult: ''
+                      testResult: '',
+                      testDate: ''
                     });
                   }}
                   className={`px-6 py-2 rounded-lg font-medium transition-colors duration-200 ${
@@ -1845,7 +1854,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
               <>
                 <div className="bg-white p-4 rounded-lg border border-purple-200 mb-4">
                   <h5 className="text-sm font-semibold text-gray-700 mb-3">Add New Test</h5>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Test Name
@@ -1867,6 +1876,17 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                         value={currentTest.testResult}
                         onChange={(e) => setCurrentTest({ ...currentTest, testResult: e.target.value })}
                         placeholder="e.g., Normal, Positive"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Test Date
+                      </label>
+                      <input
+                        type="date"
+                        value={currentTest.testDate}
+                        onChange={(e) => setCurrentTest({ ...currentTest, testDate: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-sm"
                       />
                     </div>
