@@ -449,3 +449,57 @@ export interface FactorDistributionRequest {
   quantityDistributed: number;
   distributionDate: string;
 }
+
+export interface DeathNotification {
+  id: number;
+  patientId: number;
+  referenceNumber?: string;
+  dateOfDeath: string;
+  causeOfDeath?: string;
+  placeOfDeath?: string;
+  notifiedBy?: string;
+  notificationDate?: string;
+  notes?: string;
+  patientName?: string;
+  patientFullName?: string;
+  patientNationalId?: string;
+  patientNationalIdNumber?: string;
+  patientDateOfBirth?: string;
+  patientGender?: string;
+  patientAge?: string;
+  ageAtDeath?: number;
+  patientDiagnosis?: string;
+  patientSeverity?: string;
+  patientState?: string;
+  patientVitalStatus?: string;
+  createdAt?: string;
+}
+
+export interface DeathNotificationCreateRequest {
+  patientId: number;
+  dateOfDeath: string;
+  causeOfDeath?: string;
+  placeOfDeath?: string;
+  notifiedBy?: string;
+  notificationDate?: string;
+  notes?: string;
+}
+
+export interface DeathNotificationUpdateRequest {
+  patientId: number;
+  dateOfDeath: string;
+  causeOfDeath?: string;
+  placeOfDeath?: string;
+  notifiedBy?: string;
+  notificationDate?: string;
+  notes?: string;
+}
+
+export interface DeathNotificationStatistics {
+  totalDeaths: number;
+  deathsByCause?: Record<string, number>;
+  deathsByState?: Record<string, number>;
+  deathsByMonth?: Array<{ month: string; count: number }>;
+  averageAgeAtDeath?: number;
+  deathsByGender?: Record<string, number>;
+}

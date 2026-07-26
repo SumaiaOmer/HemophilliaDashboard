@@ -75,6 +75,10 @@ const iconMap: Record<string, any> = {
   trending: TrendingUp,
   user: User,
   payment: DollarSign,
+  death: FileText,
+  'death-notification': FileText,
+  deathnotification: FileText,
+  notification: FileText,
 };
 
 export const getIcon = (iconName?: string, fallbackName?: string) => {

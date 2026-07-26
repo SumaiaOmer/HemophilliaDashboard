@@ -11,6 +11,7 @@ import { CellPhoneManager } from './components/cellphone/CellPhoneManager';
 import { DistributionManager } from './components/distribution/DistributionManager';
 import { DeliveredManager } from './components/distribution/DeliveredManager';
 import { RoleManager } from './components/roles/RoleManager';
+import { DeathNotificationsManager } from './components/deathNotifications/DeathNotificationsManager';
 import { LoginForm } from './components/auth/LoginForm';
 import { RegisterForm } from './components/auth/RegisterForm';
 import { AuthService } from './services/auth';
@@ -192,6 +193,10 @@ function App() {
         return <RoleManager />;
       case 'reports':
         return <ReportsManager />;
+      case 'death-notifications':
+      case 'deathnotification':
+      case 'death-notification':
+        return <DeathNotificationsManager />;
       default:
         return (
           <div className="flex items-center justify-center h-64">
