@@ -1,8 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X, LogOut, Droplets, ChevronDown } from 'lucide-react';
+import { Menu, X, LogOut, Droplets, ChevronDown, FileText } from 'lucide-react';
 import { AuthService } from '../services/auth';
 import { ScreensService, ScreenTreeNode } from '../services/screens';
 import { getIcon } from '../lib/iconMap';
+
+const DEATH_NOTIFICATION_SCREEN: ScreenTreeNode = {
+  id: -1,
+  name: 'Death Notifications',
+  displayName: 'Death Notifications',
+  code: 'DEATH-NOTIFICATION',
+  route: 'death-notifications',
+  icon: 'death-notification',
+  children: [],
+};
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -68,14 +78,19 @@ export const Layout: React.FC<LayoutProps> = ({
         const screens = await ScreensService.getMyScreens();
         console.log('✅ Role-based screens loaded:', screens);
         
-        if (!screens || screens.length === 0) {
+        // Always include the Death Notifications screen, deduped by route
+        const deathRoute = normalize(DEATH_NOTIFICATION_SCREEN.route || DEATH_NOTIFICATION_SCREEN.code);
+        const hasDeathScreen = screens.some(s => normalize(s.route || s.code || s.name) === deathRoute);
+        const screensWithDeath = hasDeathScreen ? screens : [...screens, DEATH_NOTIFICATION_SCREEN];
+
+        if (!screensWithDeath || screensWithDeath.length === 0) {
           setError('No menu items available for your role');
           setMenuItems([]);
           setLoading(false);
           return;
         }
-        
-        setMenuItems(screens);
+
+        setMenuItems(screensWithDeath);
         
         // Auto-expand menus that contain the active section
         const autoExpanded: Record<number, boolean> = {};
