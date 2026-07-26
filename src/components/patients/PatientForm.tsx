@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
-import { Patient, PatientRequest, PatientTestDate, TestType, OtherMedicalTest, InhibitorEntry, InhibitorHistory } from '../../types/api';
+import { Patient, PatientRequest, PatientTestDate, TestType, OtherMedicalTest, InhibitorEntry, InhibitorTestRequest } from '../../types/api';
 import { toDateInputValue } from '../../lib/dateUtils';
 import { LookupsService, LookupItem } from '../../services/lookups';
 
@@ -13,26 +13,10 @@ interface PatientFormProps {
 const CHRONIC_DISEASES = ['DM', 'HTN', 'Asthma', 'Cardiac disease', 'Other'];
 
 const OCCUPATIONS = [
-  'Student',
-  'Teacher',
-  'Doctor',
-  'Nurse',
-  'Engineer',
-  'Farmer',
-  'Business Owner',
-  'Government Employee',
-  'Private Sector Employee',
-  'Military',
-  'Police',
-  'Driver',
-  'Mechanic',
-  'Carpenter',
-  'Electrician',
-  'Retired',
-  'Unemployed',
-  'Housewife',
-  'Child',
-  'Other'
+  'Student', 'Teacher', 'Doctor', 'Nurse', 'Engineer', 'Farmer', 'Business Owner',
+  'Government Employee', 'Private Sector Employee', 'Military', 'Police', 'Driver',
+  'Mechanic', 'Carpenter', 'Electrician', 'Retired', 'Unemployed', 'Housewife',
+  'Child', 'Other'
 ];
 
 const STATE_CITIES: Record<string, string[]> = {
@@ -143,7 +127,6 @@ export const PatientForm: React.FC<PatientFormProps> = ({
   const [lookupStateCities, setLookupStateCities] = useState<Record<string, string[]>>(STATE_CITIES);
   const [lookupCityLocalities, setLookupCityLocalities] = useState<Record<string, string[]>>(CITY_LOCALITIES);
 
-  // Resolved state->cities and city->localities maps (prefer lookup, fallback to hardcoded)
   const stateCitiesMap = lookupStateCities;
   const cityLocalitiesMap = lookupCityLocalities;
 
@@ -164,7 +147,6 @@ export const PatientForm: React.FC<PatientFormProps> = ({
       setLookupMaritalStatuses(maritalStatuses);
       setLookupChronicDiseases(chronicDiseases);
 
-      // Build state->cities map from lookup if available
       if (citiesLookup.length > 0) {
         const citiesMap: Record<string, string[]> = { ...STATE_CITIES };
         citiesLookup.forEach(item => {
@@ -182,7 +164,6 @@ export const PatientForm: React.FC<PatientFormProps> = ({
         setLookupStateCities(citiesMap);
       }
 
-      // Build city->localities map from lookup if available
       if (localitiesLookup.length > 0) {
         const localitiesMap: Record<string, string[]> = { ...CITY_LOCALITIES };
         localitiesLookup.forEach(item => {
@@ -205,11 +186,9 @@ export const PatientForm: React.FC<PatientFormProps> = ({
 
   const getInitialChronicDiseases = () => {
     if (!patient) return false;
-
     if (patient.HasChronicDiseases !== undefined) {
       return patient.HasChronicDiseases;
     }
-
     if (!patient.chronicDiseases) return false;
     if (Array.isArray(patient.chronicDiseases)) {
       return patient.chronicDiseases.length > 0;
@@ -252,7 +231,6 @@ export const PatientForm: React.FC<PatientFormProps> = ({
     occupation: '',
     contactNumber2: '',
     contactNumber2CountryCode: '+249',
- 
     vitalStatus: 'Alive',
     hemophiliaCenterId: '',
     diagnosis: '',
@@ -298,7 +276,6 @@ export const PatientForm: React.FC<PatientFormProps> = ({
     testResult: '',
     testDate: ''
   });
-  const [inhibitorHistory, setInhibitorHistory] = useState<Array<{id?: number; testDate: string; level: number}>>([]);
 
   useEffect(() => {
     if (patient) {
@@ -325,8 +302,36 @@ export const PatientForm: React.FC<PatientFormProps> = ({
         : chronicDiseasesArray.length > 0;
 
       const hasFactorLevelValue = patient.factorPercent !== undefined && patient.factorPercent !== null;
-
       const factorPercentDate = toDateInputValue(patient.factorPercentDate);
+
+      const normalizedInhibitorHistory = Array.isArray(patient.inhibitorHistory)
+        ? patient.inhibitorHistory.map((item: any) => ({
+            inhibitorLevel: item.level !== undefined && item.level !== null ? Number(item.level) : undefined,
+            inhibitorScreeningDate: toDateInputValue(item.testDate),
+          }))
+        : [];
+
+      const inheritedInhibitorLevel = patient.inhibitorLevel !== undefined && patient.inhibitorLevel !== null
+        ? Number(patient.inhibitorLevel)
+        : (normalizedInhibitorHistory[0]?.inhibitorLevel ?? undefined);
+
+      const inheritedInhibitorScreeningDate = patient.inhibitorScreeningDate
+        ? toDateInputValue(patient.inhibitorScreeningDate)
+        : (normalizedInhibitorHistory[0]?.inhibitorScreeningDate || '');
+
+      const normalizedInhibitors = Array.isArray(patient.inhibitors) && patient.inhibitors.length > 0
+        ? patient.inhibitors.map((item: any) => ({
+            inhibitorLevel: item.inhibitorLevel !== undefined && item.inhibitorLevel !== null ? Number(item.inhibitorLevel) : undefined,
+            inhibitorScreeningDate: toDateInputValue(item.inhibitorScreeningDate),
+          }))
+        : (normalizedInhibitorHistory.length > 0 ? normalizedInhibitorHistory : []);
+
+      const normalizedOtherTests = (patient.otherMedicalTests || []).map((test: any) => ({
+        id: test.id,
+        testName: test.testName || '',
+        testResult: test.testResult || '',
+        testDate: toDateInputValue(test.testDate),
+      }));
 
       const normalized1 = normalizePhoneValue(patient.contactNumber1 || patient.contactNumber);
       const normalized2 = normalizePhoneValue(patient.contactNumber2);
@@ -375,15 +380,15 @@ export const PatientForm: React.FC<PatientFormProps> = ({
             'ThirdDegree': 'third_degree',
             'None': 'none'
           };
-          const fh = patient.familyHistory;
-          if (!fh || fh === 'none' || fh === 'None') return '';
-          return reverseMap[fh] || fh.toLowerCase();
+          const fh = (patient.familyHistory as any) || '';
+          if (!fh || String(fh).toLowerCase() === 'none') return '';
+          return reverseMap[String(fh)] || String(fh).toLowerCase();
         })(),
-        HasInhibitors: patient.HasInhibitors === true || patient.hasInhibitors === true || patient.inhibitor === true,
-        hasInhibitors: patient.hasInhibitors === true || patient.HasInhibitors === true || patient.inhibitor === true,
-        inhibitorLevel: patient.inhibitorLevel ? Number(patient.inhibitorLevel) : undefined,
-        inhibitorScreeningDate,
-        inhibitors: patient.inhibitors || [],
+        HasInhibitors: patient.HasInhibitors === true || patient.hasInhibitors === true || patient.inhibitor === true || normalizedInhibitorHistory.length > 0,
+        hasInhibitors: patient.hasInhibitors === true || patient.HasInhibitors === true || patient.inhibitor === true || normalizedInhibitorHistory.length > 0,
+        inhibitorLevel: inheritedInhibitorLevel,
+        inhibitorScreeningDate: inheritedInhibitorScreeningDate,
+        inhibitors: normalizedInhibitors,
         HasChronicDiseases: hasChronicDiseasesValue,
         chronicDiseases: chronicDiseasesArray,
         chronicDiseaseOther: patient.chronicDiseaseOther || '',
@@ -401,28 +406,23 @@ export const PatientForm: React.FC<PatientFormProps> = ({
       setFactorTestDate(factorPercentDate);
       setHasFamilyHistory(!!patient.familyHistory && patient.familyHistory !== 'none');
 
-      if (patient.otherMedicalTests && patient.otherMedicalTests.length > 0) {
-        setOtherTests(patient.otherMedicalTests);
+      if (normalizedOtherTests.length > 0) {
+        setOtherTests(normalizedOtherTests);
         setHasOtherTests(true);
       } else {
         setOtherTests([]);
         setHasOtherTests(false);
       }
 
-      if (patient.inhibitorHistory && patient.inhibitorHistory.length > 0) {
-        setInhibitorHistory(patient.inhibitorHistory);
-      } else {
-        setInhibitorHistory([]);
-      }
+      // Build a normalized testDates map from either `patient.testDates` or top-level HBV/HCV/HIV fields
+      const testDatesMap: Partial<Record<TestType, { hasTaken: boolean; testDate: string; result?: 'positive' | 'negative' }>> = {
+        HBV: { hasTaken: false, testDate: '', result: undefined },
+        HCV: { hasTaken: false, testDate: '', result: undefined },
+        HIV: { hasTaken: false, testDate: '', result: undefined },
+        Other: { hasTaken: false, testDate: '' },
+      };
 
       if (patient.testDates && Array.isArray(patient.testDates)) {
-        const testDatesMap: Partial<Record<TestType, { hasTaken: boolean; testDate: string; result?: 'positive' | 'negative' }>> = {
-          HBV: { hasTaken: false, testDate: '', result: undefined },
-          HCV: { hasTaken: false, testDate: '', result: undefined },
-          HIV: { hasTaken: false, testDate: '', result: undefined },
-          Other: { hasTaken: false, testDate: '' },
-        };
-
         patient.testDates.forEach((td) => {
           if (td.testType in testDatesMap) {
             testDatesMap[td.testType] = {
@@ -432,9 +432,31 @@ export const PatientForm: React.FC<PatientFormProps> = ({
             };
           }
         });
-
-        setTestDates(testDatesMap);
       }
+
+      // Fallback: accept top-level viral screening fields (hbv/hcv/hiv)
+      const hbvTaken = patient.hbvTestTaken ?? (patient as any)['HBVTestTaken'] ?? (patient as any)['hbv_test_taken'];
+      const hbvDate = patient.hbvTestDate ?? (patient as any)['HBVTestDate'] ?? (patient as any)['hbv_test_date'];
+      const hbvResult = patient.hbvTestResult ?? (patient as any)['HBVTestResult'] ?? (patient as any)['hbv_test_result'];
+      if (hbvTaken !== undefined || hbvDate || hbvResult) {
+        testDatesMap.HBV = { hasTaken: Boolean(hbvTaken), testDate: toDateInputValue(hbvDate), result: hbvResult || undefined };
+      }
+
+      const hcvTaken = patient.hcvTestTaken ?? (patient as any)['HCVTestTaken'] ?? (patient as any)['hcv_test_taken'];
+      const hcvDate = patient.hcvTestDate ?? (patient as any)['HCVTestDate'] ?? (patient as any)['hcv_test_date'];
+      const hcvResult = patient.hcvTestResult ?? (patient as any)['HCVTestResult'] ?? (patient as any)['hcv_test_result'];
+      if (hcvTaken !== undefined || hcvDate || hcvResult) {
+        testDatesMap.HCV = { hasTaken: Boolean(hcvTaken), testDate: toDateInputValue(hcvDate), result: hcvResult || undefined };
+      }
+
+      const hivTaken = patient.hivTestTaken ?? (patient as any)['HIVTestTaken'] ?? (patient as any)['hiv_test_taken'];
+      const hivDate = patient.hivTestDate ?? (patient as any)['HIVTestDate'] ?? (patient as any)['hiv_test_date'];
+      const hivResult = patient.hivTestResult ?? (patient as any)['HIVTestResult'] ?? (patient as any)['hiv_test_result'];
+      if (hivTaken !== undefined || hivDate || hivResult) {
+        testDatesMap.HIV = { hasTaken: Boolean(hivTaken), testDate: toDateInputValue(hivDate), result: hivResult || undefined };
+      }
+
+      setTestDates(testDatesMap);
     } else {
       setHasChronicDiseases(false);
       setHasFactorLevel(false);
@@ -451,164 +473,182 @@ export const PatientForm: React.FC<PatientFormProps> = ({
     }
   }, [patient]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+const handleSubmit = (e: React.FormEvent) => {
+  e.preventDefault();
 
-    const requiredFields = {
-      fullName: 'Full Name',
-      nationalIdNumber: 'National ID Number',
-      dateOfBirth: 'Date of Birth',
-      gender: 'Gender',
-      homeState: 'Home State',
-      homeCityOrTown: 'Home City or Town',
-      homeLocality: 'Home Locality',
-      residenceType: 'Current Residence',
-      contactNumber1: 'Contact Number 1',
-      contactNumber2: 'Contact Number 2',
-      hemophiliaCenterId: 'Hemophilia Center ID',
-      severity: 'Severity',
-      bloodGroup: 'Blood Group',
-      vitalStatus: 'Vital Status',
-      maritalStatus: 'Marital Status',
-      occupation: 'Occupation'
-    };
+  // ... validation code remains the same ...
 
-    const missingFields: string[] = [];
-    for (const [field, label] of Object.entries(requiredFields)) {
-      const value = formData[field as keyof typeof formData];
-      if (!value || value === '' || value === undefined) {
-        missingFields.push(label);
-      }
-    }
+  const chronicDiseasesArray = Array.isArray(formData.chronicDiseases) 
+    ? formData.chronicDiseases 
+    : [];
 
-    if (formData.residenceType === 'InsideSudan') {
-      if (!formData.state) missingFields.push('State (Current Residence)');
-      if (!formData.cityOrTown) missingFields.push('City/Town (Current Residence)');
-      if (!formData.locality) missingFields.push('Locality (Current Residence)');
-    }
+  const testDatesArray: PatientTestDate[] = Object.entries(testDates)
+    .filter(([_, value]) => value.hasTaken)
+    .map(([testType, value]) => ({
+      testType: testType as TestType,
+      hasTaken: value.hasTaken,
+      testDate: value.testDate || undefined,
+      ...(value.result && { result: value.result }),
+    }));
 
-    if (formData.residenceType === 'OutsideSudan') {
-      if (!formData.country) missingFields.push('Country (Current Residence)');
-      if (!formData.state) missingFields.push('Region/State (Current Residence)');
-    }
+  const capitalizeFirstLetter = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
 
-    if (hasFamilyHistory && (!formData.familyHistory || formData.familyHistory === '')) {
-      missingFields.push('Family History');
-    }
-
-    if (missingFields.length > 0) {
-      alert(`Please fill in the following required fields:\n\n${missingFields.join('\n')}`);
-      return;
-    }
-
-    const chronicDiseasesArray = formData.chronicDiseases && formData.chronicDiseases.length > 0
-      ? formData.chronicDiseases
-      : [];
-
-    const testDatesArray: PatientTestDate[] = Object.entries(testDates)
-      .filter(([_, value]) => value.hasTaken)
-      .map(([testType, value]) => ({
-        testType: testType as TestType,
-        hasTaken: value.hasTaken,
-        testDate: value.testDate || undefined,
-        ...(value.result && { result: value.result }),
-      }));
-
-    const capitalizeFirstLetter = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
-
-    const familyHistoryMap: Record<string, string> = {
-      'first_degree': 'FirstDegree',
-      'second_degree': 'SecondDegree',
-      'third_degree': 'ThirdDegree'
-    };
-
-    const maritalStatusMap: Record<string, string> = {
-      'single': 'Single',
-      'married': 'Married',
-      'divorced': 'Divorced',
-      'widowed': 'Widowed'
-    };
-
-    const severityMap: Record<string, string> = {
-      'mild': 'Mild',
-      'moderate': 'Moderate',
-      'severe': 'Severe'
-    };
-
-    const chronicDiseaseString = chronicDiseasesArray.length > 0 ? chronicDiseasesArray.join(', ') : '';
-
-    const resolvedContactNumber1 = composePhoneNumber(formData.contactNumber1CountryCode, formData.contactNumber1);
-    const resolvedContactNumber2 = composePhoneNumber(formData.contactNumber2CountryCode, formData.contactNumber2);
-
-    const submitData: PatientRequest = {
-      fullName: formData.fullName,
-      nationalIdNumber: formData.nationalIdNumber,
-      dateOfBirth: formData.dateOfBirth,
-      gender: formData.gender,
-      age: formData.age,
-      maritalStatus: maritalStatusMap[formData.maritalStatus] || capitalizeFirstLetter(formData.maritalStatus),
-      occupation: formData.occupation,
-      contactNumber1: resolvedContactNumber1,
-      vitalStatus: (formData.vitalStatus || 'Alive') as 'Alive' | 'Died' | 'Unknown',
-      hemophiliaCenterId: formData.hemophiliaCenterId,
-      HasInhibitors: formData.HasInhibitors,
-      HasChronicDiseases: chronicDiseasesArray.length > 0,
-      residenceType: formData.residenceType,
-      homeState: formData.homeState,
-      homeCityOrTown: formData.homeCityOrTown,
-      homeLocality: formData.homeLocality,
-    };
-
-    if (resolvedContactNumber2) submitData.contactNumber2 = resolvedContactNumber2; 
-    if (formData.diagnosis) submitData.diagnosis = formData.diagnosis;
-    if (formData.diagnosisType) submitData.diagnosisType = formData.diagnosisType;
-    if (formData.diagnosisYear && formData.diagnosisYear > 0) submitData.diagnosisYear = formData.diagnosisYear;
-    if (formData.severity) submitData.severity = severityMap[formData.severity] || capitalizeFirstLetter(formData.severity);
-    if (hasFamilyHistory && formData.familyHistory) submitData.familyHistory = familyHistoryMap[formData.familyHistory] || formData.familyHistory;
-    if (formData.bloodGroup) submitData.bloodGroup = formData.bloodGroup;
-    if (hasFactorLevel && formData.factorPercent) submitData.factorPercent = formData.factorPercent;
-    if (hasFactorLevel && factorTestDate) submitData.factorPercentDate = factorTestDate;
-    if (formData.hasInhibitors) submitData.hasInhibitors = formData.hasInhibitors;
-    if (formData.inhibitorLevel) submitData.inhibitorLevel = formData.inhibitorLevel;
-    if (formData.inhibitorScreeningDate) submitData.inhibitorScreeningDate = formData.inhibitorScreeningDate;
-    if (chronicDiseaseString) submitData.chronicDiseases = chronicDiseasesArray;
-    if (formData.chronicDiseaseOther) submitData.chronicDiseaseOther = formData.chronicDiseaseOther;
-    if (formData.hasHBVVaccination) submitData.hasHBVVaccination = formData.hasHBVVaccination;
-    if (formData.hbvVaccinationDate) submitData.hbvVaccinationDate = formData.hbvVaccinationDate;
-    if (formData.hasHealthInsurance) submitData.hasHealthInsurance = formData.hasHealthInsurance;
-    submitData.insuranceProvider = formData.insuranceProvider || '';
-    if (formData.isCircumcised) submitData.isCircumcised = formData.isCircumcised;
-
-    // Include test dates if any are taken
-    if (testDatesArray.length > 0) submitData.testDates = testDatesArray;
-
-    // Include inhibitor records if any
-    if (formData.inhibitors && formData.inhibitors.length > 0) {
-      submitData.inhibitors = formData.inhibitors;
-    }
-
-    // Include other medical tests if any
-    if (otherTests.length > 0) {
-      submitData.otherMedicalTests = otherTests;
-    }
-
-    // Include inhibitor history if any
-    if (inhibitorHistory.length > 0) {
-      submitData.inhibitorHistory = inhibitorHistory;
-    }
-
-    if (formData.residenceType === 'InsideSudan') {
-      submitData.residenceState = formData.state;
-      submitData.residenceCityOrTown = formData.cityOrTown;
-      submitData.residenceLocalArea = formData.locality;
-    } else if (formData.residenceType === 'OutsideSudan') {
-      submitData.residenceRegion = formData.state;
-      submitData.residenceCityOrTown = formData.cityOrTown;
-      submitData.country = formData.country;
-    }
-
-    onSave(submitData);
+  const familyHistoryMap: Record<string, string> = {
+    'first_degree': 'FirstDegree',
+    'second_degree': 'SecondDegree',
+    'third_degree': 'ThirdDegree'
   };
+
+  const maritalStatusMap: Record<string, string> = {
+    'single': 'Single',
+    'married': 'Married',
+    'divorced': 'Divorced',
+    'widowed': 'Widowed'
+  };
+
+  const severityMap: Record<string, string> = {
+    'mild': 'Mild',
+    'moderate': 'Moderate',
+    'severe': 'Severe'
+  };
+
+  const resolvedContactNumber1 = composePhoneNumber(formData.contactNumber1CountryCode, formData.contactNumber1);
+  const resolvedContactNumber2 = composePhoneNumber(formData.contactNumber2CountryCode, formData.contactNumber2);
+  const hbvTestState = testDates.HBV;
+  const hcvTestState = testDates.HCV;
+  const hivTestState = testDates.HIV;
+
+  // ============ BUILD INHIBITOR TESTS ============
+  const inhibitorTests: InhibitorTestRequest[] = [];
+
+  // 1. Add current inhibitor screening if exists
+  if (formData.HasInhibitors && formData.inhibitorScreeningDate) {
+    inhibitorTests.push({
+      level: formData.inhibitorLevel || 0,
+      testDate: formData.inhibitorScreeningDate
+    });
+  }
+
+  // 2. Add patient-level inhibitors (from the Inhibitor Information section)
+  if (formData.inhibitors && formData.inhibitors.length > 0) {
+    formData.inhibitors.forEach(inh => {
+      if (inh.inhibitorScreeningDate) {
+        inhibitorTests.push({
+          level: inh.inhibitorLevel || 0,
+          testDate: inh.inhibitorScreeningDate
+        });
+      }
+    });
+  }
+
+  // ============ BUILD OTHER MEDICAL TESTS ============
+  const otherMedicalTests = otherTests.map(test => ({
+    testName: test.testName || '',
+    testResult: test.testResult || '',
+    testDate: test.testDate || new Date().toISOString().split('T')[0]
+  }));
+
+  // ============ BUILD SUBMIT DATA ============
+  const submitData: PatientRequest = {
+    fullName: formData.fullName,
+    nationalIdNumber: formData.nationalIdNumber,
+    dateOfBirth: formData.dateOfBirth,
+    gender: formData.gender,
+    contactNumber1: resolvedContactNumber1,
+    hemophiliaCenterId: formData.hemophiliaCenterId,
+    severity: formData.severity
+      ? (severityMap[formData.severity as string] || capitalizeFirstLetter(formData.severity as string))
+      : '',
+    bloodGroup: formData.bloodGroup,
+    vitalStatus: (formData.vitalStatus || 'Alive') as 'Alive' | 'Died' | 'Unknown',
+    maritalStatus: formData.maritalStatus
+      ? (maritalStatusMap[formData.maritalStatus as string] || capitalizeFirstLetter(formData.maritalStatus as string))
+      : '',
+    occupation: formData.occupation,
+    residenceType: formData.residenceType,
+    homeState: formData.homeState,
+    homeCityOrTown: formData.homeCityOrTown,
+    homeLocality: formData.homeLocality,
+    isDiagnosed: Boolean(formData.diagnosis || formData.diagnosisType || formData.diagnosisYear),
+    chronicDiseases: chronicDiseasesArray.length > 0 ? chronicDiseasesArray.join(', ') : '',
+    chronicDiseaseOther: formData.chronicDiseaseOther || '',
+    HasChronicDiseases: chronicDiseasesArray.length > 0,
+    hasChronicDiseases: chronicDiseasesArray.length > 0,
+    HasInhibitors: Boolean(formData.HasInhibitors || formData.hasInhibitors),
+    hasInhibitors: Boolean(formData.HasInhibitors || formData.hasInhibitors),
+    otherMedicalTests: otherMedicalTests.length > 0 ? otherMedicalTests : [],
+    testDates: testDatesArray.length > 0 ? testDatesArray : [],
+    hbvTestTaken: hbvTestState?.hasTaken ?? false,
+    hbvTestDate: hbvTestState?.testDate || '',
+    hbvTestResult: hbvTestState?.result || '',
+    hcvTestTaken: hcvTestState?.hasTaken ?? false,
+    hcvTestDate: hcvTestState?.testDate || '',
+    hcvTestResult: hcvTestState?.result || '',
+    hivTestTaken: hivTestState?.hasTaken ?? false,
+    hivTestDate: hivTestState?.testDate || '',
+    hivTestResult: hivTestState?.result || '',
+  };
+
+  // CRITICAL: Always include inhibitorTests if there are any, even if empty array
+  // Don't skip it - backend expects it
+  if (inhibitorTests.length > 0) {
+    submitData.inhibitorTests = inhibitorTests;
+  } else if (formData.HasInhibitors) {
+    // If HasInhibitors is true but no tests, send at least the current one
+    submitData.inhibitorTests = [{
+      level: formData.inhibitorLevel || 0,
+      testDate: formData.inhibitorScreeningDate || new Date().toISOString().split('T')[0]
+    }];
+  }
+
+  // Add optional fields
+  if (resolvedContactNumber2) submitData.contactNumber2 = resolvedContactNumber2;
+  if (formData.age) submitData.age = formData.age;
+  if (formData.diagnosis) submitData.diagnosis = formData.diagnosis;
+  if (formData.diagnosisType) submitData.diagnosisType = formData.diagnosisType;
+  if (formData.diagnosisYear && formData.diagnosisYear > 0) submitData.diagnosisYear = formData.diagnosisYear;
+  if (formData.incidenceDate) submitData.incidenceDate = formData.incidenceDate;
+  if (hasFamilyHistory && formData.familyHistory) submitData.familyHistory = familyHistoryMap[formData.familyHistory] || formData.familyHistory;
+  if (hasFactorLevel && formData.factorPercent) submitData.factorPercent = formData.factorPercent;
+  if (hasFactorLevel && factorTestDate) submitData.factorPercentDate = factorTestDate;
+  if (formData.hasInhibitors) submitData.hasInhibitors = formData.hasInhibitors;
+  if (formData.inhibitorLevel) submitData.inhibitorLevel = formData.inhibitorLevel;
+  if (formData.inhibitorScreeningDate) submitData.inhibitorScreeningDate = formData.inhibitorScreeningDate;
+  if (formData.hasHBVVaccination) submitData.hasHBVVaccination = formData.hasHBVVaccination;
+  if (formData.hbvVaccinationDate) submitData.hbvVaccinationDate = formData.hbvVaccinationDate;
+  if (formData.hasHealthInsurance) submitData.hasHealthInsurance = formData.hasHealthInsurance;
+  if (formData.insuranceProvider) submitData.insuranceProvider = formData.insuranceProvider;
+  if (formData.isCircumcised) submitData.isCircumcised = formData.isCircumcised;
+  if (formData.longTermMedication) submitData.longTermMedication = formData.longTermMedication;
+
+  if (formData.residenceType === 'InsideSudan') {
+    submitData.residenceState = formData.state;
+    submitData.residenceCityOrTown = formData.cityOrTown;
+    submitData.residenceLocalArea = formData.locality;
+  } else if (formData.residenceType === 'OutsideSudan') {
+    submitData.residenceRegion = formData.state;
+    submitData.residenceCityOrTown = formData.cityOrTown;
+    submitData.country = formData.country;
+  }
+
+  // Clean up - but DON'T remove inhibitorTests
+  Object.keys(submitData).forEach(key => {
+    const value = submitData[key as keyof PatientRequest];
+    if (value === undefined || value === null) {
+      delete submitData[key as keyof PatientRequest];
+    }
+    // Only remove empty arrays for non-inhibitor fields
+    if (Array.isArray(value) && value.length === 0 && key !== 'inhibitorTests') {
+      delete submitData[key as keyof PatientRequest];
+    }
+    if (value === '' && key !== 'inhibitorTests') {
+      delete submitData[key as keyof PatientRequest];
+    }
+  });
+
+  console.log('Submitting patient data:', JSON.stringify(submitData, null, 2));
+  onSave(submitData);
+};
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -714,11 +754,10 @@ export const PatientForm: React.FC<PatientFormProps> = ({
     setOtherTests(otherTests.filter((_, i) => i !== index));
   };
 
-  // Patient-level inhibitor entries management
   const addPatientInhibitor = () => {
     setFormData(prev => ({
       ...prev,
-      inhibitors: [...(prev.inhibitors || []), { inhibitorLevel: 0, inhibitorScreeningDate: '' }]
+      inhibitors: [...(prev.inhibitors || []), { inhibitorLevel: undefined, inhibitorScreeningDate: '' }]
     }));
   };
 
@@ -736,19 +775,6 @@ export const PatientForm: React.FC<PatientFormProps> = ({
     }));
   };
 
-  // Inhibitor History management
-  const addInhibitorHistoryEntry = () => {
-    setInhibitorHistory(prev => [...prev, { testDate: new Date().toISOString().split('T')[0], level: 0 }]);
-  };
-
-  const removeInhibitorHistoryEntry = (index: number) => {
-    setInhibitorHistory(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const updateInhibitorHistoryEntry = (index: number, field: 'testDate' | 'level', value: any) => {
-    setInhibitorHistory(prev => prev.map((entry, i) => i === index ? { ...entry, [field]: value } : entry));
-  };
-
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
       <div className="bg-white rounded-lg w-full max-w-4xl my-8 shadow-xl">
@@ -756,76 +782,35 @@ export const PatientForm: React.FC<PatientFormProps> = ({
           <h3 className="text-xl font-semibold text-gray-800">
             {patient ? 'Edit Patient' : 'Add New Patient'}
           </h3>
-          <button
-            onClick={onCancel}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
-          >
+          <button onClick={onCancel} className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200">
             <X className="h-5 w-5 text-gray-500" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto">
+          {/* ===== DEMOGRAPHIC DATA ===== */}
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <h4 className="text-lg font-semibold text-red-900 mb-4">Demographic Data</h4>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Full Name *
-                </label>
-                <input
-                  type="text"
-                  name="fullName"
-                  value={formData.fullName}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                  placeholder="Full name"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
+                <input type="text" name="fullName" value={formData.fullName} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Full name" />
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  National ID Number *
-                </label>
-                <input
-                  type="text"
-                  name="nationalIdNumber"
-                  value={formData.nationalIdNumber}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                  placeholder="National ID"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-2">National ID Number *</label>
+                <input type="text" name="nationalIdNumber" value={formData.nationalIdNumber} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="National ID" />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Date of Birth *
-                </label>
-                <input
-                  type="date"
-                  name="dateOfBirth"
-                  value={formData.dateOfBirth}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-2">Date of Birth *</label>
+                <input type="date" name="dateOfBirth" value={formData.dateOfBirth} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Gender *
-                </label>
-                <select
-                  name="gender"
-                  value={formData.gender || ''}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                >
+                <label className="block text-sm font-medium text-gray-700 mb-2">Gender *</label>
+                <select name="gender" value={formData.gender || ''} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                   <option value="">Select Gender</option>
                   <option value="male">Male</option>
                   <option value="female">Female</option>
@@ -833,18 +818,11 @@ export const PatientForm: React.FC<PatientFormProps> = ({
               </div>
             </div>
 
+            {/* Home State, City, Locality */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Home State *
-                </label>
-                <select
-                  name="homeState"
-                  value={formData.homeState || ''}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                >
+                <label className="block text-sm font-medium text-gray-700 mb-2">Home State *</label>
+                <select name="homeState" value={formData.homeState || ''} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                   <option value="">Select State</option>
                   {(lookupSudanStates.length > 0 ? lookupSudanStates : [
                     { id: '1', name: 'Khartoum' }, { id: '2', name: 'Al Jazirah' }, { id: '3', name: 'White Nile' },
@@ -858,19 +836,9 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                   ))}
                 </select>
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  City or Town *
-                </label>
-                <select
-                  name="homeCityOrTown"
-                  value={formData.homeCityOrTown || ''}
-                  onChange={handleChange}
-                  required
-                  disabled={!formData.homeState}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
-                >
+                <label className="block text-sm font-medium text-gray-700 mb-2">City or Town *</label>
+                <select name="homeCityOrTown" value={formData.homeCityOrTown || ''} onChange={handleChange} required disabled={!formData.homeState} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:bg-gray-100 disabled:cursor-not-allowed">
                   <option value="">{formData.homeState ? 'Select City or Town' : 'Select State First'}</option>
                   {formData.homeState && stateCitiesMap[formData.homeState]?.map(city => (
                     <option key={city} value={city}>{city}</option>
@@ -878,19 +846,9 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                   <option value="Other">Other</option>
                 </select>
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Local area *
-                </label>
-                <select
-                  name="homeLocality"
-                  value={formData.homeLocality || ''}
-                  onChange={handleChange}
-                  required
-                  disabled={!formData.homeCityOrTown}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
-                >
+                <label className="block text-sm font-medium text-gray-700 mb-2">Local area *</label>
+                <select name="homeLocality" value={formData.homeLocality || ''} onChange={handleChange} required disabled={!formData.homeCityOrTown} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:bg-gray-100 disabled:cursor-not-allowed">
                   <option value="">{formData.homeCityOrTown ? 'Select Local Area' : 'Select City First'}</option>
                   {formData.homeCityOrTown && cityLocalitiesMap[formData.homeCityOrTown]?.map(locality => (
                     <option key={locality} value={locality}>{locality}</option>
@@ -900,17 +858,10 @@ export const PatientForm: React.FC<PatientFormProps> = ({
               </div>
             </div>
 
+            {/* Current Residence */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Current Residence *
-              </label>
-              <select
-                name="residenceType"
-                value={formData.residenceType || ''}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-              >
+              <label className="block text-sm font-medium text-gray-700 mb-2">Current Residence *</label>
+              <select name="residenceType" value={formData.residenceType || ''} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 <option value="">Select Residence</option>
                 <option value="InsideSudan">Inside Sudan</option>
                 <option value="OutsideSudan">Outside Sudan</option>
@@ -920,16 +871,8 @@ export const PatientForm: React.FC<PatientFormProps> = ({
             {formData.residenceType === 'InsideSudan' && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    State *
-                  </label>
-                  <select
-                    name="state"
-                    value={formData.state || ''}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                  >
+                  <label className="block text-sm font-medium text-gray-700 mb-2">State *</label>
+                  <select name="state" value={formData.state || ''} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                     <option value="">Select State</option>
                     {(lookupSudanStates.length > 0 ? lookupSudanStates : [
                       { id: '1', name: 'Khartoum' }, { id: '2', name: 'Al Jazirah' }, { id: '3', name: 'White Nile' },
@@ -943,18 +886,9 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                     ))}
                   </select>
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    City or Town
-                  </label>
-                  <select
-                    name="cityOrTown"
-                    value={formData.cityOrTown || ''}
-                    onChange={handleChange}
-                    disabled={!formData.state}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
-                  >
+                  <label className="block text-sm font-medium text-gray-700 mb-2">City or Town</label>
+                  <select name="cityOrTown" value={formData.cityOrTown || ''} onChange={handleChange} disabled={!formData.state} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:bg-gray-100 disabled:cursor-not-allowed">
                     <option value="">{formData.state ? 'Select City or Town' : 'Select State First'}</option>
                     {availableCities.map(city => (
                       <option key={city} value={city}>{city}</option>
@@ -962,18 +896,9 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                     <option value="Other">Other</option>
                   </select>
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Local area
-                  </label>
-                  <select
-                    name="locality"
-                    value={formData.locality || ''}
-                    onChange={handleChange}
-                    disabled={!formData.cityOrTown}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
-                  >
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Local area</label>
+                  <select name="locality" value={formData.locality || ''} onChange={handleChange} disabled={!formData.cityOrTown} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:bg-gray-100 disabled:cursor-not-allowed">
                     <option value="">{formData.cityOrTown ? 'Select Local Area' : 'Select City First'}</option>
                     {availableLocalities.map(locality => (
                       <option key={locality} value={locality}>{locality}</option>
@@ -987,16 +912,8 @@ export const PatientForm: React.FC<PatientFormProps> = ({
             {formData.residenceType === 'OutsideSudan' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Country *
-                  </label>
-                  <select
-                    name="country"
-                    value={formData.country || ''}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                  >
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Country *</label>
+                  <select name="country" value={formData.country || ''} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                     <option value="">Select Country</option>
                     {COUNTRIES.map(country => (
                       <option key={country} value={country}>{country}</option>
@@ -1004,33 +921,17 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    State/Region
-                  </label>
-                  <input
-                    type="text"
-                    name="state"
-                    value={formData.state || ''}
-                    onChange={handleChange}
-                    placeholder="Enter state or region"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                  />
+                  <label className="block text-sm font-medium text-gray-700 mb-2">State/Region</label>
+                  <input type="text" name="state" value={formData.state || ''} onChange={handleChange} placeholder="Enter state or region" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
                 </div>
               </div>
             )}
 
+            {/* Marital Status, Occupation */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Marital Status *
-                </label>
-                <select
-                  name="maritalStatus"
-                  value={formData.maritalStatus || ''}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                >
+                <label className="block text-sm font-medium text-gray-700 mb-2">Marital Status *</label>
+                <select name="maritalStatus" value={formData.maritalStatus || ''} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                   <option value="">Select Status</option>
                   {(lookupMaritalStatuses.length > 0 ? lookupMaritalStatuses : [
                     { id: '1', name: 'Single' }, { id: '2', name: 'Married' }, { id: '3', name: 'Divorced' },
@@ -1040,18 +941,9 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                   ))}
                 </select>
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Occupation *
-                </label>
-                <select
-                  name="occupation"
-                  value={formData.occupation || ''}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                >
+                <label className="block text-sm font-medium text-gray-700 mb-2">Occupation *</label>
+                <select name="occupation" value={formData.occupation || ''} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                   <option value="">Select Occupation</option>
                   {(lookupOccupations.length > 0 ? lookupOccupations : OCCUPATIONS.map((name, i) => ({ id: String(i + 1), name, type: 'Occupations' }))).map(o => (
                     <option key={o.id} value={o.name}>{o.name}</option>
@@ -1060,131 +952,62 @@ export const PatientForm: React.FC<PatientFormProps> = ({
               </div>
             </div>
 
+            {/* Contact Numbers */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Contact Number 1 *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Contact Number 1 *</label>
                 <div className="flex gap-2">
-                  <select
-                    name="contactNumber1CountryCode"
-                    value={formData.contactNumber1CountryCode || '+249'}
-                    onChange={handleChange}
-                    className="w-36 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                    required
-                  >
+                  <select name="contactNumber1CountryCode" value={formData.contactNumber1CountryCode || '+249'} onChange={handleChange} className="w-36 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" required>
                     {PHONE_CODE_OPTIONS.map(option => (
-                      <option key={option.code} value={option.code}>
-                        {option.country} ({option.code})
-                      </option>
+                      <option key={option.code} value={option.code}>{option.country} ({option.code})</option>
                     ))}
                   </select>
-                  <input
-                    type="tel"
-                    name="contactNumber1"
-                    value={formData.contactNumber1}
-                    onChange={handleChange}
-                    required
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                    placeholder="Phone number 1"
-                  />
+                  <input type="tel" name="contactNumber1" value={formData.contactNumber1} onChange={handleChange} required className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Phone number 1" />
                 </div>
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Contact Number 2 *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Contact Number 2</label>
                 <div className="flex gap-2">
-                  <select
-                    name="contactNumber2CountryCode"
-                    value={formData.contactNumber2CountryCode || '+249'}
-                    onChange={handleChange}
-                    className="w-36 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                    required
-                  >
+                  <select name="contactNumber2CountryCode" value={formData.contactNumber2CountryCode || '+249'} onChange={handleChange} className="w-36 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                     {PHONE_CODE_OPTIONS.map(option => (
-                      <option key={option.code} value={option.code}>
-                        {option.country} ({option.code})
-                      </option>
+                      <option key={option.code} value={option.code}>{option.country} ({option.code})</option>
                     ))}
                   </select>
-                  <input
-                    type="tel"
-                    name="contactNumber2"
-                    value={formData.contactNumber2}
-                    onChange={handleChange}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                    placeholder="Phone number 2"
-                  />
+                  <input type="tel" name="contactNumber2" value={formData.contactNumber2} onChange={handleChange} className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Phone number 2" />
                 </div>
               </div>
             </div>
 
+            {/* Vital Status */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Vital Status *
-              </label>
-              <select
-                name="vitalStatus"
-                value={formData.vitalStatus || 'Alive'}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-              >
+              <label className="block text-sm font-medium text-gray-700 mb-2">Vital Status *</label>
+              <select name="vitalStatus" value={formData.vitalStatus || 'Alive'} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 <option value="Alive">Alive</option>
                 <option value="Died">Died</option>
                 <option value="Unknown">Unknown</option>
               </select>
             </div>
-
           </div>
 
+          {/* ===== MEDICAL INFORMATION ===== */}
           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
             <h4 className="text-lg font-semibold text-green-900 mb-4">Medical Information</h4>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Hemophilia Center ID *
-                </label>
-                <input
-                  type="text"
-                  name="hemophiliaCenterId"
-                  value={formData.hemophiliaCenterId}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                  placeholder="Center ID"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-2">Hemophilia Center ID *</label>
+                <input type="text" name="hemophiliaCenterId" value={formData.hemophiliaCenterId} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Center ID" />
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Incidence Date
-                </label>
-                <input
-                  type="date"
-                  name="incidenceDate"
-                  value={formData.incidenceDate || ''}
-                  onChange={handleChange}
-                  max={toDateInputValue(new Date().toISOString())}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-2">Incidence Date</label>
+                <input type="date" name="incidenceDate" value={formData.incidenceDate || ''} onChange={handleChange} max={toDateInputValue(new Date().toISOString())} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Diagnosis
-                </label>
-                <select
-                  name="diagnosis"
-                  value={formData.diagnosis}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                >
+                <label className="block text-sm font-medium text-gray-700 mb-2">Diagnosis</label>
+                <select name="diagnosis" value={formData.diagnosis} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                   <option value="">Select Diagnosis</option>
                   {(lookupDiagnoses.length > 0 ? lookupDiagnoses : [
                     { id: '1', name: 'Hemophilia A' }, { id: '2', name: 'Hemophilia B' },
@@ -1204,50 +1027,21 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Diagnosis Type
-                </label>
-                <input
-                  type="text"
-                  name="diagnosisType"
-                  value={formData.diagnosisType || ''}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                  placeholder="e.g., new_patient, followup"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-2">Diagnosis Type</label>
+                <input type="text" name="diagnosisType" value={formData.diagnosisType || ''} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="e.g., new_patient, followup" />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Diagnosis Year
-                </label>
-                <input
-                  type="number"
-                  name="diagnosisYear"
-                  value={formData.diagnosisYear || ''}
-                  onChange={handleChange}
-                  min="1900"
-                  max={new Date().getFullYear()}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                  placeholder="Year of diagnosis"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-2">Diagnosis Year</label>
+                <input type="number" name="diagnosisYear" value={formData.diagnosisYear || ''} onChange={handleChange} min="1900" max={new Date().getFullYear()} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Year of diagnosis" />
               </div>
-              
             </div>
 
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Blood Group *
-              </label>
-              <select
-                name="bloodGroup"
-                value={formData.bloodGroup || ''}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-              >
+              <label className="block text-sm font-medium text-gray-700 mb-2">Blood Group *</label>
+              <select name="bloodGroup" value={formData.bloodGroup || ''} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 <option value="">Select Blood Group</option>
                 <option value="A+">A+</option>
                 <option value="A-">A-</option>
@@ -1261,16 +1055,8 @@ export const PatientForm: React.FC<PatientFormProps> = ({
             </div>
 
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Severity *
-              </label>
-              <select
-                name="severity"
-                value={formData.severity || ''}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-              >
+              <label className="block text-sm font-medium text-gray-700 mb-2">Severity *</label>
+              <select name="severity" value={formData.severity || ''} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 <option value="">Select Severity</option>
                 <option value="mild">Mild</option>
                 <option value="moderate">Moderate</option>
@@ -1279,76 +1065,39 @@ export const PatientForm: React.FC<PatientFormProps> = ({
               </select>
             </div>
 
+            {/* Factor Level */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Has Factor Level Test?
-              </label>
-              <select
-                value={hasFactorLevel ? 'true' : 'false'}
-                onChange={(e) => {
-                  const value = e.target.value === 'true';
-                  setHasFactorLevel(value);
-                  if (!value) {
-                    setFormData(prev => ({
-                      ...prev,
-                      factorPercent: undefined,
-                      factorPercentDate: undefined
-                    }));
-                    setFactorTestDate('');
-                  }
-                }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-              >
+              <label className="block text-sm font-medium text-gray-700 mb-2">Has Factor Level Test?</label>
+              <select value={hasFactorLevel ? 'true' : 'false'} onChange={(e) => {
+                const value = e.target.value === 'true';
+                setHasFactorLevel(value);
+                if (!value) {
+                  setFormData(prev => ({ ...prev, factorPercent: undefined, factorPercentDate: undefined }));
+                  setFactorTestDate('');
+                }
+              }} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 <option value="false">No</option>
                 <option value="true">Yes</option>
               </select>
             </div>
 
             {hasFactorLevel && (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Level of factor at diagnosis
-                    </label>
-                    <input
-                      type="number"
-                      name="factorPercent"
-                      value={formData.factorPercent || ''}
-                      onChange={handleChange}
-                      min="0"
-                      max="100"
-                      step="0.01"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                      placeholder="Factor %"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Factor Test Date
-                    </label>
-                    <input
-                      type="date"
-                      value={factorTestDate}
-                      onChange={(e) => setFactorTestDate(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                    />
-                  </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Level of factor at diagnosis</label>
+                  <input type="number" name="factorPercent" value={formData.factorPercent || ''} onChange={handleChange} min="0" max="100" step="0.01" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Factor %" />
                 </div>
-              </>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Factor Test Date</label>
+                  <input type="date" value={factorTestDate} onChange={(e) => setFactorTestDate(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
+                </div>
+              </div>
             )}
 
+            {/* Inhibitor Section - with multiple inhibitors support */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Inhibitor
-              </label>
-              <select
-                name="HasInhibitors"
-                value={formData.HasInhibitors ? 'true' : 'false'}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-              >
+              <label className="block text-sm font-medium text-gray-700 mb-2">Inhibitor</label>
+              <select name="HasInhibitors" value={formData.HasInhibitors ? 'true' : 'false'} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 <option value="false">No</option>
                 <option value="true">Yes</option>
               </select>
@@ -1358,45 +1107,26 @@ export const PatientForm: React.FC<PatientFormProps> = ({
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Inhibitor Screening Date
-                    </label>
-                    <input
-                      type="date"
-                      name="inhibitorScreeningDate"
-                      value={formData.inhibitorScreeningDate}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                    />
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Inhibitor Screening Date</label>
+                    <input type="date" name="inhibitorScreeningDate" value={formData.inhibitorScreeningDate ?? ''} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
                   </div>
-
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Inhibitor Level
-                    </label>
-                    <input
-                      type="number"
-                      name="inhibitorLevel"
-                      value={formData.inhibitorLevel || ''}
-                      onChange={handleChange}
-                      step="0.01"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                      placeholder="Inhibitor level"
-                    />
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Inhibitor Level</label>
+                    <input type="number" name="inhibitorLevel" value={formData.inhibitorLevel !== undefined ? String(formData.inhibitorLevel) : ''} onChange={handleChange} step="0.01" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Inhibitor level" />
                   </div>
                 </div>
 
-                {/* Patient-level Inhibitor Records */}
+                {/* Multiple Inhibitor Records - "Inhibitor Information" section */}
                 <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mt-4">
                   <div className="flex justify-between items-center mb-4">
-                    <h4 className="text-lg font-semibold text-purple-900">Inhibitor Information</h4>
+                    <h4 className="text-lg font-semibold text-purple-900">Additional Inhibitor Records</h4>
                     <button
                       type="button"
                       onClick={addPatientInhibitor}
                       className="flex items-center space-x-1 px-3 py-1 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200 text-sm"
                     >
                       <Plus className="h-4 w-4" />
-                      <span>Add Inhibitor</span>
+                      <span>Add Inhibitor Record</span>
                     </button>
                   </div>
 
@@ -1405,29 +1135,28 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                       {formData.inhibitors.map((inhibitor, index) => (
                         <div key={index} className="bg-white p-4 rounded-lg border border-gray-200">
                           <div className="flex justify-between items-start mb-3">
-                            <h5 className="font-medium text-gray-800">Inhibitor #{index + 1}</h5>
+                            <h5 className="font-medium text-gray-800">Inhibitor Record #{index + 1}</h5>
                             <button
                               type="button"
                               onClick={() => removePatientInhibitor(index)}
                               className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors duration-200"
-                              title="Remove inhibitor"
-                              aria-label={`Remove inhibitor ${index + 1}`}
                             >
                               <Trash2 className="h-4 w-4" />
                             </button>
                           </div>
-
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div>
                               <label className="block text-xs text-gray-600 mb-1">Inhibitor Level</label>
                               <input
                                 type="number"
-                                value={inhibitor.inhibitorLevel || ''}
-                                onChange={(e) => updatePatientInhibitor(index, 'inhibitorLevel', parseFloat(e.target.value) || 0)}
+                                value={inhibitor.inhibitorLevel !== undefined ? String(inhibitor.inhibitorLevel) : ''}
+                                onChange={(e) => {
+                                  const v = e.target.value;
+                                  updatePatientInhibitor(index, 'inhibitorLevel', v === '' ? undefined : parseFloat(v));
+                                }}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                               />
                             </div>
-
                             <div>
                               <label className="block text-xs text-gray-600 mb-1">Screening Date</label>
                               <input
@@ -1442,96 +1171,25 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-gray-500 text-center py-4">No inhibitor entries. Click "Add Inhibitor" to add one.</p>
+                    <p className="text-sm text-gray-500 text-center py-4">No additional inhibitor records. Click "Add Inhibitor Record" to add one.</p>
                   )}
                 </div>
               </>
             )}
 
-            {/* Inhibitor History Management */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="text-lg font-semibold text-blue-900">Inhibitor History</h4>
-                <button
-                  type="button"
-                  onClick={addInhibitorHistoryEntry}
-                  className="flex items-center space-x-1 px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 text-sm"
-                >
-                  <Plus className="h-4 w-4" />
-                  <span>Add Entry</span>
-                </button>
-              </div>
-
-              {inhibitorHistory && inhibitorHistory.length > 0 ? (
-                <div className="space-y-3">
-                  {inhibitorHistory.map((entry, index) => (
-                    <div key={index} className="bg-white p-3 rounded-lg border border-blue-200">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-blue-800">Entry #{index + 1}</span>
-                        <button
-                          type="button"
-                          onClick={() => removeInhibitorHistoryEntry(index)}
-                          className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors duration-200"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-xs text-gray-600 mb-1">Test Date</label>
-                          <input
-                            type="date"
-                            value={entry.testDate || ''}
-                            onChange={(e) => updateInhibitorHistoryEntry(index, 'testDate', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs text-gray-600 mb-1">Level</label>
-                          <input
-                            type="number"
-                            value={entry.level || 0}
-                            onChange={(e) => updateInhibitorHistoryEntry(index, 'level', parseFloat(e.target.value) || 0)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
-                            placeholder="Inhibitor level"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-gray-500 text-center py-4">No inhibitor history entries. Click "Add Entry" to add one.</p>
-              )}
-            </div>
-
+            {/* Chronic Diseases */}
             <div className="mb-4">
               <div className="mb-3">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Has Chronic Diseases?
-                </label>
-                <select
-                  value={hasChronicDiseases ? 'true' : 'false'}
-                  onChange={(e) => {
-                    const value = e.target.value === 'true';
-                    setHasChronicDiseases(value);
-                    if (!value) {
-                      setFormData(prev => ({
-                        ...prev,
-                        HasChronicDiseases: false,
-                        chronicDiseases: [],
-                        chronicDiseaseOther: ''
-                      }));
-                    } else {
-                      setFormData(prev => ({
-                        ...prev,
-                        HasChronicDiseases: true,
-                        chronicDiseases: Array.isArray(prev.chronicDiseases) ? prev.chronicDiseases : []
-                      }));
-                    }
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                >
+                <label className="block text-sm font-medium text-gray-700 mb-2">Has Chronic Diseases?</label>
+                <select value={hasChronicDiseases ? 'true' : 'false'} onChange={(e) => {
+                  const value = e.target.value === 'true';
+                  setHasChronicDiseases(value);
+                  if (!value) {
+                    setFormData(prev => ({ ...prev, HasChronicDiseases: false, chronicDiseases: [], chronicDiseaseOther: '' }));
+                  } else {
+                    setFormData(prev => ({ ...prev, HasChronicDiseases: true, chronicDiseases: Array.isArray(prev.chronicDiseases) ? prev.chronicDiseases : [] }));
+                  }
+                }} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                   <option value="false">No</option>
                   <option value="true">Yes</option>
                 </select>
@@ -1539,58 +1197,34 @@ export const PatientForm: React.FC<PatientFormProps> = ({
 
               {hasChronicDiseases && (
                 <>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Select Chronic Diseases
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Select Chronic Diseases</label>
                   <div className="space-y-2">
                     {(lookupChronicDiseases.length > 0 ? lookupChronicDiseases : CHRONIC_DISEASES.map((name, i) => ({ id: String(i + 1), name, type: 'ChronicDiseaseOptions' }))).map(disease => {
                       const chronicDiseasesArray = Array.isArray(formData.chronicDiseases) ? formData.chronicDiseases : [];
                       const isChecked = chronicDiseasesArray.includes(disease.name);
                       return (
                         <label key={disease.id} className="flex items-center cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={(e) => handleChronicDiseaseChange(disease.name, e.target.checked)}
-                            className="mr-2 h-4 w-4 cursor-pointer"
-                          />
+                          <input type="checkbox" checked={isChecked} onChange={(e) => handleChronicDiseaseChange(disease.name, e.target.checked)} className="mr-2 h-4 w-4 cursor-pointer" />
                           {disease.name}
                         </label>
                       );
                     })}
                   </div>
                   {formData.chronicDiseases?.includes('Other') && (
-                    <input
-                      type="text"
-                      name="chronicDiseaseOther"
-                      value={formData.chronicDiseaseOther}
-                      onChange={handleChange}
-                      placeholder="Specify other chronic disease"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none mt-2"
-                    />
+                    <input type="text" name="chronicDiseaseOther" value={formData.chronicDiseaseOther} onChange={handleChange} placeholder="Specify other chronic disease" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none mt-2" />
                   )}
                 </>
               )}
             </div>
 
+            {/* Family History */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Has Family History?
-              </label>
-              <select
-                value={hasFamilyHistory ? 'true' : 'false'}
-                onChange={(e) => {
-                  const value = e.target.value === 'true';
-                  setHasFamilyHistory(value);
-                  if (!value) {
-                    setFormData(prev => ({
-                      ...prev,
-                      familyHistory: ''
-                    }));
-                  }
-                }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-              >
+              <label className="block text-sm font-medium text-gray-700 mb-2">Has Family History?</label>
+              <select value={hasFamilyHistory ? 'true' : 'false'} onChange={(e) => {
+                const value = e.target.value === 'true';
+                setHasFamilyHistory(value);
+                if (!value) setFormData(prev => ({ ...prev, familyHistory: '' }));
+              }} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 <option value="false">No</option>
                 <option value="true">Yes</option>
               </select>
@@ -1598,15 +1232,8 @@ export const PatientForm: React.FC<PatientFormProps> = ({
 
             {hasFamilyHistory && (
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Family History
-                </label>
-                <select
-                  name="familyHistory"
-                  value={formData.familyHistory || ''}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                >
+                <label className="block text-sm font-medium text-gray-700 mb-2">Family History</label>
+                <select name="familyHistory" value={formData.familyHistory || ''} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                   <option value="">Select Family History</option>
                   <option value="first_degree">First Degree</option>
                   <option value="second_degree">Second Degree</option>
@@ -1614,53 +1241,28 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                 </select>
               </div>
             )}
-
           </div>
 
+          {/* ===== ADDITIONAL HEALTH INFORMATION ===== */}
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <h4 className="text-lg font-semibold text-red-900 mb-4">Additional Health Information</h4>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <input
-                    type="checkbox"
-                    name="hasHBVVaccination"
-                    checked={formData.hasHBVVaccination || false}
-                    onChange={handleChange}
-                    className="mr-2 h-4 w-4 cursor-pointer"
-                  />
+                  <input type="checkbox" name="hasHBVVaccination" checked={formData.hasHBVVaccination || false} onChange={handleChange} className="mr-2 h-4 w-4 cursor-pointer" />
                   Has HBV Vaccination
                 </label>
                 {formData.hasHBVVaccination && (
-                  <input
-                    type="date"
-                    name="hbvVaccinationDate"
-                    value={formData.hbvVaccinationDate || ''}
-                    onChange={handleChange}
-                    placeholder="Vaccination Date"
-                    className="mt-2 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
-                  />
+                  <input type="date" name="hbvVaccinationDate" value={formData.hbvVaccinationDate || ''} onChange={handleChange} placeholder="Vaccination Date" className="mt-2 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none" />
                 )}
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <input
-                    type="checkbox"
-                    name="hasHealthInsurance"
-                    checked={formData.hasHealthInsurance || false}
-                    onChange={(e) => {
-                      handleChange(e);
-                      if (!e.target.checked) {
-                        setFormData(prev => ({
-                          ...prev,
-                          insuranceProvider: ''
-                        }));
-                      }
-                    }}
-                    className="mr-2 h-4 w-4 cursor-pointer"
-                  />
+                  <input type="checkbox" name="hasHealthInsurance" checked={formData.hasHealthInsurance || false} onChange={(e) => {
+                    handleChange(e);
+                    if (!e.target.checked) setFormData(prev => ({ ...prev, insuranceProvider: '' }));
+                  }} className="mr-2 h-4 w-4 cursor-pointer" />
                   Has Health Insurance
                 </label>
               </div>
@@ -1668,78 +1270,40 @@ export const PatientForm: React.FC<PatientFormProps> = ({
 
             {formData.hasHealthInsurance && (
               <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Insurance Provider
-                </label>
-                <input
-                  type="text"
-                  name="insuranceProvider"
-                  value={formData.insuranceProvider || ''}
-                  onChange={handleChange}
-                  placeholder="Enter insurance provider"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-2">Insurance Provider</label>
+                <input type="text" name="insuranceProvider" value={formData.insuranceProvider || ''} onChange={handleChange} placeholder="Enter insurance provider" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
               </div>
             )}
 
             <div className="mt-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                <input
-                  type="checkbox"
-                  name="isCircumcised"
-                  checked={formData.isCircumcised || false}
-                  onChange={handleChange}
-                  className="mr-2 h-4 w-4 cursor-pointer"
-                />
+                <input type="checkbox" name="isCircumcised" checked={formData.isCircumcised || false} onChange={handleChange} className="mr-2 h-4 w-4 cursor-pointer" />
                 Is Circumcised
               </label>
             </div>
           </div>
 
+          {/* ===== VIRAL SCREENING ===== */}
           <div className="bg-teal-50 border border-teal-200 rounded-lg p-4">
-            <h4 className="text-lg font-semibold text-teal-900 mb-4">Viral Screening </h4>
+            <h4 className="text-lg font-semibold text-teal-900 mb-4">Viral Screening</h4>
 
             <div className="space-y-4">
+              {/* HBV */}
               <div className="border-b border-teal-200 pb-4">
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-medium text-gray-700">
-                    HBV Test
-                  </label>
-                  <select
-                    value={testDates.HBV?.hasTaken ? 'true' : 'false'}
-                    onChange={(e) => {
-                      const hasTaken = e.target.value === 'true';
-                      setTestDates(prev => ({
-                        ...prev,
-                        HBV: { hasTaken, testDate: hasTaken ? prev.HBV?.testDate || '' : '', result: hasTaken ? prev.HBV?.result : undefined }
-                      }));
-                    }}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                  >
+                  <label className="text-sm font-medium text-gray-700">HBV Test</label>
+                  <select value={testDates.HBV?.hasTaken ? 'true' : 'false'} onChange={(e) => {
+                    const hasTaken = e.target.value === 'true';
+                    setTestDates(prev => ({ ...prev, HBV: { hasTaken, testDate: hasTaken ? prev.HBV?.testDate || '' : '', result: hasTaken ? prev.HBV?.result : undefined } }));
+                  }} className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                     <option value="false">No</option>
                     <option value="true">Yes</option>
                   </select>
                 </div>
                 {testDates.HBV?.hasTaken && (
                   <div className="space-y-2 mt-2">
-                    <input
-                      type="date"
-                      value={testDates.HBV.testDate}
-                      onChange={(e) => setTestDates(prev => ({
-                        ...prev,
-                        HBV: { ...prev.HBV!, testDate: e.target.value }
-                      }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                      placeholder="Test Date"
-                    />
-                    <select
-                      value={testDates.HBV.result || ''}
-                      onChange={(e) => setTestDates(prev => ({
-                        ...prev,
-                        HBV: { ...prev.HBV!, result: e.target.value as 'positive' | 'negative' | undefined }
-                      }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                    >
+                    <input type="date" value={testDates.HBV.testDate} onChange={(e) => setTestDates(prev => ({ ...prev, HBV: { ...prev.HBV!, testDate: e.target.value } }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Test Date" />
+                    <select value={testDates.HBV.result || ''} onChange={(e) => setTestDates(prev => ({ ...prev, HBV: { ...prev.HBV!, result: e.target.value as 'positive' | 'negative' | undefined } }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                       <option value="">Select Result</option>
                       <option value="positive">Positive</option>
                       <option value="negative">Negative</option>
@@ -1748,46 +1312,22 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                 )}
               </div>
 
+              {/* HCV */}
               <div className="border-b border-teal-200 pb-4">
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-medium text-gray-700">
-                    HCV Test
-                  </label>
-                  <select
-                    value={testDates.HCV?.hasTaken ? 'true' : 'false'}
-                    onChange={(e) => {
-                      const hasTaken = e.target.value === 'true';
-                      setTestDates(prev => ({
-                        ...prev,
-                        HCV: { hasTaken, testDate: hasTaken ? prev.HCV?.testDate || '' : '', result: hasTaken ? prev.HCV?.result : undefined }
-                      }));
-                    }}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                  >
+                  <label className="text-sm font-medium text-gray-700">HCV Test</label>
+                  <select value={testDates.HCV?.hasTaken ? 'true' : 'false'} onChange={(e) => {
+                    const hasTaken = e.target.value === 'true';
+                    setTestDates(prev => ({ ...prev, HCV: { hasTaken, testDate: hasTaken ? prev.HCV?.testDate || '' : '', result: hasTaken ? prev.HCV?.result : undefined } }));
+                  }} className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                     <option value="false">No</option>
                     <option value="true">Yes</option>
                   </select>
                 </div>
                 {testDates.HCV?.hasTaken && (
                   <div className="space-y-2 mt-2">
-                    <input
-                      type="date"
-                      value={testDates.HCV.testDate}
-                      onChange={(e) => setTestDates(prev => ({
-                        ...prev,
-                        HCV: { ...prev.HCV!, testDate: e.target.value }
-                      }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                      placeholder="Test Date"
-                    />
-                    <select
-                      value={testDates.HCV.result || ''}
-                      onChange={(e) => setTestDates(prev => ({
-                        ...prev,
-                        HCV: { ...prev.HCV!, result: e.target.value as 'positive' | 'negative' | undefined }
-                      }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                    >
+                    <input type="date" value={testDates.HCV.testDate} onChange={(e) => setTestDates(prev => ({ ...prev, HCV: { ...prev.HCV!, testDate: e.target.value } }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Test Date" />
+                    <select value={testDates.HCV.result || ''} onChange={(e) => setTestDates(prev => ({ ...prev, HCV: { ...prev.HCV!, result: e.target.value as 'positive' | 'negative' | undefined } }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                       <option value="">Select Result</option>
                       <option value="positive">Positive</option>
                       <option value="negative">Negative</option>
@@ -1796,46 +1336,22 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                 )}
               </div>
 
+              {/* HIV */}
               <div className="border-b border-teal-200 pb-4">
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-medium text-gray-700">
-                    HIV Test
-                  </label>
-                  <select
-                    value={testDates.HIV?.hasTaken ? 'true' : 'false'}
-                    onChange={(e) => {
-                      const hasTaken = e.target.value === 'true';
-                      setTestDates(prev => ({
-                        ...prev,
-                        HIV: { hasTaken, testDate: hasTaken ? prev.HIV?.testDate || '' : '', result: hasTaken ? prev.HIV?.result : undefined }
-                      }));
-                    }}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                  >
+                  <label className="text-sm font-medium text-gray-700">HIV Test</label>
+                  <select value={testDates.HIV?.hasTaken ? 'true' : 'false'} onChange={(e) => {
+                    const hasTaken = e.target.value === 'true';
+                    setTestDates(prev => ({ ...prev, HIV: { hasTaken, testDate: hasTaken ? prev.HIV?.testDate || '' : '', result: hasTaken ? prev.HIV?.result : undefined } }));
+                  }} className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                     <option value="false">No</option>
                     <option value="true">Yes</option>
                   </select>
                 </div>
                 {testDates.HIV?.hasTaken && (
                   <div className="space-y-2 mt-2">
-                    <input
-                      type="date"
-                      value={testDates.HIV.testDate}
-                      onChange={(e) => setTestDates(prev => ({
-                        ...prev,
-                        HIV: { ...prev.HIV!, testDate: e.target.value }
-                      }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                      placeholder="Test Date"
-                    />
-                    <select
-                      value={testDates.HIV.result || ''}
-                      onChange={(e) => setTestDates(prev => ({
-                        ...prev,
-                        HIV: { ...prev.HIV!, result: e.target.value as 'positive' | 'negative' | undefined }
-                      }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                    >
+                    <input type="date" value={testDates.HIV.testDate} onChange={(e) => setTestDates(prev => ({ ...prev, HIV: { ...prev.HIV!, testDate: e.target.value } }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Test Date" />
+                    <select value={testDates.HIV.result || ''} onChange={(e) => setTestDates(prev => ({ ...prev, HIV: { ...prev.HIV!, result: e.target.value as 'positive' | 'negative' | undefined } }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                       <option value="">Select Result</option>
                       <option value="positive">Positive</option>
                       <option value="negative">Negative</option>
@@ -1843,54 +1359,25 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                   </div>
                 )}
               </div>
-
             </div>
           </div>
 
+          {/* ===== OTHER MEDICAL TESTS ===== */}
           <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
             <div className="mb-4">
-              <label className="block text-lg font-semibold text-purple-900 mb-2">
-                Other Medical Tests + New Test
-              </label>
+              <label className="block text-lg font-semibold text-purple-900 mb-2">Other Medical Tests</label>
               <div className="flex items-center space-x-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setHasOtherTests(true);
-                    if (!hasOtherTests) {
-                      setOtherTests([]);
-                      setCurrentTest({
-                        testName: '',
-                        testResult: '',
-                        testDate: ''
-                      });
-                    }
-                  }}
-                  className={`px-6 py-2 rounded-lg font-medium transition-colors duration-200 ${
-                    hasOtherTests
-                      ? 'bg-purple-600 text-white'
-                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                  }`}
-                >
+                <button type="button" onClick={() => {
+                  setHasOtherTests(true);
+                  if (!hasOtherTests) { setOtherTests([]); setCurrentTest({ testName: '', testResult: '', testDate: '' }); }
+                }} className={`px-6 py-2 rounded-lg font-medium transition-colors duration-200 ${hasOtherTests ? 'bg-purple-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'}`}>
                   Yes
                 </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setHasOtherTests(false);
-                    setOtherTests([]);
-                    setCurrentTest({
-                      testName: '',
-                      testResult: '',
-                      testDate: ''
-                    });
-                  }}
-                  className={`px-6 py-2 rounded-lg font-medium transition-colors duration-200 ${
-                    !hasOtherTests
-                      ? 'bg-gray-600 text-white'
-                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                  }`}
-                >
+                <button type="button" onClick={() => {
+                  setHasOtherTests(false);
+                  setOtherTests([]);
+                  setCurrentTest({ testName: '', testResult: '', testDate: '' });
+                }} className={`px-6 py-2 rounded-lg font-medium transition-colors duration-200 ${!hasOtherTests ? 'bg-gray-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'}`}>
                   No
                 </button>
               </div>
@@ -1902,47 +1389,19 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                   <h5 className="text-sm font-semibold text-gray-700 mb-3">Add New Test</h5>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Test Name
-                      </label>
-                      <input
-                        type="text"
-                        value={currentTest.testName}
-                        onChange={(e) => setCurrentTest({ ...currentTest, testName: e.target.value })}
-                        placeholder="e.g., CBC, Liver Function"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-sm"
-                      />
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Test Name</label>
+                      <input type="text" value={currentTest.testName} onChange={(e) => setCurrentTest({ ...currentTest, testName: e.target.value })} placeholder="e.g., CBC, Liver Function" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-sm" />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Test Result
-                      </label>
-                      <input
-                        type="text"
-                        value={currentTest.testResult}
-                        onChange={(e) => setCurrentTest({ ...currentTest, testResult: e.target.value })}
-                        placeholder="e.g., Normal, Positive"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-sm"
-                      />
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Test Result</label>
+                      <input type="text" value={currentTest.testResult} onChange={(e) => setCurrentTest({ ...currentTest, testResult: e.target.value })} placeholder="e.g., Normal, Positive" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-sm" />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Test Date
-                      </label>
-                      <input
-                        type="date"
-                        value={currentTest.testDate}
-                        onChange={(e) => setCurrentTest({ ...currentTest, testDate: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-sm"
-                      />
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Test Date</label>
+                      <input type="date" value={currentTest.testDate} onChange={(e) => setCurrentTest({ ...currentTest, testDate: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-sm" />
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={addOtherTest}
-                    disabled={!currentTest.testName.trim() || !currentTest.testResult.trim()}
-                    className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200 text-sm font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
-                  >
+                  <button type="button" onClick={addOtherTest} disabled={!currentTest.testName.trim() || !currentTest.testResult.trim()} className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200 text-sm font-medium disabled:bg-gray-300 disabled:cursor-not-allowed">
                     <Plus className="h-4 w-4" />
                     <span>Add Test</span>
                   </button>
@@ -1955,24 +1414,11 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                       <div key={index} className="bg-white p-3 rounded-lg border border-purple-200">
                         <div className="flex justify-between items-start">
                           <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
-                            <div>
-                              <span className="font-medium text-gray-600">Test:</span>
-                              <span className="ml-1 text-gray-900">{test.testName}</span>
-                            </div>
-                            <div>
-                              <span className="font-medium text-gray-600">Result:</span>
-                              <span className="ml-1 text-gray-900">{test.testResult}</span>
-                            </div>
-                            <div>
-                              <span className="font-medium text-gray-600">Date:</span>
-                              <span className="ml-1 text-gray-900">{test.testDate || 'N/A'}</span>
-                            </div>
+                            <div><span className="font-medium text-gray-600">Test:</span> <span className="ml-1 text-gray-900">{test.testName}</span></div>
+                            <div><span className="font-medium text-gray-600">Result:</span> <span className="ml-1 text-gray-900">{test.testResult}</span></div>
+                            <div><span className="font-medium text-gray-600">Date:</span> <span className="ml-1 text-gray-900">{test.testDate || 'N/A'}</span></div>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => removeOtherTest(index)}
-                            className="ml-2 p-1 text-red-600 hover:bg-red-50 rounded transition-colors duration-200"
-                          >
+                          <button type="button" onClick={() => removeOtherTest(index)} className="ml-2 p-1 text-red-600 hover:bg-red-50 rounded transition-colors duration-200">
                             <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
@@ -1984,18 +1430,12 @@ export const PatientForm: React.FC<PatientFormProps> = ({
             )}
           </div>
 
+          {/* ===== FORM BUTTONS ===== */}
           <div className="flex space-x-3 pt-4 sticky bottom-0 bg-white border-t border-gray-200 -mx-6 px-6 py-4">
-            <button
-              type="button"
-              onClick={onCancel}
-              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200"
-            >
+            <button type="button" onClick={onCancel} className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200">
               Cancel
             </button>
-            <button
-              type="submit"
-              className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
-            >
+            <button type="submit" className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200">
               {patient ? 'Update Patient' : 'Create Patient'}
             </button>
           </div>

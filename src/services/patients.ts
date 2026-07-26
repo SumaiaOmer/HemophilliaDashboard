@@ -96,6 +96,25 @@ export class PatientsService {
       });
     }
 
+    // Also accept top-level HBV/HCV/HIV fields and merge them into testDates
+    const pushViral = (keyBase: string, type: string) => {
+      const taken = patient[`${keyBase}TestTaken`] ?? patient[`${keyBase.toUpperCase()}TestTaken`] ?? patient[`${keyBase}_test_taken`];
+      const date = patient[`${keyBase}TestDate`] ?? patient[`${keyBase.toUpperCase()}TestDate`] ?? patient[`${keyBase}_test_date`];
+      const result = patient[`${keyBase}TestResult`] ?? patient[`${keyBase.toUpperCase()}TestResult`] ?? patient[`${keyBase}_test_result`];
+      if (taken !== undefined || date !== undefined || result !== undefined) {
+        testDates.push({
+          testType: type,
+          hasTaken: taken === true || taken === 'true' || Boolean(taken),
+          testDate: date || undefined,
+          result: result || undefined
+        });
+      }
+    };
+
+    pushViral('hbv', 'HBV');
+    pushViral('hcv', 'HCV');
+    pushViral('hiv', 'HIV');
+
     return {
       id: patient.id || patient.Id,
       fullName: patient.FullName || patient.fullName || patient.full_name || '',
@@ -150,6 +169,17 @@ export class PatientsService {
       testDates: testDates.length > 0 ? testDates : undefined,
       inhibitorHistory: patient.InhibitorHistory || patient.inhibitorHistory || (patient.inhibitorHistory && Array.isArray(patient.inhibitorHistory) ? patient.inhibitorHistory : undefined),
       otherMedicalTests: patient.OtherMedicalTests || patient.otherMedicalTests || (patient.otherMedicalTests && Array.isArray(patient.otherMedicalTests) ? patient.otherMedicalTests : undefined)
+      ,
+      // Expose top-level viral fields for direct binding in forms
+      hbvTestTaken: patient.hbvTestTaken ?? patient.HBVTestTaken ?? patient.hbv_test_taken,
+      hbvTestDate: patient.hbvTestDate ?? patient.HBVTestDate ?? patient.hbv_test_date,
+      hbvTestResult: patient.hbvTestResult ?? patient.HBVTestResult ?? patient.hbv_test_result,
+      hcvTestTaken: patient.hcvTestTaken ?? patient.HCVTestTaken ?? patient.hcv_test_taken,
+      hcvTestDate: patient.hcvTestDate ?? patient.HCVTestDate ?? patient.hcv_test_date,
+      hcvTestResult: patient.hcvTestResult ?? patient.HCVTestResult ?? patient.hcv_test_result,
+      hivTestTaken: patient.hivTestTaken ?? patient.HIVTestTaken ?? patient.hiv_test_taken,
+      hivTestDate: patient.hivTestDate ?? patient.HIVTestDate ?? patient.hiv_test_date,
+      hivTestResult: patient.hivTestResult ?? patient.HIVTestResult ?? patient.hiv_test_result
     };
   }
 
@@ -164,6 +194,16 @@ export class PatientsService {
   }
 
   private static transformPatientForAPI(patient: PatientRequest): any {
+    const hasChronicDiseasesValue = Boolean(
+      patient.HasChronicDiseases ?? patient.hasChronicDiseases ?? (Array.isArray(patient.chronicDiseases) ? patient.chronicDiseases.length > 0 : !!patient.chronicDiseases)
+    );
+
+    const chronicDiseasesValue = Array.isArray(patient.chronicDiseases)
+      ? patient.chronicDiseases
+      : typeof patient.chronicDiseases === 'string' && patient.chronicDiseases.trim().length > 0
+        ? patient.chronicDiseases
+        : null;
+
     const transformed: any = {
       FullName: patient.fullName,
       NationalIdNumber: patient.nationalIdNumber || null,
@@ -183,7 +223,10 @@ export class PatientsService {
       Severity: patient.severity || null,
       FactorPercent: patient.factorPercent || null,
       FactorPercentDate: patient.factorPercentDate || null,
-      HasInhibitors: patient.hasInhibitors || patient.HasInhibitors || false,
+      IsDiagnosed: patient.isDiagnosed ?? Boolean(patient.diagnosis || patient.diagnosisType || patient.diagnosisYear),
+      isDiagnosed: patient.isDiagnosed ?? Boolean(patient.diagnosis || patient.diagnosisType || patient.diagnosisYear),
+      HasInhibitors: patient.hasInhibitors ?? patient.HasInhibitors ?? false,
+      hasInhibitors: patient.hasInhibitors ?? patient.HasInhibitors ?? false,
       FamilyHistory: patient.familyHistory || null,
       VitalStatus: patient.vitalStatus || 'Alive',
       HomeState: patient.homeState || null,
@@ -195,14 +238,51 @@ export class PatientsService {
       ResidenceLocalArea: patient.residenceLocalArea || null,
       ResidenceRegion: patient.residenceRegion || null,
       ResidenceCountry: patient.residenceCountry || patient.country || null,
-      HasChronicDiseases: patient.HasChronicDiseases || (patient.chronicDiseases && patient.chronicDiseases.length > 0) || false,
-      ChronicDiseases: patient.chronicDiseases && patient.chronicDiseases.length > 0 ? patient.chronicDiseases : null,
+      HasChronicDiseases: hasChronicDiseasesValue,
+      hasChronicDiseases: hasChronicDiseasesValue,
+      ChronicDiseases: chronicDiseasesValue,
+      chronicDiseases: chronicDiseasesValue,
       ChronicDiseaseOther: patient.chronicDiseaseOther || null,
       HasHBVVaccination: patient.hasHBVVaccination || false,
+      hasHBVVaccination: patient.hasHBVVaccination || false,
       HBVVaccinationDate: patient.hbvVaccinationDate || null,
+      hbvVaccinationDate: patient.hbvVaccinationDate || null,
+      HBVTestTaken: patient.hbvTestTaken ?? false,
+      hbvTestTaken: patient.hbvTestTaken ?? false,
+      HBVTestDate: patient.hbvTestDate || null,
+      hbvTestDate: patient.hbvTestDate || null,
+      HBVTestResult: patient.hbvTestResult || null,
+      hbvTestResult: patient.hbvTestResult || null,
+      HCVTestTaken: patient.hcvTestTaken ?? false,
+      hcvTestTaken: patient.hcvTestTaken ?? false,
+      HCVTestDate: patient.hcvTestDate || null,
+      hcvTestDate: patient.hcvTestDate || null,
+      HCVTestResult: patient.hcvTestResult || null,
+      hcvTestResult: patient.hcvTestResult || null,
+      HIVTestTaken: patient.hivTestTaken ?? false,
+      hivTestTaken: patient.hivTestTaken ?? false,
+      HIVTestDate: patient.hivTestDate || null,
+      hivTestDate: patient.hivTestDate || null,
+      HIVTestResult: patient.hivTestResult || null,
+      hivTestResult: patient.hivTestResult || null,
       HasHealthInsurance: patient.hasHealthInsurance || false,
+      hasHealthInsurance: patient.hasHealthInsurance || false,
       InsuranceProvider: patient.insuranceProvider || null,
+      insuranceProvider: patient.insuranceProvider || null,
       IsCircumcised: patient.isCircumcised || false,
+      isCircumcised: patient.isCircumcised || false,
+      TestDates: patient.testDates?.map(td => ({
+        TestType: td.testType,
+        HasTaken: td.hasTaken,
+        TestDate: td.testDate,
+        Result: td.result,
+      })),
+      testDates: patient.testDates?.map(td => ({
+        testType: td.testType,
+        hasTaken: td.hasTaken,
+        testDate: td.testDate,
+        result: td.result,
+      })),
     };
 
     if (patient.inhibitorHistory && patient.inhibitorHistory.length > 0) {
@@ -213,11 +293,27 @@ export class PatientsService {
       }));
     }
 
+    if (patient.inhibitorTests && patient.inhibitorTests.length > 0) {
+      transformed.InhibitorTests = patient.inhibitorTests.map(t => ({
+        Level: t.level,
+        TestDate: t.testDate,
+      }));
+      transformed.inhibitorTests = patient.inhibitorTests.map(t => ({
+        level: t.level,
+        testDate: t.testDate,
+      }));
+    }
+
     if (patient.otherMedicalTests && patient.otherMedicalTests.length > 0) {
       transformed.OtherMedicalTests = patient.otherMedicalTests.map(t => ({
         TestName: t.testName,
         TestResult: t.testResult,
         TestDate: t.testDate
+      }));
+      transformed.otherMedicalTests = patient.otherMedicalTests.map(t => ({
+        testName: t.testName,
+        testResult: t.testResult,
+        testDate: t.testDate
       }));
     }
 

@@ -34,6 +34,17 @@ export interface FactorRequest {
   companyName: string;
 }
 
+export interface InhibitorTestRequest {
+  level: number;
+  testDate: string;
+}
+
+export interface OtherMedicalTestRequest {
+  testName: string;
+  testResult: string;
+  testDate: string;
+}
+
 export interface Patient {
   id: number;
   fullName: string;
@@ -69,20 +80,32 @@ export interface Patient {
   factorPercent?: number;
   factorPercentDate?: string;
   familyHistory?: 'first_degree' | 'second_degree' | 'third_degree' | 'none';
+  isDiagnosed?: boolean;
   HasInhibitors?: boolean;
   hasInhibitors?: boolean;
   inhibitorLevel?: number;
   inhibitorScreeningDate?: string;
   inhibitors?: InhibitorEntry[];
   inhibitorHistory?: InhibitorHistory[];
+  inhibitorTests?: InhibitorTestRequest[];
   latestInhibitorLevel?: number;
   latestInhibitorTestDate?: string;
   HasChronicDiseases?: boolean;
-  chronicDiseases?: string[];
+  hasChronicDiseases?: boolean;
+  chronicDiseases?: string | string[];
   chronicDiseaseOther?: string;
   bloodGroup?: string;
   hasHBVVaccination?: boolean;
   hbvVaccinationDate?: string;
+  hbvTestTaken?: boolean;
+  hbvTestDate?: string;
+  hbvTestResult?: string;
+  hcvTestTaken?: boolean;
+  hcvTestDate?: string;
+  hcvTestResult?: string;
+  hivTestTaken?: boolean;
+  hivTestDate?: string;
+  hivTestResult?: string;
   hasHealthInsurance?: boolean;
   insuranceProvider?: string;
   isCircumcised?: boolean;
@@ -143,22 +166,34 @@ export interface PatientRequest {
   locality?: string;
   country?: string;
   incidenceDate?: string;
+  isDiagnosed?: boolean;
   HasInhibitors?: boolean;
   inhibitorLevel?: number;
   inhibitorScreeningDate?: string;
   inhibitors?: InhibitorEntry[];
   inhibitorHistory?: InhibitorHistory[];
+  inhibitorTests?: InhibitorTestRequest[];
   HasChronicDiseases?: boolean;
-  chronicDiseases?: string[];
+  hasChronicDiseases?: boolean;
+  chronicDiseases?: string | string[];
   chronicDiseaseOther?: string;
   hasHBVVaccination?: boolean;
   hbvVaccinationDate?: string;
+  hbvTestTaken?: boolean;
+  hbvTestDate?: string;
+  hbvTestResult?: string;
+  hcvTestTaken?: boolean;
+  hcvTestDate?: string;
+  hcvTestResult?: string;
+  hivTestTaken?: boolean;
+  hivTestDate?: string;
+  hivTestResult?: string;
   hasHealthInsurance?: boolean;
   insuranceProvider?: string;
   isCircumcised?: boolean;
   longTermMedication?: boolean;
   testDates?: PatientTestDate[];
-  otherMedicalTests?: OtherMedicalTest[];
+  otherMedicalTests?: OtherMedicalTestRequest[];
 }
 
 export interface InhibitorEntry {

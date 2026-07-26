@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Plus, CreditCard as Edit, Trash2, Users, Calendar, MapPin, Phone, Heart, ChevronDown, ChevronUp } from 'lucide-react';
 import { Patient, PatientRequest } from '../../types/api';
@@ -68,6 +67,7 @@ export const PatientsManager: React.FC = () => {
         await loadPatients();
       } catch (error) {
         console.error('Error deleting patient:', error);
+        alert('Failed to delete patient. Please try again.');
       }
     }
   };
@@ -81,24 +81,12 @@ export const PatientsManager: React.FC = () => {
     setExpandedPatient(expandedPatient === patientId ? null : patientId);
   };
 
-  const calculateAge = (dateOfBirth: string) => {
-    const today = new Date();
-    const birthDate = new Date(dateOfBirth);
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
-    }
-    return age;
-  };
-
   const filteredPatients = patients.filter(patient =>
     patient.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     patient.nationalIdNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     patient.state?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     patient.hemophiliaCenterId?.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
 
   const formatOccupation = (occupation?: string) => {
     if (!occupation) return 'N/A';
@@ -109,6 +97,29 @@ export const PatientsManager: React.FC = () => {
     if (!status) return 'N/A';
     return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
+
+  const getChronicDiseasesDisplay = (chronicDiseases?: string[] | string) => {
+    if (!chronicDiseases) return 'None';
+    if (Array.isArray(chronicDiseases)) {
+      return chronicDiseases.length > 0 ? chronicDiseases.join(', ') : 'None';
+    }
+    if (typeof chronicDiseases === 'string') {
+      try {
+        const parsed = JSON.parse(chronicDiseases);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.join(', ');
+        }
+        return chronicDiseases || 'None';
+      } catch {
+        return chronicDiseases || 'None';
+      }
+    }
+    return 'None';
+  };
+
+  const formatBooleanValue = (value?: boolean) => (value ? 'Yes' : 'No');
+  const getInhibitorStatus = (patient: Patient) =>
+    patient.HasInhibitors ?? patient.hasInhibitors ?? patient.inhibitor ?? false;
 
   if (loading) {
     return (
@@ -126,7 +137,10 @@ export const PatientsManager: React.FC = () => {
           <p className="text-gray-600">Comprehensive patient records and medical information</p>
         </div>
         <button
-          onClick={() => setShowForm(true)}
+          onClick={() => {
+            setEditingPatient(null);
+            setShowForm(true);
+          }}
           className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors duration-200"
         >
           <Plus className="h-5 w-5" />
@@ -182,7 +196,7 @@ export const PatientsManager: React.FC = () => {
                           <div className="text-xs text-gray-500">ID: {patient.nationalIdNumber}</div>
                           <div className="text-xs text-gray-500 flex items-center mt-1">
                             <Calendar className="h-3 w-3 mr-1" />
-                               ({formatDate(patient.dateOfBirth)})
+                            {formatDate(patient.dateOfBirth)}
                           </div>
                           {patient.gender && (
                             <div className="text-xs text-gray-500 capitalize">{patient.gender}</div>
@@ -285,9 +299,9 @@ export const PatientsManager: React.FC = () => {
                                 <span className="text-gray-600">Gender:</span>
                                 <span className="ml-2 text-gray-900 capitalize">{patient.gender || 'N/A'}</span>
                               </div>
-                                <div>
+                              <div>
                                 <span className="text-gray-600">Age:</span>
-                                <span className="ml-2 text-gray-900 capitalize">{patient.age || 'N/A'}</span>
+                                <span className="ml-2 text-gray-900">{patient.age || 'N/A'}</span>
                               </div>
                               <div>
                                 <span className="text-gray-600">Marital Status:</span>
@@ -320,6 +334,10 @@ export const PatientsManager: React.FC = () => {
                                 <span className="text-gray-600">Diagnosis:</span>
                                 <span className="ml-2 text-gray-900">{patient.diagnosis || 'N/A'}</span>
                               </div>
+                              <div>
+                                <span className="text-gray-600">Diagnosed:</span>
+                                <span className="ml-2 text-gray-900">{formatBooleanValue(patient.isDiagnosed)}</span>
+                              </div>
                               {patient.incidenceDate && (
                                 <div>
                                   <span className="text-gray-600">Incidence Date:</span>
@@ -338,8 +356,8 @@ export const PatientsManager: React.FC = () => {
                                 <div>
                                   <span className="text-gray-600">Factor Percent:</span>
                                   <span className="ml-2 text-gray-900">{patient.factorPercent}%</span>
-                                  {patient.factorLevelTestDate && (
-                                    <span className="text-xs text-gray-500"> (Test: {formatDate(patient.factorLevelTestDate)})</span>
+                                  {patient.factorPercentDate && (
+                                    <span className="text-xs text-gray-500"> (Test: {formatDate(patient.factorPercentDate)})</span>
                                   )}
                                 </div>
                               )}
@@ -349,11 +367,11 @@ export const PatientsManager: React.FC = () => {
                               </div>
                               <div>
                                 <span className="text-gray-600">Inhibitor:</span>
-                                <span className={`ml-2 font-medium ${patient.inhibitor ? 'text-red-600' : 'text-green-600'}`}>
-                                  {patient.inhibitor ? 'Yes' : 'No'}
+                                <span className={`ml-2 font-medium ${getInhibitorStatus(patient) ? 'text-red-600' : 'text-green-600'}`}>
+                                  {formatBooleanValue(getInhibitorStatus(patient))}
                                 </span>
-                                {patient.inhibitor && patient.inhibitorLevel && (
-                                  <span className="text-xs text-gray-600"> (Level: {patient.inhibitorLevel})</span>
+                                {getInhibitorStatus(patient) && (patient.inhibitorLevel || patient.latestInhibitorLevel) && (
+                                  <span className="text-xs text-gray-600"> (Level: {patient.inhibitorLevel ?? patient.latestInhibitorLevel})</span>
                                 )}
                               </div>
                               {patient.inhibitorScreeningDate && (
@@ -362,16 +380,60 @@ export const PatientsManager: React.FC = () => {
                                   <span className="ml-2 text-gray-900 text-xs">{formatDate(patient.inhibitorScreeningDate)}</span>
                                 </div>
                               )}
-                              {patient.viralScreeningDate && (
+                              {patient.inhibitorTests && patient.inhibitorTests.length > 0 && (
                                 <div>
-                                  <span className="text-gray-600">Viral Screening:</span>
-                                  <span className="ml-2 text-gray-900 text-xs">{formatDate(patient.viralScreeningDate)}</span>
+                                  <span className="text-gray-600">Inhibitor Tests:</span>
+                                  <div className="mt-1 space-y-1">
+                                    {patient.inhibitorTests.map((entry, idx) => (
+                                      <div key={idx} className="text-xs text-gray-600">
+                                        {formatDate(entry.testDate)}: Level {entry.level}
+                                      </div>
+                                    ))}
+                                  </div>
                                 </div>
                               )}
-                              {patient.otherTestDate && (
+                              {patient.hasHBVVaccination !== undefined && (
                                 <div>
-                                  <span className="text-gray-600">Other Test:</span>
-                                  <span className="ml-2 text-gray-900 text-xs">{formatDate(patient.otherTestDate)}</span>
+                                  <span className="text-gray-600">HBV Vaccination:</span>
+                                  <span className="ml-2 text-gray-900">{formatBooleanValue(patient.hasHBVVaccination)}</span>
+                                  {patient.hbvVaccinationDate && (
+                                    <span className="text-xs text-gray-500"> ({formatDate(patient.hbvVaccinationDate)})</span>
+                                  )}
+                                </div>
+                              )}
+                              {patient.hasHealthInsurance !== undefined && (
+                                <div>
+                                  <span className="text-gray-600">Health Insurance:</span>
+                                  <span className="ml-2 text-gray-900">{formatBooleanValue(patient.hasHealthInsurance)}</span>
+                                  {patient.insuranceProvider && (
+                                    <span className="text-xs text-gray-500"> ({patient.insuranceProvider})</span>
+                                  )}
+                                </div>
+                              )}
+                              {patient.isCircumcised !== undefined && (
+                                <div>
+                                  <span className="text-gray-600">Circumcised:</span>
+                                  <span className="ml-2 text-gray-900">{formatBooleanValue(patient.isCircumcised)}</span>
+                                </div>
+                              )}
+                              {patient.longTermMedication !== undefined && (
+                                <div>
+                                  <span className="text-gray-600">Long Term Medication:</span>
+                                  <span className="ml-2 text-gray-900">{formatBooleanValue(patient.longTermMedication)}</span>
+                                </div>
+                              )}
+                              {patient.testDates && patient.testDates.length > 0 && (
+                                <div>
+                                  <span className="text-gray-600">Lab Tests:</span>
+                                  <div className="mt-1 space-y-1">
+                                    {patient.testDates.map((test, idx) => (
+                                      <div key={idx} className="text-xs text-gray-600">
+                                        {test.testType}: {test.hasTaken ? 'Done' : 'Not done'}
+                                        {test.testDate ? ` (${formatDate(test.testDate)})` : ''}
+                                        {test.result ? ` • ${test.result}` : ''}
+                                      </div>
+                                    ))}
+                                  </div>
                                 </div>
                               )}
                             </div>
@@ -395,13 +457,51 @@ export const PatientsManager: React.FC = () => {
                                   <span className="ml-2 text-gray-900">{patient.contactNumber2}</span>
                                 </div>
                               )}
-                              {Array.isArray(patient.chronicDiseases) && patient.chronicDiseases.length > 0 && (
+                              <div>
+                                <span className="text-gray-600">Chronic Diseases:</span>
+                                <p className="mt-1 text-gray-900 text-xs">
+                                  {getChronicDiseasesDisplay(patient.chronicDiseases)}
+                                  {patient.chronicDiseaseOther && ` (${patient.chronicDiseaseOther})`}
+                                </p>
+                              </div>
+                              {patient.inhibitorHistory && patient.inhibitorHistory.length > 0 && (
                                 <div>
-                                  <span className="text-gray-600">Chronic Diseases:</span>
-                                  <p className="mt-1 text-gray-900 text-xs">
-                                    {patient.chronicDiseases.join(', ')}
-                                    {patient.chronicDiseaseOther && ` (${patient.chronicDiseaseOther})`}
-                                  </p>
+                                  <span className="text-gray-600">Inhibitor History:</span>
+                                  <div className="mt-1 space-y-1">
+                                    {patient.inhibitorHistory.map((entry, idx) => (
+                                      <div key={idx} className="text-xs text-gray-600">
+                                        {formatDate(entry.testDate)}: Level {entry.level}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              {patient.otherMedicalTests && patient.otherMedicalTests.length > 0 && (
+                                <div>
+                                  <span className="text-gray-600">Other Tests:</span>
+                                  <div className="mt-1 space-y-1">
+                                    {patient.otherMedicalTests.map((test, idx) => (
+                                      <div key={idx} className="text-xs text-gray-600">
+                                        {test.testName}: {test.testResult} ({formatDate(test.testDate)})
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              {(patient.hbvTestTaken !== undefined || patient.hcvTestTaken !== undefined || patient.hivTestTaken !== undefined) && (
+                                <div>
+                                  <span className="text-gray-600">Viral Tests:</span>
+                                  <div className="mt-1 space-y-1 text-xs text-gray-600">
+                                    {patient.hbvTestTaken !== undefined && (
+                                      <div>HBV: {formatBooleanValue(patient.hbvTestTaken)}{patient.hbvTestDate ? ` (${formatDate(patient.hbvTestDate)})` : ''}{patient.hbvTestResult ? ` • ${patient.hbvTestResult}` : ''}</div>
+                                    )}
+                                    {patient.hcvTestTaken !== undefined && (
+                                      <div>HCV: {formatBooleanValue(patient.hcvTestTaken)}{patient.hcvTestDate ? ` (${formatDate(patient.hcvTestDate)})` : ''}{patient.hcvTestResult ? ` • ${patient.hcvTestResult}` : ''}</div>
+                                    )}
+                                    {patient.hivTestTaken !== undefined && (
+                                      <div>HIV: {formatBooleanValue(patient.hivTestTaken)}{patient.hivTestDate ? ` (${formatDate(patient.hivTestDate)})` : ''}{patient.hivTestResult ? ` • ${patient.hivTestResult}` : ''}</div>
+                                    )}
+                                  </div>
                                 </div>
                               )}
                             </div>
