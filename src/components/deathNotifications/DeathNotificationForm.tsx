@@ -7,6 +7,7 @@ import {
 } from '../../types/api';
 import { toDateInputValue, toISOStringFromDateInput } from '../../lib/dateUtils';
 import { DeathNotificationsService } from '../../services/deathNotifications';
+import { PatientsService } from '../../services/patients';
 
 interface DeathNotificationFormProps {
   notification?: DeathNotification | null;
@@ -49,9 +50,25 @@ export const DeathNotificationForm: React.FC<DeathNotificationFormProps> = ({
 }) => {
   const [formData, setFormData] = useState<DeathNotificationCreateRequest>({
     patientId: 0,
+    reporterName: '',
+    reporterRelation: 'Family Member',
+    reporterPhone: '',
+    reportDate: toDateInputValue(new Date().toISOString()),
     dateOfDeath: toDateInputValue(new Date().toISOString()),
-    causeOfDeath: '',
     placeOfDeath: '',
+    directCauseOfDeath: '',
+    underlyingCauseOfDeath: '',
+    isDeathRelatedToBleedingDisorder: true,
+    complicationType: '',
+    receivedClottingFactors: false,
+    lastDoseDate: '',
+    caseSummary: '',
+    recommendations: '',
+    surveillanceOfficerName: '',
+    surveillanceOfficerSignature: '',
+    programDirectorName: '',
+    programDirectorSignature: '',
+    causeOfDeath: '',
     notifiedBy: '',
     notificationDate: toDateInputValue(new Date().toISOString()),
     notes: '',
@@ -59,6 +76,7 @@ export const DeathNotificationForm: React.FC<DeathNotificationFormProps> = ({
 
   const [patientSearch, setPatientSearch] = useState('');
   const [showPatientDropdown, setShowPatientDropdown] = useState(false);
+  const [availablePatients, setAvailablePatients] = useState<Patient[]>(patients);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [referenceNumber, setReferenceNumber] = useState<string | null>(null);
@@ -69,9 +87,25 @@ export const DeathNotificationForm: React.FC<DeathNotificationFormProps> = ({
     if (notification) {
       setFormData({
         patientId: notification.patientId,
+        reporterName: (notification as any).reporterName || notification.notifiedBy || '',
+        reporterRelation: (notification as any).reporterRelation || 'Family Member',
+        reporterPhone: (notification as any).reporterPhone || '',
+        reportDate: toDateInputValue((notification as any).reportDate || notification.notificationDate || notification.dateOfDeath),
         dateOfDeath: toDateInputValue(notification.dateOfDeath),
-        causeOfDeath: notification.causeOfDeath || '',
         placeOfDeath: notification.placeOfDeath || '',
+        directCauseOfDeath: (notification as any).directCauseOfDeath || notification.causeOfDeath || '',
+        underlyingCauseOfDeath: (notification as any).underlyingCauseOfDeath || notification.causeOfDeath || '',
+        isDeathRelatedToBleedingDisorder: (notification as any).isDeathRelatedToBleedingDisorder ?? true,
+        complicationType: (notification as any).complicationType || notification.causeOfDeath || '',
+        receivedClottingFactors: (notification as any).receivedClottingFactors ?? false,
+        lastDoseDate: (notification as any).lastDoseDate || '',
+        caseSummary: (notification as any).caseSummary || notification.notes || '',
+        recommendations: (notification as any).recommendations || '',
+        surveillanceOfficerName: (notification as any).surveillanceOfficerName || '',
+        surveillanceOfficerSignature: (notification as any).surveillanceOfficerSignature || '',
+        programDirectorName: (notification as any).programDirectorName || '',
+        programDirectorSignature: (notification as any).programDirectorSignature || '',
+        causeOfDeath: notification.causeOfDeath || '',
         notifiedBy: notification.notifiedBy || '',
         notificationDate: toDateInputValue(notification.notificationDate || new Date().toISOString()),
         notes: notification.notes || '',
@@ -85,9 +119,25 @@ export const DeathNotificationForm: React.FC<DeathNotificationFormProps> = ({
     } else {
       setFormData({
         patientId: 0,
+        reporterName: '',
+        reporterRelation: 'Family Member',
+        reporterPhone: '',
+        reportDate: toDateInputValue(new Date().toISOString()),
         dateOfDeath: toDateInputValue(new Date().toISOString()),
-        causeOfDeath: '',
         placeOfDeath: '',
+        directCauseOfDeath: '',
+        underlyingCauseOfDeath: '',
+        isDeathRelatedToBleedingDisorder: true,
+        complicationType: '',
+        receivedClottingFactors: false,
+        lastDoseDate: '',
+        caseSummary: '',
+        recommendations: '',
+        surveillanceOfficerName: '',
+        surveillanceOfficerSignature: '',
+        programDirectorName: '',
+        programDirectorSignature: '',
+        causeOfDeath: '',
         notifiedBy: '',
         notificationDate: toDateInputValue(new Date().toISOString()),
         notes: '',
@@ -105,6 +155,32 @@ export const DeathNotificationForm: React.FC<DeathNotificationFormProps> = ({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    setAvailablePatients(patients);
+  }, [patients]);
+
+  useEffect(() => {
+    if (patients.length > 0) return;
+
+    let isCancelled = false;
+    PatientsService.getAll()
+      .then((data) => {
+        if (!isCancelled) {
+          setAvailablePatients(data);
+        }
+      })
+      .catch((err) => {
+        console.error('Error loading patients for death notification form:', err);
+        if (!isCancelled) {
+          setAvailablePatients([]);
+        }
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [patients.length]);
 
   useEffect(() => {
     if (!notification && formData.patientId > 0) {
@@ -134,11 +210,27 @@ export const DeathNotificationForm: React.FC<DeathNotificationFormProps> = ({
     try {
       const submitData: DeathNotificationCreateRequest = {
         patientId: formData.patientId,
-        dateOfDeath: toISOStringFromDateInput(formData.dateOfDeath),
-        causeOfDeath: formData.causeOfDeath || undefined,
+        reporterName: formData.reporterName || formData.notifiedBy || undefined,
+        reporterRelation: formData.reporterRelation || 'Family Member',
+        reporterPhone: formData.reporterPhone || undefined,
+        reportDate: formData.reportDate || formData.notificationDate || formData.dateOfDeath,
+        dateOfDeath: formData.dateOfDeath || undefined,
         placeOfDeath: formData.placeOfDeath || undefined,
+        directCauseOfDeath: formData.directCauseOfDeath || formData.causeOfDeath || undefined,
+        underlyingCauseOfDeath: formData.underlyingCauseOfDeath || formData.causeOfDeath || undefined,
+        isDeathRelatedToBleedingDisorder: formData.isDeathRelatedToBleedingDisorder ?? true,
+        complicationType: formData.complicationType || formData.causeOfDeath || undefined,
+        receivedClottingFactors: formData.receivedClottingFactors ?? false,
+        lastDoseDate: formData.lastDoseDate || undefined,
+        caseSummary: formData.caseSummary || formData.notes || undefined,
+        recommendations: formData.recommendations || undefined,
+        surveillanceOfficerName: formData.surveillanceOfficerName || undefined,
+        surveillanceOfficerSignature: formData.surveillanceOfficerSignature || undefined,
+        programDirectorName: formData.programDirectorName || undefined,
+        programDirectorSignature: formData.programDirectorSignature || undefined,
+        causeOfDeath: formData.causeOfDeath || undefined,
         notifiedBy: formData.notifiedBy || undefined,
-        notificationDate: toISOStringFromDateInput(formData.notificationDate),
+        notificationDate: formData.notificationDate || undefined,
         notes: formData.notes || undefined,
       };
       await onSave(submitData);
@@ -179,7 +271,7 @@ export const DeathNotificationForm: React.FC<DeathNotificationFormProps> = ({
     }
   };
 
-  const filteredPatients = patients.filter((patient) => {
+  const filteredPatients = availablePatients.filter((patient) => {
     const searchLower = patientSearch.toLowerCase();
     return (
       patient.fullName?.toLowerCase().includes(searchLower) ||
@@ -188,7 +280,7 @@ export const DeathNotificationForm: React.FC<DeathNotificationFormProps> = ({
     );
   });
 
-  const selectedPatient = patients.find((p) => p.id === formData.patientId);
+  const selectedPatient = availablePatients.find((p) => p.id === formData.patientId);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
@@ -250,7 +342,7 @@ export const DeathNotificationForm: React.FC<DeathNotificationFormProps> = ({
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Patient *
               </label>
-              {patients.length === 0 ? (
+              {availablePatients.length === 0 ? (
                 <div className="w-full px-3 py-2 border border-red-300 bg-red-50 rounded-lg text-sm text-red-600">
                   No patients available. Please add patients first.
                 </div>
@@ -430,7 +522,7 @@ export const DeathNotificationForm: React.FC<DeathNotificationFormProps> = ({
             </button>
             <button
               type="submit"
-              disabled={patients.length === 0 || formData.patientId === 0 || isSubmitting}
+              disabled={availablePatients.length === 0 || formData.patientId === 0 || isSubmitting}
               className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
             >
               {isSubmitting ? (

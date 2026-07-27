@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Plus,
-  CreditCard as Edit,
   Trash2,
   FileText,
   Calendar,
@@ -24,7 +23,6 @@ export const DeathNotificationsManager: React.FC = () => {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [editingNotification, setEditingNotification] = useState<DeathNotification | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -49,14 +47,26 @@ export const DeathNotificationsManager: React.FC = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [notificationsData, patientsData] = await Promise.all([
-        DeathNotificationsService.getAll(),
+      const [patientsResult, notificationsResult] = await Promise.allSettled([
         PatientsService.getAll(),
+        DeathNotificationsService.getAll(),
       ]);
-      setNotifications(notificationsData);
-      setPatients(patientsData);
+
+      if (patientsResult.status === 'fulfilled') {
+        setPatients(patientsResult.value);
+      } else {
+        console.error('Error loading patients:', patientsResult.reason);
+        setPatients([]);
+      }
+
+      if (notificationsResult.status === 'fulfilled') {
+        setNotifications(notificationsResult.value);
+      } else {
+        console.error('Error loading death notifications:', notificationsResult.reason);
+        setNotifications([]);
+      }
     } catch (error) {
-      console.error('Error loading death notifications:', error);
+      console.error('Error loading death notifications data:', error);
     } finally {
       setLoading(false);
     }
@@ -64,14 +74,9 @@ export const DeathNotificationsManager: React.FC = () => {
 
   const handleSave = async (notificationData: DeathNotificationCreateRequest) => {
     try {
-      if (editingNotification) {
-        await DeathNotificationsService.update(editingNotification.id, notificationData);
-      } else {
-        await DeathNotificationsService.create(notificationData);
-      }
+      await DeathNotificationsService.create(notificationData);
       await loadData();
       setShowForm(false);
-      setEditingNotification(null);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to save notification';
       throw new Error(errorMessage);
@@ -87,11 +92,6 @@ export const DeathNotificationsManager: React.FC = () => {
         console.error('Error deleting death notification:', error);
       }
     }
-  };
-
-  const handleEdit = (notification: DeathNotification) => {
-    setEditingNotification(notification);
-    setShowForm(true);
   };
 
   const getPatientName = (patientId: number) => {
@@ -424,13 +424,6 @@ export const DeathNotificationsManager: React.FC = () => {
                   </div>
                   <div className="flex space-x-2">
                     <button
-                      onClick={() => handleEdit(notification)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
-                      title="Edit"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </button>
-                    <button
                       onClick={() => handleDelete(notification.id)}
                       className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
                       title="Delete"
@@ -463,13 +456,77 @@ export const DeathNotificationsManager: React.FC = () => {
                       <span>Place: {notification.placeOfDeath}</span>
                     </div>
                   )}
-                  {notification.notifiedBy && (
+                  {notification.reporterName && (
                     <div className="flex items-center text-gray-600">
                       <User className="h-4 w-4 mr-2" />
-                      <span>Notified by: {notification.notifiedBy}</span>
+                      <span>Reporter: {notification.reporterName}</span>
                     </div>
                   )}
-                  {notification.notes && (
+                  {notification.reporterPhone && (
+                    <div className="flex items-center text-gray-600">
+                      <span className="font-medium text-gray-600 mr-2">Phone:</span>
+                      <span>{notification.reporterPhone}</span>
+                    </div>
+                  )}
+                  {notification.reportDate && (
+                    <div className="flex items-center text-gray-600">
+                      <span className="font-medium text-gray-600 mr-2">Report Date:</span>
+                      <span>{formatDate(notification.reportDate)}</span>
+                    </div>
+                  )}
+                  {notification.directCauseOfDeath && (
+                    <div className="flex items-start text-gray-600">
+                      <AlertCircle className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0" />
+                      <span>Direct cause: {notification.directCauseOfDeath}</span>
+                    </div>
+                  )}
+                  {notification.underlyingCauseOfDeath && (
+                    <div className="flex items-start text-gray-600">
+                      <AlertCircle className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0" />
+                      <span>Underlying cause: {notification.underlyingCauseOfDeath}</span>
+                    </div>
+                  )}
+                  {notification.complicationType && (
+                    <div className="flex items-center text-gray-600">
+                      <span className="font-medium text-gray-600 mr-2">Complication:</span>
+                      <span>{notification.complicationType}</span>
+                    </div>
+                  )}
+                  {notification.receivedClottingFactors !== undefined && (
+                    <div className="flex items-center text-gray-600">
+                      <span className="font-medium text-gray-600 mr-2">Clotting factors:</span>
+                      <span>{notification.receivedClottingFactors ? 'Yes' : 'No'}</span>
+                    </div>
+                  )}
+                  {notification.lastDoseDate && (
+                    <div className="flex items-center text-gray-600">
+                      <span className="font-medium text-gray-600 mr-2">Last dose:</span>
+                      <span>{formatDate(notification.lastDoseDate)}</span>
+                    </div>
+                  )}
+                  {notification.caseSummary && (
+                    <div className="pt-2 border-t border-gray-100 text-gray-500 text-xs italic">
+                      <span className="font-semibold text-gray-700">Summary:</span> {notification.caseSummary}
+                    </div>
+                  )}
+                  {notification.recommendations && (
+                    <div className="text-gray-600 text-xs italic">
+                      <span className="font-semibold text-gray-700">Recommendations:</span> {notification.recommendations}
+                    </div>
+                  )}
+                  {notification.surveillanceOfficerName && (
+                    <div className="flex items-center text-gray-600">
+                      <span className="font-medium text-gray-600 mr-2">Surveillance officer:</span>
+                      <span>{notification.surveillanceOfficerName}</span>
+                    </div>
+                  )}
+                  {notification.programDirectorName && (
+                    <div className="flex items-center text-gray-600">
+                      <span className="font-medium text-gray-600 mr-2">Program director:</span>
+                      <span>{notification.programDirectorName}</span>
+                    </div>
+                  )}
+                  {notification.notes && !notification.caseSummary && (
                     <div className="pt-2 border-t border-gray-100 text-gray-500 text-xs italic">
                       {notification.notes}
                     </div>
@@ -493,12 +550,10 @@ export const DeathNotificationsManager: React.FC = () => {
 
       {showForm && (
         <DeathNotificationForm
-          notification={editingNotification}
           patients={patients}
           onSave={handleSave}
           onCancel={() => {
             setShowForm(false);
-            setEditingNotification(null);
           }}
         />
       )}
