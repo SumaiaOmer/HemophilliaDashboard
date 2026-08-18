@@ -12,6 +12,7 @@ import { DistributionManager } from './components/distribution/DistributionManag
 import { DeliveredManager } from './components/distribution/DeliveredManager';
 import { RoleManager } from './components/roles/RoleManager';
 import { DeathNotificationsManager } from './components/deathNotifications/DeathNotificationsManager';
+import { LookupsManager } from './components/lookups/LookupsManager';
 import { LoginForm } from './components/auth/LoginForm';
 import { RegisterForm } from './components/auth/RegisterForm';
 import { AuthService } from './services/auth';
@@ -197,6 +198,9 @@ function App() {
       case 'deathnotification':
       case 'death-notification':
         return <DeathNotificationsManager />;
+      case 'lookups':
+      case 'lookup':
+        return <LookupsManager />;
       default:
         return (
           <div className="flex items-center justify-center h-64">

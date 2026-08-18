@@ -67,6 +67,8 @@ const iconMap: Record<string, any> = {
   settings: Settings,
   box: Box,
   database: Database,
+  lookups: Database,
+  lookup: Database,
   map: Map,
   location: MapPin,
   clock: Clock,

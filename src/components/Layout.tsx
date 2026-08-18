@@ -14,6 +14,16 @@ const DEATH_NOTIFICATION_SCREEN: ScreenTreeNode = {
   children: [],
 };
 
+const LOOKUP_SCREEN: ScreenTreeNode = {
+  id: -2,
+  name: 'Lookups',
+  displayName: 'Lookup Management',
+  code: 'LOOKUPS',
+  route: 'lookups',
+  icon: 'database',
+  children: [],
+};
+
 interface LayoutProps {
   children: React.ReactNode;
   activeSection: string;
@@ -83,14 +93,22 @@ export const Layout: React.FC<LayoutProps> = ({
         const hasDeathScreen = screens.some(s => normalize(s.route || s.code || s.name) === deathRoute);
         const screensWithDeath = hasDeathScreen ? screens : [...screens, DEATH_NOTIFICATION_SCREEN];
 
-        if (!screensWithDeath || screensWithDeath.length === 0) {
+        // Include the Lookup Management screen for admins only, deduped by route
+        const lookupRoute = normalize(LOOKUP_SCREEN.route || LOOKUP_SCREEN.code);
+        const hasLookupScreen = screensWithDeath.some(s => normalize(s.route || s.code || s.name) === lookupRoute);
+        const isAdmin = user?.role?.toLowerCase() === 'admin';
+        const screensFinal = !hasLookupScreen && isAdmin
+          ? [...screensWithDeath, LOOKUP_SCREEN]
+          : screensWithDeath;
+
+        if (!screensFinal || screensFinal.length === 0) {
           setError('No menu items available for your role');
           setMenuItems([]);
           setLoading(false);
           return;
         }
 
-        setMenuItems(screensWithDeath);
+        setMenuItems(screensFinal);
         
         // Auto-expand menus that contain the active section
         const autoExpanded: Record<number, boolean> = {};
