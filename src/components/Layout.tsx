@@ -88,66 +88,129 @@ export const Layout: React.FC<LayoutProps> = ({
         const screens = await ScreensService.getMyScreens();
         console.log('✅ Role-based screens loaded:', screens);
         
-        // Inject the Death Notifications screen as a child of the Patient menu
-        // node (matched dynamically by code/name). Falls back to top-level when
-        // no Patient parent is present. Deduped by route at every level.
+        // Group patient-related screens (Patient list, Patient Visit, Death
+        // Notifications) under a single "Patient" parent menu. Works whether
+        // the backend already nests them or returns them as flat top-level
+        // items. Deduped by route at every level.
         const deathRoute = normalize(DEATH_NOTIFICATION_SCREEN.route || DEATH_NOTIFICATION_SCREEN.code);
+        const visitRoute = 'patient-visits';
+        const patientListRoute = 'patients';
 
-        const isPatientNode = (node: ScreenTreeNode): boolean => {
-          const code = (node.code || '').toUpperCase();
-          const name = (node.name || '').toLowerCase();
-          const display = (node.displayName || '').toLowerCase();
+        const routeOf = (n: ScreenTreeNode) => normalize(n.route || n.code || n.name);
+
+        const isPatientGroup = (n: ScreenTreeNode): boolean => {
+          const code = (n.code || '').toUpperCase();
+          const name = (n.name || '').toLowerCase();
+          const display = (n.displayName || '').toLowerCase();
           return (
-            code === 'PATIENT' ||
-            code === 'PATIENTS' ||
-            name === 'patient' ||
-            name === 'patients' ||
-            display === 'patient' ||
-            display === 'patients' ||
-            name.includes('patient list') ||
-            display.includes('patient list')
+            (code === 'PATIENT' || code === 'PATIENTS') &&
+            !!(n.children && n.children.length > 0)
+          ) || (
+            name === 'patient' || name === 'patients' ||
+            display === 'patient' || display === 'patients'
           );
         };
 
-        const nodeHasDeathRoute = (node: ScreenTreeNode): boolean => {
-          if (normalize(node.route || node.code || node.name) === deathRoute) return true;
-          return !!(node.children && node.children.some(nodeHasDeathRoute));
+        // Routes that should live inside the Patient group
+        const isPatientChildRoute = (r: string): boolean =>
+          r === patientListRoute ||
+          r === visitRoute ||
+          r === deathRoute ||
+          r === 'patient' ||
+          r === 'patientvisit' ||
+          r === 'deathnotification';
+
+        const collectAllRoutes = (items: ScreenTreeNode[], acc: Set<string> = new Set()): Set<string> => {
+          items.forEach(n => {
+            acc.add(routeOf(n));
+            if (n.children) collectAllRoutes(n.children, acc);
+          });
+          return acc;
         };
 
-        const injectDeathNotification = (items: ScreenTreeNode[]): ScreenTreeNode[] => {
-          let injected = false;
-          const result = items.map((node) => {
-            // Recurse first so we can inject into nested patient nodes too
-            let children = node.children ? injectDeathNotification(node.children) : [];
+        const existingRoutes = collectAllRoutes(screens);
+        const hasDeath = existingRoutes.has(deathRoute);
+        const hasVisit = existingRoutes.has(visitRoute);
+        const hasPatientList = existingRoutes.has(patientListRoute);
 
-            if (!injected && isPatientNode(node) && !nodeHasDeathRoute({ ...node, children })) {
-              children = [...children, DEATH_NOTIFICATION_SCREEN];
-              injected = true;
+        // Walk the tree: if we find an existing Patient group, ensure all three
+        // children are present. Otherwise, gather loose patient-related screens.
+        const ensureChild = (parent: ScreenTreeNode, child: ScreenTreeNode): ScreenTreeNode => {
+          const exists = parent.children.some(c => routeOf(c) === routeOf(child));
+          return { ...parent, children: exists ? parent.children : [...parent.children, child] };
+        };
+
+        const PATIENT_GROUP: ScreenTreeNode = {
+          id: -3,
+          name: 'Patient',
+          displayName: 'Patient',
+          code: 'PATIENT',
+          route: 'patient',
+          icon: 'patient',
+          children: [],
+        };
+
+        let screensGrouped: ScreenTreeNode[];
+        let groupedIntoParent = false;
+
+        const groupPatientScreens = (items: ScreenTreeNode[]): ScreenTreeNode[] => {
+          let usedParent = false;
+          const result = items.map((node) => {
+            // Recurse first
+            let children = node.children ? groupPatientScreens(node.children) : [];
+
+            if (!usedParent && isPatientGroup({ ...node, children })) {
+              // This is the Patient parent — ensure all three children exist
+              let updated = { ...node, children: [...children] };
+              if (!hasDeath || !updated.children.some(c => routeOf(c) === deathRoute)) {
+                updated = ensureChild(updated, DEATH_NOTIFICATION_SCREEN);
+              }
+              usedParent = true;
+              return updated;
             }
 
             return { ...node, children };
           });
 
-          return injected ? result : result;
+          if (usedParent) groupedIntoParent = true;
+          return result;
         };
 
-        let screensWithDeath: ScreenTreeNode[];
-        const alreadyHasDeath = screens.some(nodeHasDeathRoute);
-        if (alreadyHasDeath) {
-          screensWithDeath = screens;
+        const grouped = groupPatientScreens(screens);
+
+        if (groupedIntoParent) {
+          // An existing Patient parent was found and enriched
+          screensGrouped = grouped;
         } else {
-          const injected = injectDeathNotification(screens);
-          const wasInjected = injected.some(nodeHasDeathRoute);
-          screensWithDeath = wasInjected ? injected : [...screens, DEATH_NOTIFICATION_SCREEN];
+          // No Patient parent existed — build one from loose top-level screens
+          const looseChildren: ScreenTreeNode[] = [];
+
+          // Find patient list screen at top level
+          const patientListScreen = screens.find(s => routeOf(s) === patientListRoute || routeOf(s) === 'patient');
+          if (patientListScreen) looseChildren.push({ ...patientListScreen, children: [] });
+
+          // Find patient visit screen at top level
+          const visitScreen = screens.find(s => routeOf(s) === visitRoute || routeOf(s) === 'patientvisit');
+          if (visitScreen) looseChildren.push({ ...visitScreen, children: [] });
+
+          // Always add Death Notifications (deduped)
+          if (!looseChildren.some(c => routeOf(c) === deathRoute)) {
+            looseChildren.push(DEATH_NOTIFICATION_SCREEN);
+          }
+
+          // Remove the loose screens from top level and insert the group
+          const childRoutes = new Set(looseChildren.map(routeOf));
+          const remaining = screens.filter(s => !childRoutes.has(routeOf(s)));
+          screensGrouped = [...remaining, { ...PATIENT_GROUP, children: looseChildren }];
         }
 
         // Include the Lookup Management screen for admins only, deduped by route
         const lookupRoute = normalize(LOOKUP_SCREEN.route || LOOKUP_SCREEN.code);
-        const hasLookupScreen = screensWithDeath.some(s => normalize(s.route || s.code || s.name) === lookupRoute);
+        const hasLookupScreen = screensGrouped.some(s => normalize(s.route || s.code || s.name) === lookupRoute);
         const isAdmin = user?.role?.toLowerCase() === 'admin';
         const screensFinal = !hasLookupScreen && isAdmin
-          ? [...screensWithDeath, LOOKUP_SCREEN]
-          : screensWithDeath;
+          ? [...screensGrouped, LOOKUP_SCREEN]
+          : screensGrouped;
 
         if (!screensFinal || screensFinal.length === 0) {
           setError('No menu items available for your role');
