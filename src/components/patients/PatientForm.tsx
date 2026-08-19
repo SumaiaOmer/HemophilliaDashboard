@@ -1034,8 +1034,27 @@ const handleSubmit = (e: React.FormEvent) => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Diagnosis Year</label>
-                <input type="number" name="diagnosisYear" value={formData.diagnosisYear || ''} onChange={handleChange} min="1900" max={new Date().getFullYear()} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Year of diagnosis" />
+                <label className="block text-sm font-medium text-gray-700 mb-2">Diagnosis Year *</label>
+                <input
+                  type="number"
+                  name="diagnosisYear"
+                  value={formData.diagnosisYear || ''}
+                  onChange={handleChange}
+                  required
+                  min="1900"
+                  max={new Date().getFullYear()}
+                  step="1"
+                  pattern="\d{4}"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  placeholder="e.g., 2020"
+                />
+                {formData.diagnosisYear !== undefined && formData.diagnosisYear !== null && String(formData.diagnosisYear) && (
+                  (Number(formData.diagnosisYear) < 1900 || Number(formData.diagnosisYear) > new Date().getFullYear()) && (
+                    <p className="mt-1 text-sm text-red-600">
+                      Please enter a year between 1900 and {new Date().getFullYear()}
+                    </p>
+                  )
+                )}
               </div>
             </div>
 
