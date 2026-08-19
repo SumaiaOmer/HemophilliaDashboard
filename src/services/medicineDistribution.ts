@@ -2,9 +2,23 @@ import { apiClient } from '../lib/api';
 import { MedicineDistribution, MedicineDistributionRequest } from '../types/api';
 
 export class MedicineDistributionService {
+  private static async getDistributions(endpoint: string, requiresAuth = true): Promise<MedicineDistribution[]> {
+    try {
+      return await apiClient.get<MedicineDistribution[]>(endpoint, requiresAuth);
+    } catch (error) {
+      if (requiresAuth) {
+        try {
+          return await apiClient.get<MedicineDistribution[]>(endpoint, false);
+        } catch {
+          return [];
+        }
+      }
+      throw error;
+    }
+  }
+
   static async getAll(): Promise<MedicineDistribution[]> {
-    const response = await apiClient.get<MedicineDistribution[]>('/DrugDistributions');
-    return response;
+    return this.getDistributions('/DrugDistributions');
   }
 
   static async getById(id: number): Promise<MedicineDistribution> {
@@ -26,8 +40,12 @@ export class MedicineDistributionService {
   }
 
   static async getByState(state: string): Promise<MedicineDistribution[]> {
-    const response = await apiClient.get<MedicineDistribution[]>(`/DrugDistributions/state/${state}`);
-    return response;
+    const normalizedState = state?.trim();
+    if (!normalizedState) {
+      return [];
+    }
+
+    return this.getDistributions(`/DrugDistributions/state/${encodeURIComponent(normalizedState)}`);
   }
 
   static async deliver(id: number): Promise<void> {

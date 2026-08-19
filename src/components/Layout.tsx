@@ -88,10 +88,9 @@ export const Layout: React.FC<LayoutProps> = ({
         const screens = await ScreensService.getMyScreens();
         console.log('✅ Role-based screens loaded:', screens);
         
-        // Group patient-related screens (Patient list, Patient Visit) under a
-        // single "Patient" parent menu. Death Notifications stays as its own
-        // top-level entry. Works whether the backend already nests them or
-        // returns them as flat top-level items. Deduped by route at every level.
+        // Group patient-related screens under a single "Patient" parent menu.
+        // Works whether the backend already nests them or returns them as flat
+        // top-level items. Deduped by route at every level.
         const deathRoute = normalize(DEATH_NOTIFICATION_SCREEN.route || DEATH_NOTIFICATION_SCREEN.code);
         const visitRoute = 'patient-visits';
         const patientListRoute = 'patients';
@@ -168,6 +167,9 @@ export const Layout: React.FC<LayoutProps> = ({
           const visitScreen = screens.find(s => routeOf(s) === visitRoute || routeOf(s) === 'patientvisit');
           if (visitScreen) looseChildren.push({ ...visitScreen, children: [] });
 
+          const deathScreen = screens.find(s => routeOf(s) === deathRoute) || DEATH_NOTIFICATION_SCREEN;
+          looseChildren.push({ ...deathScreen, children: [] });
+
           // Only create the Patient group if at least one child was found
           if (looseChildren.length > 0) {
             const childRoutes = new Set(looseChildren.map(routeOf));
@@ -178,9 +180,23 @@ export const Layout: React.FC<LayoutProps> = ({
           }
         }
 
-        // Always include Death Notifications as a top-level entry, deduped by route
-        const hasDeathTopLevel = screensGrouped.some(s => routeOf(s) === deathRoute);
-        const screensWithDeath = hasDeathTopLevel ? screensGrouped : [...screensGrouped, DEATH_NOTIFICATION_SCREEN];
+        // Keep Death Notifications under the Patient parent, including when
+        // the backend already provides that parent.
+        const patientParentIndex = screensGrouped.findIndex(isPatientGroup);
+        const hasDeathChild = screensGrouped.some((screen) =>
+          screen.children?.some((child) => routeOf(child) === deathRoute)
+        );
+        const topLevelDeath = screensGrouped.find((screen) => routeOf(screen) === deathRoute);
+        let screensWithDeath = screensGrouped.filter((screen) => routeOf(screen) !== deathRoute);
+
+        if (patientParentIndex >= 0 && !hasDeathChild) {
+          const patientParent = screensWithDeath[patientParentIndex];
+          const deathScreen = topLevelDeath || DEATH_NOTIFICATION_SCREEN;
+          screensWithDeath[patientParentIndex] = {
+            ...patientParent,
+            children: [...(patientParent.children || []), { ...deathScreen, children: [] }],
+          };
+        }
 
         // Include the Lookup Management screen for admins only, deduped by route
         const lookupRoute = normalize(LOOKUP_SCREEN.route || LOOKUP_SCREEN.code);
