@@ -88,10 +88,58 @@ export const Layout: React.FC<LayoutProps> = ({
         const screens = await ScreensService.getMyScreens();
         console.log('✅ Role-based screens loaded:', screens);
         
-        // Always include the Death Notifications screen, deduped by route
+        // Inject the Death Notifications screen as a child of the Patient menu
+        // node (matched dynamically by code/name). Falls back to top-level when
+        // no Patient parent is present. Deduped by route at every level.
         const deathRoute = normalize(DEATH_NOTIFICATION_SCREEN.route || DEATH_NOTIFICATION_SCREEN.code);
-        const hasDeathScreen = screens.some(s => normalize(s.route || s.code || s.name) === deathRoute);
-        const screensWithDeath = hasDeathScreen ? screens : [...screens, DEATH_NOTIFICATION_SCREEN];
+
+        const isPatientNode = (node: ScreenTreeNode): boolean => {
+          const code = (node.code || '').toUpperCase();
+          const name = (node.name || '').toLowerCase();
+          const display = (node.displayName || '').toLowerCase();
+          return (
+            code === 'PATIENT' ||
+            code === 'PATIENTS' ||
+            name === 'patient' ||
+            name === 'patients' ||
+            display === 'patient' ||
+            display === 'patients' ||
+            name.includes('patient list') ||
+            display.includes('patient list')
+          );
+        };
+
+        const nodeHasDeathRoute = (node: ScreenTreeNode): boolean => {
+          if (normalize(node.route || node.code || node.name) === deathRoute) return true;
+          return !!(node.children && node.children.some(nodeHasDeathRoute));
+        };
+
+        const injectDeathNotification = (items: ScreenTreeNode[]): ScreenTreeNode[] => {
+          let injected = false;
+          const result = items.map((node) => {
+            // Recurse first so we can inject into nested patient nodes too
+            let children = node.children ? injectDeathNotification(node.children) : [];
+
+            if (!injected && isPatientNode(node) && !nodeHasDeathRoute({ ...node, children })) {
+              children = [...children, DEATH_NOTIFICATION_SCREEN];
+              injected = true;
+            }
+
+            return { ...node, children };
+          });
+
+          return injected ? result : result;
+        };
+
+        let screensWithDeath: ScreenTreeNode[];
+        const alreadyHasDeath = screens.some(nodeHasDeathRoute);
+        if (alreadyHasDeath) {
+          screensWithDeath = screens;
+        } else {
+          const injected = injectDeathNotification(screens);
+          const wasInjected = injected.some(nodeHasDeathRoute);
+          screensWithDeath = wasInjected ? injected : [...screens, DEATH_NOTIFICATION_SCREEN];
+        }
 
         // Include the Lookup Management screen for admins only, deduped by route
         const lookupRoute = normalize(LOOKUP_SCREEN.route || LOOKUP_SCREEN.code);
@@ -128,7 +176,7 @@ export const Layout: React.FC<LayoutProps> = ({
           });
         };
         
-        expandParentsOfActive(screens);
+        expandParentsOfActive(screensFinal);
         
         // Also expand default menus
         const expandDefaultParents = (items: ScreenTreeNode[]) => {
@@ -141,7 +189,7 @@ export const Layout: React.FC<LayoutProps> = ({
             }
           });
         };
-        expandDefaultParents(screens);
+        expandDefaultParents(screensFinal);
         
         setExpandedMenus(autoExpanded);
         
