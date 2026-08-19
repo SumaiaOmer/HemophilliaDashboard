@@ -108,7 +108,33 @@ export const DeathNotificationsManager: React.FC = () => {
     return notification?.patientNationalIdNumber || 'N/A';
   };
 
-  const filteredNotifications = notifications.filter((notification) => {
+  // Build a merged list: formal death notifications PLUS patients whose
+  // vitalStatus is "Died" but who don't yet have a notification record.
+  const mergedNotifications: DeathNotification[] = (() => {
+    const notifiedPatientIds = new Set(notifications.map((n) => n.patientId));
+    const deceasedWithoutNotification = patients
+      .filter((p) => {
+        const vital = (p.vitalStatus || '').toString().toLowerCase();
+        return vital === 'died' && !notifiedPatientIds.has(p.id);
+      })
+      .map<DeathNotification>((p) => ({
+        id: -(p.id),
+        patientId: p.id,
+        dateOfDeath: p.incidenceDate || '',
+        patientFullName: p.fullName,
+        patientNationalIdNumber: p.nationalIdNumber || 'N/A',
+        patientDateOfBirth: p.dateOfBirth,
+        patientGender: p.gender,
+        patientDiagnosis: p.diagnosis,
+        patientSeverity: p.severity,
+        patientState: p.state,
+        patientVitalStatus: 'Died',
+        createdAt: undefined,
+      }));
+    return [...deceasedWithoutNotification, ...notifications];
+  })();
+
+  const filteredNotifications = mergedNotifications.filter((notification) => {
     const searchLower = searchTerm.toLowerCase();
     const patientName = getPatientName(notification.patientId).toLowerCase();
     const nationalId = getPatientNationalId(notification.patientId).toLowerCase();
@@ -139,9 +165,11 @@ export const DeathNotificationsManager: React.FC = () => {
     return matchesSearch && matchesDateRange;
   });
 
-  const sortedNotifications = [...filteredNotifications].sort(
-    (a, b) => new Date(b.dateOfDeath).getTime() - new Date(a.dateOfDeath).getTime()
-  );
+  const sortedNotifications = [...filteredNotifications].sort((a, b) => {
+    const aDate = a.dateOfDeath ? new Date(a.dateOfDeath).getTime() : 0;
+    const bDate = b.dateOfDeath ? new Date(b.dateOfDeath).getTime() : 0;
+    return bDate - aDate;
+  });
 
   const hasActiveFilters = searchTerm || startDate || endDate;
 
@@ -395,7 +423,7 @@ export const DeathNotificationsManager: React.FC = () => {
         )}
 
         <div className="mt-3 text-sm text-gray-500">
-          Showing {sortedNotifications.length} of {notifications.length} notifications
+          Showing {sortedNotifications.length} of {mergedNotifications.length} records ({notifications.length} notifications + {mergedNotifications.length - notifications.length} deceased patients)
         </div>
       </div>
 
@@ -422,14 +450,28 @@ export const DeathNotificationsManager: React.FC = () => {
                       <p className="text-xs text-gray-500">ID: {nationalId}</p>
                     </div>
                   </div>
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => handleDelete(notification.id)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
-                      title="Delete"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                  <div className="flex flex-col items-end gap-1">
+                    {notification.id > 0 ? (
+                      <button
+                        onClick={() => handleDelete(notification.id)}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
+                        title="Delete"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => setShowForm(true)}
+                        className="text-xs text-red-600 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded-lg transition-colors"
+                        title="Create death notification"
+                      >
+                        <Plus className="h-3.5 w-3.5 inline mr-1" />
+                        Notify
+                      </button>
+                    )}
+                    {notification.id < 0 && (
+                      <span className="text-[10px] text-gray-400">No notification yet</span>
+                    )}
                   </div>
                 </div>
 
@@ -444,6 +486,12 @@ export const DeathNotificationsManager: React.FC = () => {
                     <Calendar className="h-4 w-4 mr-2" />
                     <span>Date of Death: {formatDate(notification.dateOfDeath)}</span>
                   </div>
+                  {notification.id < 0 && notification.patientDiagnosis && (
+                    <div className="flex items-start text-gray-600">
+                      <AlertCircle className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0" />
+                      <span>Diagnosis: {notification.patientDiagnosis}</span>
+                    </div>
+                  )}
                   {notification.causeOfDeath && (
                     <div className="flex items-start text-gray-600">
                       <AlertCircle className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0" />
@@ -541,7 +589,7 @@ export const DeathNotificationsManager: React.FC = () => {
       {view === 'list' && sortedNotifications.length === 0 && (
         <div className="text-center py-12">
           <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-500">No death notifications found</p>
+          <p className="text-gray-500">No death notifications or deceased patients found</p>
           {hasActiveFilters && (
             <p className="text-sm text-gray-400 mt-1">Try adjusting your search or date filters</p>
           )}
