@@ -63,4 +63,8 @@ export class RolesService {
       screens: role.Screens || role.screens || []
     };
   }
+
+  static async deleteRole(roleId: number): Promise<void> {
+    await apiClient.delete<void>(`/roles/${roleId}`);
+  }
 }

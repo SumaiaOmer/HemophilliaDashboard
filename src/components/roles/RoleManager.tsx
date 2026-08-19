@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Check, ChevronDown, ChevronUp, ChevronRight } from 'lucide-react';
+import { Plus, Check, ChevronDown, ChevronUp, ChevronRight, Trash2 } from 'lucide-react';
 import { RolesService } from '../../services/roles';
 import { ScreensService, ScreenTreeNode } from '../../services/screens';
 import { UsersService } from '../../services/users';
@@ -202,6 +202,30 @@ export const RoleManager: React.FC = () => {
     }
   };
 
+  const handleDeleteRole = async (roleId: number, roleName: string) => {
+    if (!window.confirm(`Are you sure you want to delete the role "${roleName}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await RolesService.deleteRole(roleId);
+      setExpandedRoles(prev => prev.filter(r => r.roleId !== roleId));
+      setSelectedScreensByRole(prev => {
+        const next = { ...prev };
+        delete next[roleId];
+        return next;
+      });
+      setSelectedUsersByRole(prev => {
+        const next = { ...prev };
+        delete next[roleId];
+        return next;
+      });
+      await loadInitialData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete role');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -252,6 +276,13 @@ export const RoleManager: React.FC = () => {
                     <h4 className="text-lg font-semibold text-gray-800">{role.name}</h4>
                     <p className="text-sm text-gray-500">Role ID: {role.id}</p>
                   </div>
+                  <button
+                    onClick={() => handleDeleteRole(role.id, role.name)}
+                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
+                    title="Delete role"
+                  >
+                    <Trash2 className="h-5 w-5" />
+                  </button>
                 </div>
 
                 <div className="mb-4">
