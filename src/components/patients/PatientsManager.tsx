@@ -120,6 +120,7 @@ export const PatientsManager: React.FC = () => {
   const formatBooleanValue = (value?: boolean) => (value ? 'Yes' : 'No');
   const getInhibitorStatus = (patient: Patient) =>
     patient.HasInhibitors ?? patient.hasInhibitors ?? patient.inhibitor ?? false;
+  const isDeceased = (patient: Patient) => patient.vitalStatus?.toLowerCase() === 'died';
 
   if (loading) {
     return (
@@ -183,16 +184,21 @@ export const PatientsManager: React.FC = () => {
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredPatients.map((patient) => (
                 <React.Fragment key={patient.id}>
-                  <tr className="hover:bg-gray-50">
+                  <tr className={isDeceased(patient) ? 'bg-red-50 border-l-4 border-red-600' : 'hover:bg-gray-50'}>
                     <td className="px-6 py-4">
                       <div className="flex items-start">
                         <div className="flex-shrink-0">
-                          <div className="h-10 w-10 bg-red-100 rounded-full flex items-center justify-center">
-                            <Users className="h-5 w-5 text-red-600" />
+                          <div className={`h-10 w-10 rounded-full flex items-center justify-center ${isDeceased(patient) ? 'bg-red-200' : 'bg-red-100'}`}>
+                            <Users className={`h-5 w-5 ${isDeceased(patient) ? 'text-red-800' : 'text-red-600'}`} />
                           </div>
                         </div>
                         <div className="ml-4">
                           <div className="text-sm font-medium text-gray-900">{patient.fullName}</div>
+                          {isDeceased(patient) && (
+                            <span className="inline-block mt-1 px-2 py-1 text-xs font-semibold text-red-800 bg-red-200 rounded">
+                              Died
+                            </span>
+                          )}
                           <div className="text-xs text-gray-500">ID: {patient.nationalIdNumber}</div>
                           <div className="text-xs text-gray-500 flex items-center mt-1">
                             <Calendar className="h-3 w-3 mr-1" />
@@ -261,8 +267,9 @@ export const PatientsManager: React.FC = () => {
                         </button>
                         <button
                           onClick={() => handleEdit(patient)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
-                          title="Edit"
+                          disabled={isDeceased(patient)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200 disabled:text-gray-300 disabled:hover:bg-transparent disabled:cursor-not-allowed"
+                          title={isDeceased(patient) ? 'Editing is disabled for deceased patients' : 'Edit'}
                         >
                           <Edit className="h-4 w-4" />
                         </button>

@@ -978,6 +978,30 @@ const handleSubmit = (e: React.FormEvent) => {
               </div>
             </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <input type="checkbox" name="hasHealthInsurance" checked={formData.hasHealthInsurance || false} onChange={(e) => {
+                    handleChange(e);
+                    if (!e.target.checked) setFormData(prev => ({ ...prev, insuranceProvider: '' }));
+                  }} className="mr-2 h-4 w-4 cursor-pointer" />
+                  Has Health Insurance
+                </label>
+                {formData.hasHealthInsurance && (
+                  <div className="mt-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Insurance Provider</label>
+                    <input type="text" name="insuranceProvider" value={formData.insuranceProvider || ''} onChange={handleChange} placeholder="Enter insurance provider" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
+                  </div>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <input type="checkbox" name="isCircumcised" checked={formData.isCircumcised || false} onChange={handleChange} className="mr-2 h-4 w-4 cursor-pointer" />
+                  Is Circumcised
+                </label>
+              </div>
+            </div>
+
             {/* Vital Status */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Vital Status *</label>
@@ -1075,13 +1099,51 @@ const handleSubmit = (e: React.FormEvent) => {
 
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">Severity *</label>
-              <select name="severity" value={formData.severity || ''} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                <option value="">Select Severity</option>
-                <option value="mild">Mild</option>
-                <option value="moderate">Moderate</option>
-                <option value="severe">Severe</option>
-                <option value="unknown">Unknown</option>
-              </select>
+              <div className="space-y-3">
+                <div className="flex items-center gap-4">
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={
+                      formData.severity === 'mild' ? 12 :
+                      formData.severity === 'moderate' ? 38 :
+                      formData.severity === 'severe' ? 63 :
+                      formData.severity === 'unknown' ? 88 : 0
+                    }
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value);
+                      let severity = '';
+                      if (val <= 25) severity = 'mild';
+                      else if (val <= 50) severity = 'moderate';
+                      else if (val <= 75) severity = 'severe';
+                      else severity = 'unknown';
+                      setFormData((prev) => ({ ...prev, severity }));
+                    }}
+                    className="flex-1 h-2 bg-gradient-to-r from-green-500 via-yellow-500 to-red-500 rounded-lg appearance-none cursor-pointer accent-violet-600"
+                    style={{
+                      backgroundImage: 'linear-gradient(to right, rgb(34, 197, 94) 0%, rgb(34, 197, 94) 25%, rgb(234, 179, 8) 25%, rgb(234, 179, 8) 50%, rgb(239, 68, 68) 50%, rgb(239, 68, 68) 75%, rgb(107, 114, 128) 75%, rgb(107, 114, 128) 100%)'
+                    }}
+                    required
+                  />
+                  <span className="text-sm font-semibold px-3 py-1 rounded-lg min-w-24 text-center" style={{
+                    backgroundColor: formData.severity === 'mild' ? '#22c55e' :
+                                     formData.severity === 'moderate' ? '#eab308' :
+                                     formData.severity === 'severe' ? '#ef4444' :
+                                     formData.severity === 'unknown' ? '#6b7280' : '#e5e7eb',
+                    color: (formData.severity === 'moderate' || formData.severity === 'unknown') ? '#000' : '#fff'
+                  }}>
+                    {formData.severity ? formData.severity.charAt(0).toUpperCase() + formData.severity.slice(1) : 'Select'}
+                  </span>
+                </div>
+                <div className="flex justify-between text-xs text-gray-600 px-1">
+                  <span>Mild</span>
+                  <span>Moderate</span>
+                  <span>Severe</span>
+                  <span>Unknown</span>
+                </div>
+              </div>
+              <input type="hidden" name="severity" value={formData.severity || ''} required />
             </div>
 
             {/* Factor Level */}
@@ -1103,7 +1165,7 @@ const handleSubmit = (e: React.FormEvent) => {
             {hasFactorLevel && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Level of factor at diagnosis</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Level of factor </label>
                   <input type="number" name="factorPercent" value={formData.factorPercent || ''} onChange={handleChange} min="0" max="100" step="0.01" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Factor %" />
                 </div>
                 <div>
@@ -1262,46 +1324,6 @@ const handleSubmit = (e: React.FormEvent) => {
             )}
           </div>
 
-          {/* ===== ADDITIONAL HEALTH INFORMATION ===== */}
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <h4 className="text-lg font-semibold text-red-900 mb-4">Additional Health Information</h4>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <input type="checkbox" name="hasHBVVaccination" checked={formData.hasHBVVaccination || false} onChange={handleChange} className="mr-2 h-4 w-4 cursor-pointer" />
-                  Has HBV Vaccination
-                </label>
-                {formData.hasHBVVaccination && (
-                  <input type="date" name="hbvVaccinationDate" value={formData.hbvVaccinationDate || ''} onChange={handleChange} placeholder="Vaccination Date" className="mt-2 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none" />
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <input type="checkbox" name="hasHealthInsurance" checked={formData.hasHealthInsurance || false} onChange={(e) => {
-                    handleChange(e);
-                    if (!e.target.checked) setFormData(prev => ({ ...prev, insuranceProvider: '' }));
-                  }} className="mr-2 h-4 w-4 cursor-pointer" />
-                  Has Health Insurance
-                </label>
-              </div>
-            </div>
-
-            {formData.hasHealthInsurance && (
-              <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Insurance Provider</label>
-                <input type="text" name="insuranceProvider" value={formData.insuranceProvider || ''} onChange={handleChange} placeholder="Enter insurance provider" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
-              </div>
-            )}
-
-            <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <input type="checkbox" name="isCircumcised" checked={formData.isCircumcised || false} onChange={handleChange} className="mr-2 h-4 w-4 cursor-pointer" />
-                Is Circumcised
-              </label>
-            </div>
-          </div>
-
           {/* ===== VIRAL SCREENING ===== */}
           <div className="bg-teal-50 border border-teal-200 rounded-lg p-4">
             <h4 className="text-lg font-semibold text-teal-900 mb-4">Viral Screening</h4>
@@ -1379,6 +1401,30 @@ const handleSubmit = (e: React.FormEvent) => {
                 )}
               </div>
             </div>
+          </div>
+
+          {/* ===== ADDITIONAL HEALTH INFORMATION ===== */}
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <h4 className="text-lg font-semibold text-red-900 mb-4">Additional Health Information</h4>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <input type="checkbox" name="hasHBVVaccination" checked={formData.hasHBVVaccination || false} onChange={handleChange} className="mr-2 h-4 w-4 cursor-pointer" />
+                  Has HBV Vaccination
+                </label>
+                {formData.hasHBVVaccination && (
+                  <input type="date" name="hbvVaccinationDate" value={formData.hbvVaccinationDate || ''} onChange={handleChange} placeholder="Vaccination Date" className="mt-2 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none" />
+                )}
+              </div>
+            </div>
+
+            {formData.hasHealthInsurance && (
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Insurance Provider</label>
+                <input type="text" name="insuranceProvider" value={formData.insuranceProvider || ''} onChange={handleChange} placeholder="Enter insurance provider" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
+              </div>
+            )}
           </div>
 
           {/* ===== OTHER MEDICAL TESTS ===== */}

@@ -338,8 +338,12 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
 
   const hasOtherComplaint = selectedComplaints.includes('Other');
   const selectedPatient = patients.find(p => p.id === formData.patientId);
+  const isAlivePatient = (patient: Patient) => patient.vitalStatus?.toLowerCase() === 'alive';
+  const selectablePatients = visit
+    ? patients.filter(patient => patient.id === formData.patientId || isAlivePatient(patient))
+    : patients.filter(isAlivePatient);
 
-  const filteredPatients = patients.filter(patient => {
+  const filteredPatients = selectablePatients.filter(patient => {
     const searchLower = patientSearch.toLowerCase();
     return (
       patient.fullName?.toLowerCase().includes(searchLower) ||
