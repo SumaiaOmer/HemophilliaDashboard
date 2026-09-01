@@ -261,6 +261,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
   const [hasFactorLevel, setHasFactorLevel] = useState(false);
   const [factorTestDate, setFactorTestDate] = useState('');
   const [hasFamilyHistory, setHasFamilyHistory] = useState(false);
+  const [inhibitorStatus, setInhibitorStatus] = useState<'yes' | 'no' | 'not_done'>('no');
 
   const [testDates, setTestDates] = useState<Partial<Record<TestType, { hasTaken: boolean; testDate: string; result?: 'positive' | 'negative' }>>>({
     HBV: { hasTaken: false, testDate: '', result: undefined },
@@ -335,6 +336,12 @@ export const PatientForm: React.FC<PatientFormProps> = ({
 
       const normalized1 = normalizePhoneValue(patient.contactNumber1 || patient.contactNumber);
       const normalized2 = normalizePhoneValue(patient.contactNumber2);
+
+      setInhibitorStatus(
+        patient.HasInhibitors === true || patient.hasInhibitors === true || patient.inhibitor === true || normalizedInhibitorHistory.length > 0
+          ? 'yes'
+          : 'no'
+      );
 
       setFormData({
         fullName: patient.fullName || '',
@@ -705,11 +712,13 @@ const handleSubmit = (e: React.FormEvent) => {
       }));
     } else if (name === 'HasInhibitors') {
       const inhibitorValue = value === 'true';
+      const inhibitorStatus = value === 'true' ? 'true' : 'false';
       setFormData(prev => ({
         ...prev,
         HasInhibitors: inhibitorValue,
         hasInhibitors: inhibitorValue,
-        inhibitorLevel: inhibitorValue ? prev.inhibitorLevel : undefined
+        inhibitorLevel: inhibitorValue ? prev.inhibitorLevel : undefined,
+        inhibitorScreeningDate: inhibitorValue ? prev.inhibitorScreeningDate : ''
       }));
     } else if (type === 'number') {
       setFormData(prev => ({ ...prev, [name]: value === '' ? undefined : parseFloat(value) }));
@@ -1178,13 +1187,30 @@ const handleSubmit = (e: React.FormEvent) => {
             {/* Inhibitor Section - with multiple inhibitors support */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">Inhibitor</label>
-              <select name="HasInhibitors" value={formData.HasInhibitors ? 'true' : 'false'} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                <option value="false">No</option>
-                <option value="true">Yes</option>
+              <select
+                name="HasInhibitors"
+                value={inhibitorStatus}
+                onChange={(e) => {
+                  const choice = e.target.value as 'yes' | 'no' | 'not_done';
+                  const isYes = choice === 'yes';
+                  setInhibitorStatus(choice);
+                  setFormData(prev => ({
+                    ...prev,
+                    HasInhibitors: isYes,
+                    hasInhibitors: isYes,
+                    inhibitorLevel: isYes ? prev.inhibitorLevel : undefined,
+                    inhibitorScreeningDate: isYes ? prev.inhibitorScreeningDate : ''
+                  }));
+                }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+              >
+                <option value="no">No</option>
+                <option value="yes">Yes</option>
+                <option value="not_done">Not Done</option>
               </select>
             </div>
 
-            {formData.HasInhibitors && (
+            {inhibitorStatus === 'yes' && (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
@@ -1418,13 +1444,6 @@ const handleSubmit = (e: React.FormEvent) => {
                 )}
               </div>
             </div>
-
-            {formData.hasHealthInsurance && (
-              <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Insurance Provider</label>
-                <input type="text" name="insuranceProvider" value={formData.insuranceProvider || ''} onChange={handleChange} placeholder="Enter insurance provider" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
-              </div>
-            )}
           </div>
 
           {/* ===== OTHER MEDICAL TESTS ===== */}
