@@ -262,6 +262,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
   const [factorTestDate, setFactorTestDate] = useState('');
   const [hasFamilyHistory, setHasFamilyHistory] = useState(false);
   const [inhibitorStatus, setInhibitorStatus] = useState<'yes' | 'no' | 'not_done'>('no');
+  const isPatientAlive = (formData.vitalStatus || 'Alive') === 'Alive';
 
   const [testDates, setTestDates] = useState<Partial<Record<TestType, { hasTaken: boolean; testDate: string; result?: 'positive' | 'negative' }>>>({
     HBV: { hasTaken: false, testDate: '', result: undefined },
@@ -801,21 +802,19 @@ const handleSubmit = (e: React.FormEvent) => {
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <h4 className="text-lg font-semibold text-red-900 mb-4">Demographic Data</h4>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
-                <input type="text" name="fullName" value={formData.fullName} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Full name" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">National ID Number *</label>
-                <input type="text" name="nationalIdNumber" value={formData.nationalIdNumber} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="National ID" />
-              </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Vital Status *</label>
+              <select name="vitalStatus" value={formData.vitalStatus || 'Alive'} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                <option value="Alive">Alive</option>
+                <option value="Died">Died</option>
+                <option value="Unknown">Unknown</option>
+              </select>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Date of Birth *</label>
-                <input type="date" name="dateOfBirth" value={formData.dateOfBirth} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
+                <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
+                <input type="text" name="fullName" value={formData.fullName} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Full name" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Gender *</label>
@@ -824,6 +823,20 @@ const handleSubmit = (e: React.FormEvent) => {
                   <option value="male">Male</option>
                   <option value="female">Female</option>
                 </select>
+              </div>
+            </div>
+
+            {isPatientAlive && (
+              <>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">National ID Number *</label>
+                  <input type="text" name="nationalIdNumber" value={formData.nationalIdNumber} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="National ID" />
+                </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Date of Birth *</label>
+                <input type="date" name="dateOfBirth" value={formData.dateOfBirth} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
               </div>
             </div>
 
@@ -1011,508 +1024,505 @@ const handleSubmit = (e: React.FormEvent) => {
               </div>
             </div>
 
-            {/* Vital Status */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Vital Status *</label>
-              <select name="vitalStatus" value={formData.vitalStatus || 'Alive'} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                <option value="Alive">Alive</option>
-                <option value="Died">Died</option>
-                <option value="Unknown">Unknown</option>
-              </select>
-            </div>
+              </>
+            )}
           </div>
 
-          {/* ===== MEDICAL INFORMATION ===== */}
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <h4 className="text-lg font-semibold text-green-900 mb-4">Medical Information</h4>
+          {isPatientAlive && (
+            <>
+              {/* ===== MEDICAL INFORMATION ===== */}
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <h4 className="text-lg font-semibold text-green-900 mb-4">Medical Information</h4>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Hemophilia Center ID *</label>
-                <input type="text" name="hemophiliaCenterId" value={formData.hemophiliaCenterId} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Center ID" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Incidence Date</label>
-                <input type="date" name="incidenceDate" value={formData.incidenceDate || ''} onChange={handleChange} max={toDateInputValue(new Date().toISOString())} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Diagnosis</label>
-                <select name="diagnosis" value={formData.diagnosis} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                  <option value="">Select Diagnosis</option>
-                  {(lookupDiagnoses.length > 0 ? lookupDiagnoses : [
-                    { id: '1', name: 'Hemophilia A' }, { id: '2', name: 'Hemophilia B' },
-                    { id: '3', name: 'Hemophilia A carrier' }, { id: '4', name: 'Hemophilia B carrier' },
-                    { id: '5', name: 'Acquired hemophilia' }, { id: '6', name: 'Von Willebrand Disease' },
-                    { id: '7', name: 'Afibrinogenemia' }, { id: '8', name: 'Hypofibrinogenemia' },
-                    { id: '9', name: 'Dysfibrinogenemia' }, { id: '10', name: 'Platelete dysfunction' },
-                    { id: '11', name: 'Bernard Soulier syndrome' }, { id: '12', name: 'Glanzmann thrombasthenia' },
-                    { id: '13', name: 'Prothrombin deficiency' }, { id: '14', name: 'Factor V deficiency' },
-                    { id: '15', name: 'Combined factor V and VIII deficiency' }, { id: '16', name: 'Factor VII deficiency' },
-                    { id: '17', name: 'Factor X deficiency' }, { id: '18', name: 'Factor XI deficiency' },
-                    { id: '19', name: 'Factor XII deficiency' }, { id: '20', name: 'Factor XIII deficiency' },
-                    { id: '21', name: 'Vitamin K dependent factor deficiency' }, { id: '22', name: 'Other bleeding disorder' }
-                  ]).map(d => (
-                    <option key={d.id} value={d.name}>{d.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Diagnosis Type</label>
-                <input type="text" name="diagnosisType" value={formData.diagnosisType || ''} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="e.g., new_patient, followup" />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Diagnosis Year *</label>
-                <input
-                  type="number"
-                  name="diagnosisYear"
-                  value={formData.diagnosisYear || ''}
-                  onChange={handleChange}
-                  required
-                  min="1900"
-                  max={new Date().getFullYear()}
-                  step="1"
-                  pattern="\d{4}"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                  placeholder="e.g., 2020"
-                />
-                {formData.diagnosisYear !== undefined && formData.diagnosisYear !== null && String(formData.diagnosisYear) && (
-                  (Number(formData.diagnosisYear) < 1900 || Number(formData.diagnosisYear) > new Date().getFullYear()) && (
-                    <p className="mt-1 text-sm text-red-600">
-                      Please enter a year between 1900 and {new Date().getFullYear()}
-                    </p>
-                  )
-                )}
-              </div>
-            </div>
-
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Blood Group *</label>
-              <select name="bloodGroup" value={formData.bloodGroup || ''} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                <option value="">Select Blood Group</option>
-                <option value="A+">A+</option>
-                <option value="A-">A-</option>
-                <option value="B+">B+</option>
-                <option value="B-">B-</option>
-                <option value="AB+">AB+</option>
-                <option value="AB-">AB-</option>
-                <option value="O+">O+</option>
-                <option value="O-">O-</option>
-              </select>
-            </div>
-
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Severity *</label>
-              <div className="space-y-3">
-                <div className="flex items-center gap-4">
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={
-                      formData.severity === 'mild' ? 12 :
-                      formData.severity === 'moderate' ? 38 :
-                      formData.severity === 'severe' ? 63 :
-                      formData.severity === 'unknown' ? 88 : 0
-                    }
-                    onChange={(e) => {
-                      const val = parseInt(e.target.value);
-                      let severity = '';
-                      if (val <= 25) severity = 'mild';
-                      else if (val <= 50) severity = 'moderate';
-                      else if (val <= 75) severity = 'severe';
-                      else severity = 'unknown';
-                      setFormData((prev) => ({ ...prev, severity }));
-                    }}
-                    className="flex-1 h-2 bg-gradient-to-r from-green-500 via-yellow-500 to-red-500 rounded-lg appearance-none cursor-pointer accent-violet-600"
-                    style={{
-                      backgroundImage: 'linear-gradient(to right, rgb(34, 197, 94) 0%, rgb(34, 197, 94) 25%, rgb(234, 179, 8) 25%, rgb(234, 179, 8) 50%, rgb(239, 68, 68) 50%, rgb(239, 68, 68) 75%, rgb(107, 114, 128) 75%, rgb(107, 114, 128) 100%)'
-                    }}
-                    required
-                  />
-                  <span className="text-sm font-semibold px-3 py-1 rounded-lg min-w-24 text-center" style={{
-                    backgroundColor: formData.severity === 'mild' ? '#22c55e' :
-                                     formData.severity === 'moderate' ? '#eab308' :
-                                     formData.severity === 'severe' ? '#ef4444' :
-                                     formData.severity === 'unknown' ? '#6b7280' : '#e5e7eb',
-                    color: (formData.severity === 'moderate' || formData.severity === 'unknown') ? '#000' : '#fff'
-                  }}>
-                    {formData.severity ? formData.severity.charAt(0).toUpperCase() + formData.severity.slice(1) : 'Select'}
-                  </span>
-                </div>
-                <div className="flex justify-between text-xs text-gray-600 px-1">
-                  <span>Mild</span>
-                  <span>Moderate</span>
-                  <span>Severe</span>
-                  <span>Unknown</span>
-                </div>
-              </div>
-              <input type="hidden" name="severity" value={formData.severity || ''} required />
-            </div>
-
-            {/* Factor Level */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Has Factor Level Test?</label>
-              <select value={hasFactorLevel ? 'true' : 'false'} onChange={(e) => {
-                const value = e.target.value === 'true';
-                setHasFactorLevel(value);
-                if (!value) {
-                  setFormData(prev => ({ ...prev, factorPercent: undefined, factorPercentDate: undefined }));
-                  setFactorTestDate('');
-                }
-              }} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                <option value="false">No</option>
-                <option value="true">Yes</option>
-              </select>
-            </div>
-
-            {hasFactorLevel && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Level of factor </label>
-                  <input type="number" name="factorPercent" value={formData.factorPercent || ''} onChange={handleChange} min="0" max="100" step="0.01" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Factor %" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Factor Test Date</label>
-                  <input type="date" value={factorTestDate} onChange={(e) => setFactorTestDate(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
-                </div>
-              </div>
-            )}
-
-            {/* Inhibitor Section - with multiple inhibitors support */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Inhibitor</label>
-              <select
-                name="HasInhibitors"
-                value={inhibitorStatus}
-                onChange={(e) => {
-                  const choice = e.target.value as 'yes' | 'no' | 'not_done';
-                  const isYes = choice === 'yes';
-                  setInhibitorStatus(choice);
-                  setFormData(prev => ({
-                    ...prev,
-                    HasInhibitors: isYes,
-                    hasInhibitors: isYes,
-                    inhibitorLevel: isYes ? prev.inhibitorLevel : undefined,
-                    inhibitorScreeningDate: isYes ? prev.inhibitorScreeningDate : ''
-                  }));
-                }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-              >
-                <option value="no">No</option>
-                <option value="yes">Yes</option>
-                <option value="not_done">Not Done</option>
-              </select>
-            </div>
-
-            {inhibitorStatus === 'yes' && (
-              <>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Inhibitor Screening Date</label>
-                    <input type="date" name="inhibitorScreeningDate" value={formData.inhibitorScreeningDate ?? ''} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Hemophilia Center ID *</label>
+                    <input type="text" name="hemophiliaCenterId" value={formData.hemophiliaCenterId} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Center ID" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Inhibitor Level</label>
-                    <input type="number" name="inhibitorLevel" value={formData.inhibitorLevel !== undefined ? String(formData.inhibitorLevel) : ''} onChange={handleChange} step="0.01" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Inhibitor level" />
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Incidence Date</label>
+                    <input type="date" name="incidenceDate" value={formData.incidenceDate || ''} onChange={handleChange} max={toDateInputValue(new Date().toISOString())} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
                   </div>
                 </div>
 
-                {/* Multiple Inhibitor Records - "Inhibitor Information" section */}
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mt-4">
-                  <div className="flex justify-between items-center mb-4">
-                    <h4 className="text-lg font-semibold text-purple-900">Additional Inhibitor Records</h4>
-                    <button
-                      type="button"
-                      onClick={addPatientInhibitor}
-                      className="flex items-center space-x-1 px-3 py-1 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200 text-sm"
-                    >
-                      <Plus className="h-4 w-4" />
-                      <span>Add Inhibitor Record</span>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Diagnosis</label>
+                    <select name="diagnosis" value={formData.diagnosis} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                      <option value="">Select Diagnosis</option>
+                      {(lookupDiagnoses.length > 0 ? lookupDiagnoses : [
+                        { id: '1', name: 'Hemophilia A' }, { id: '2', name: 'Hemophilia B' },
+                        { id: '3', name: 'Hemophilia A carrier' }, { id: '4', name: 'Hemophilia B carrier' },
+                        { id: '5', name: 'Acquired hemophilia' }, { id: '6', name: 'Von Willebrand Disease' },
+                        { id: '7', name: 'Afibrinogenemia' }, { id: '8', name: 'Hypofibrinogenemia' },
+                        { id: '9', name: 'Dysfibrinogenemia' }, { id: '10', name: 'Platelete dysfunction' },
+                        { id: '11', name: 'Bernard Soulier syndrome' }, { id: '12', name: 'Glanzmann thrombasthenia' },
+                        { id: '13', name: 'Prothrombin deficiency' }, { id: '14', name: 'Factor V deficiency' },
+                        { id: '15', name: 'Combined factor V and VIII deficiency' }, { id: '16', name: 'Factor VII deficiency' },
+                        { id: '17', name: 'Factor X deficiency' }, { id: '18', name: 'Factor XI deficiency' },
+                        { id: '19', name: 'Factor XII deficiency' }, { id: '20', name: 'Factor XIII deficiency' },
+                        { id: '21', name: 'Vitamin K dependent factor deficiency' }, { id: '22', name: 'Other bleeding disorder' }
+                      ]).map(d => (
+                        <option key={d.id} value={d.name}>{d.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Diagnosis Type</label>
+                    <input type="text" name="diagnosisType" value={formData.diagnosisType || ''} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="e.g., new_patient, followup" />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Diagnosis Year *</label>
+                    <input
+                      type="number"
+                      name="diagnosisYear"
+                      value={formData.diagnosisYear || ''}
+                      onChange={handleChange}
+                      required
+                      min="1900"
+                      max={new Date().getFullYear()}
+                      step="1"
+                      pattern="\d{4}"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                      placeholder="e.g., 2020"
+                    />
+                    {formData.diagnosisYear !== undefined && formData.diagnosisYear !== null && String(formData.diagnosisYear) && (
+                      (Number(formData.diagnosisYear) < 1900 || Number(formData.diagnosisYear) > new Date().getFullYear()) && (
+                        <p className="mt-1 text-sm text-red-600">
+                          Please enter a year between 1900 and {new Date().getFullYear()}
+                        </p>
+                      )
+                    )}
+                  </div>
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Blood Group *</label>
+                  <select name="bloodGroup" value={formData.bloodGroup || ''} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    <option value="">Select Blood Group</option>
+                    <option value="A+">A+</option>
+                    <option value="A-">A-</option>
+                    <option value="B+">B+</option>
+                    <option value="B-">B-</option>
+                    <option value="AB+">AB+</option>
+                    <option value="AB-">AB-</option>
+                    <option value="O+">O+</option>
+                    <option value="O-">O-</option>
+                  </select>
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Severity *</label>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-4">
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={
+                          formData.severity === 'mild' ? 12 :
+                          formData.severity === 'moderate' ? 38 :
+                          formData.severity === 'severe' ? 63 :
+                          formData.severity === 'unknown' ? 88 : 0
+                        }
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value);
+                          let severity = '';
+                          if (val <= 25) severity = 'mild';
+                          else if (val <= 50) severity = 'moderate';
+                          else if (val <= 75) severity = 'severe';
+                          else severity = 'unknown';
+                          setFormData((prev) => ({ ...prev, severity }));
+                        }}
+                        className="flex-1 h-2 bg-gradient-to-r from-green-500 via-yellow-500 to-red-500 rounded-lg appearance-none cursor-pointer accent-violet-600"
+                        style={{
+                          backgroundImage: 'linear-gradient(to right, rgb(34, 197, 94) 0%, rgb(34, 197, 94) 25%, rgb(234, 179, 8) 25%, rgb(234, 179, 8) 50%, rgb(239, 68, 68) 50%, rgb(239, 68, 68) 75%, rgb(107, 114, 128) 75%, rgb(107, 114, 128) 100%)'
+                        }}
+                        required
+                      />
+                      <span className="text-sm font-semibold px-3 py-1 rounded-lg min-w-24 text-center" style={{
+                        backgroundColor: formData.severity === 'mild' ? '#22c55e' :
+                                         formData.severity === 'moderate' ? '#eab308' :
+                                         formData.severity === 'severe' ? '#ef4444' :
+                                         formData.severity === 'unknown' ? '#6b7280' : '#e5e7eb',
+                        color: (formData.severity === 'moderate' || formData.severity === 'unknown') ? '#000' : '#fff'
+                      }}>
+                        {formData.severity ? formData.severity.charAt(0).toUpperCase() + formData.severity.slice(1) : 'Select'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-600 px-1">
+                      <span>Mild</span>
+                      <span>Moderate</span>
+                      <span>Severe</span>
+                      <span>Unknown</span>
+                    </div>
+                  </div>
+                  <input type="hidden" name="severity" value={formData.severity || ''} required />
+                </div>
+
+                {/* Factor Level */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Has Factor Level Test?</label>
+                  <select value={hasFactorLevel ? 'true' : 'false'} onChange={(e) => {
+                    const value = e.target.value === 'true';
+                    setHasFactorLevel(value);
+                    if (!value) {
+                      setFormData(prev => ({ ...prev, factorPercent: undefined, factorPercentDate: undefined }));
+                      setFactorTestDate('');
+                    }
+                  }} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    <option value="false">No</option>
+                    <option value="true">Yes</option>
+                  </select>
+                </div>
+
+                {hasFactorLevel && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Level of factor </label>
+                      <input type="number" name="factorPercent" value={formData.factorPercent || ''} onChange={handleChange} min="0" max="100" step="0.01" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Factor %" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Factor Test Date</label>
+                      <input type="date" value={factorTestDate} onChange={(e) => setFactorTestDate(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
+                    </div>
+                  </div>
+                )}
+
+                {/* Inhibitor Section - with multiple inhibitors support */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Inhibitor</label>
+                  <select
+                    name="HasInhibitors"
+                    value={inhibitorStatus}
+                    onChange={(e) => {
+                      const choice = e.target.value as 'yes' | 'no' | 'not_done';
+                      const isYes = choice === 'yes';
+                      setInhibitorStatus(choice);
+                      setFormData(prev => ({
+                        ...prev,
+                        HasInhibitors: isYes,
+                        hasInhibitors: isYes,
+                        inhibitorLevel: isYes ? prev.inhibitorLevel : undefined,
+                        inhibitorScreeningDate: isYes ? prev.inhibitorScreeningDate : ''
+                      }));
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  >
+                    <option value="no">No</option>
+                    <option value="yes">Yes</option>
+                    <option value="not_done">Not Done</option>
+                  </select>
+                </div>
+
+                {inhibitorStatus === 'yes' && (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Inhibitor Screening Date</label>
+                        <input type="date" name="inhibitorScreeningDate" value={formData.inhibitorScreeningDate ?? ''} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Inhibitor Level</label>
+                        <input type="number" name="inhibitorLevel" value={formData.inhibitorLevel !== undefined ? String(formData.inhibitorLevel) : ''} onChange={handleChange} step="0.01" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Inhibitor level" />
+                      </div>
+                    </div>
+
+                    {/* Multiple Inhibitor Records - "Inhibitor Information" section */}
+                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mt-4">
+                      <div className="flex justify-between items-center mb-4">
+                        <h4 className="text-lg font-semibold text-purple-900">Additional Inhibitor Records</h4>
+                        <button
+                          type="button"
+                          onClick={addPatientInhibitor}
+                          className="flex items-center space-x-1 px-3 py-1 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200 text-sm"
+                        >
+                          <Plus className="h-4 w-4" />
+                          <span>Add Inhibitor Record</span>
+                        </button>
+                      </div>
+
+                      {formData.inhibitors && formData.inhibitors.length > 0 ? (
+                        <div className="space-y-4">
+                          {formData.inhibitors.map((inhibitor, index) => (
+                            <div key={index} className="bg-white p-4 rounded-lg border border-gray-200">
+                              <div className="flex justify-between items-start mb-3">
+                                <h5 className="font-medium text-gray-800">Inhibitor Record #{index + 1}</h5>
+                                <button
+                                  type="button"
+                                  onClick={() => removePatientInhibitor(index)}
+                                  className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors duration-200"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div>
+                                  <label className="block text-xs text-gray-600 mb-1">Inhibitor Level</label>
+                                  <input
+                                    type="number"
+                                    value={inhibitor.inhibitorLevel !== undefined ? String(inhibitor.inhibitorLevel) : ''}
+                                    onChange={(e) => {
+                                      const v = e.target.value;
+                                      updatePatientInhibitor(index, 'inhibitorLevel', v === '' ? undefined : parseFloat(v));
+                                    }}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-xs text-gray-600 mb-1">Screening Date</label>
+                                  <input
+                                    type="date"
+                                    value={inhibitor.inhibitorScreeningDate || ''}
+                                    onChange={(e) => updatePatientInhibitor(index, 'inhibitorScreeningDate', e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-500 text-center py-4">No additional inhibitor records. Click "Add Inhibitor Record" to add one.</p>
+                      )}
+                    </div>
+                  </>
+                )}
+
+                {/* Chronic Diseases */}
+                <div className="mb-4">
+                  <div className="mb-3">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Has Chronic Diseases?</label>
+                    <select value={hasChronicDiseases ? 'true' : 'false'} onChange={(e) => {
+                      const value = e.target.value === 'true';
+                      setHasChronicDiseases(value);
+                      if (!value) {
+                        setFormData(prev => ({ ...prev, HasChronicDiseases: false, chronicDiseases: [], chronicDiseaseOther: '' }));
+                      } else {
+                        setFormData(prev => ({ ...prev, HasChronicDiseases: true, chronicDiseases: Array.isArray(prev.chronicDiseases) ? prev.chronicDiseases : [] }));
+                      }
+                    }} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                      <option value="false">No</option>
+                      <option value="true">Yes</option>
+                    </select>
+                  </div>
+
+                  {hasChronicDiseases && (
+                    <>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Select Chronic Diseases</label>
+                      <div className="space-y-2">
+                        {(lookupChronicDiseases.length > 0 ? lookupChronicDiseases : CHRONIC_DISEASES.map((name, i) => ({ id: String(i + 1), name, type: 'ChronicDiseaseOptions' }))).map(disease => {
+                          const chronicDiseasesArray = Array.isArray(formData.chronicDiseases) ? formData.chronicDiseases : [];
+                          const isChecked = chronicDiseasesArray.includes(disease.name);
+                          return (
+                            <label key={disease.id} className="flex items-center cursor-pointer">
+                              <input type="checkbox" checked={isChecked} onChange={(e) => handleChronicDiseaseChange(disease.name, e.target.checked)} className="mr-2 h-4 w-4 cursor-pointer" />
+                              {disease.name}
+                            </label>
+                          );
+                        })}
+                      </div>
+                      {formData.chronicDiseases?.includes('Other') && (
+                        <input type="text" name="chronicDiseaseOther" value={formData.chronicDiseaseOther} onChange={handleChange} placeholder="Specify other chronic disease" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none mt-2" />
+                      )}
+                    </>
+                  )}
+                </div>
+
+                {/* Family History */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Has Family History?</label>
+                  <select value={hasFamilyHistory ? 'true' : 'false'} onChange={(e) => {
+                    const value = e.target.value === 'true';
+                    setHasFamilyHistory(value);
+                    if (!value) setFormData(prev => ({ ...prev, familyHistory: '' }));
+                  }} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    <option value="false">No</option>
+                    <option value="true">Yes</option>
+                  </select>
+                </div>
+
+                {hasFamilyHistory && (
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Family History</label>
+                    <select name="familyHistory" value={formData.familyHistory || ''} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                      <option value="">Select Family History</option>
+                      <option value="first_degree">First Degree</option>
+                      <option value="second_degree">Second Degree</option>
+                      <option value="third_degree">Third Degree</option>
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              {/* ===== VIRAL SCREENING ===== */}
+              <div className="bg-teal-50 border border-teal-200 rounded-lg p-4">
+                <h4 className="text-lg font-semibold text-teal-900 mb-4">Viral Screening</h4>
+
+                <div className="space-y-4">
+                  {/* HBV */}
+                  <div className="border-b border-teal-200 pb-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-sm font-medium text-gray-700">HBV Test</label>
+                      <select value={testDates.HBV?.hasTaken ? 'true' : 'false'} onChange={(e) => {
+                        const hasTaken = e.target.value === 'true';
+                        setTestDates(prev => ({ ...prev, HBV: { hasTaken, testDate: hasTaken ? prev.HBV?.testDate || '' : '', result: hasTaken ? prev.HBV?.result : undefined } }));
+                      }} className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        <option value="false">No</option>
+                        <option value="true">Yes</option>
+                      </select>
+                    </div>
+                    {testDates.HBV?.hasTaken && (
+                      <div className="space-y-2 mt-2">
+                        <input type="date" value={testDates.HBV.testDate} onChange={(e) => setTestDates(prev => ({ ...prev, HBV: { ...prev.HBV!, testDate: e.target.value } }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Test Date" />
+                        <select value={testDates.HBV.result || ''} onChange={(e) => setTestDates(prev => ({ ...prev, HBV: { ...prev.HBV!, result: e.target.value as 'positive' | 'negative' | undefined } }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                          <option value="">Select Result</option>
+                          <option value="positive">Positive</option>
+                          <option value="negative">Negative</option>
+                        </select>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* HCV */}
+                  <div className="border-b border-teal-200 pb-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-sm font-medium text-gray-700">HCV Test</label>
+                      <select value={testDates.HCV?.hasTaken ? 'true' : 'false'} onChange={(e) => {
+                        const hasTaken = e.target.value === 'true';
+                        setTestDates(prev => ({ ...prev, HCV: { hasTaken, testDate: hasTaken ? prev.HCV?.testDate || '' : '', result: hasTaken ? prev.HCV?.result : undefined } }));
+                      }} className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        <option value="false">No</option>
+                        <option value="true">Yes</option>
+                      </select>
+                    </div>
+                    {testDates.HCV?.hasTaken && (
+                      <div className="space-y-2 mt-2">
+                        <input type="date" value={testDates.HCV.testDate} onChange={(e) => setTestDates(prev => ({ ...prev, HCV: { ...prev.HCV!, testDate: e.target.value } }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Test Date" />
+                        <select value={testDates.HCV.result || ''} onChange={(e) => setTestDates(prev => ({ ...prev, HCV: { ...prev.HCV!, result: e.target.value as 'positive' | 'negative' | undefined } }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                          <option value="">Select Result</option>
+                          <option value="positive">Positive</option>
+                          <option value="negative">Negative</option>
+                        </select>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* HIV */}
+                  <div className="border-b border-teal-200 pb-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-sm font-medium text-gray-700">HIV Test</label>
+                      <select value={testDates.HIV?.hasTaken ? 'true' : 'false'} onChange={(e) => {
+                        const hasTaken = e.target.value === 'true';
+                        setTestDates(prev => ({ ...prev, HIV: { hasTaken, testDate: hasTaken ? prev.HIV?.testDate || '' : '', result: hasTaken ? prev.HIV?.result : undefined } }));
+                      }} className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        <option value="false">No</option>
+                        <option value="true">Yes</option>
+                      </select>
+                    </div>
+                    {testDates.HIV?.hasTaken && (
+                      <div className="space-y-2 mt-2">
+                        <input type="date" value={testDates.HIV.testDate} onChange={(e) => setTestDates(prev => ({ ...prev, HIV: { ...prev.HIV!, testDate: e.target.value } }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Test Date" />
+                        <select value={testDates.HIV.result || ''} onChange={(e) => setTestDates(prev => ({ ...prev, HIV: { ...prev.HIV!, result: e.target.value as 'positive' | 'negative' | undefined } }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                          <option value="">Select Result</option>
+                          <option value="positive">Positive</option>
+                          <option value="negative">Negative</option>
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* ===== ADDITIONAL HEALTH INFORMATION ===== */}
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <h4 className="text-lg font-semibold text-red-900 mb-4">Additional Health Information</h4>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <input type="checkbox" name="hasHBVVaccination" checked={formData.hasHBVVaccination || false} onChange={handleChange} className="mr-2 h-4 w-4 cursor-pointer" />
+                      Has HBV Vaccination
+                    </label>
+                    {formData.hasHBVVaccination && (
+                      <input type="date" name="hbvVaccinationDate" value={formData.hbvVaccinationDate || ''} onChange={handleChange} placeholder="Vaccination Date" className="mt-2 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none" />
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* ===== OTHER MEDICAL TESTS ===== */}
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                <div className="mb-4">
+                  <label className="block text-lg font-semibold text-purple-900 mb-2">Other Medical Tests</label>
+                  <div className="flex items-center space-x-4">
+                    <button type="button" onClick={() => {
+                      setHasOtherTests(true);
+                      if (!hasOtherTests) { setOtherTests([]); setCurrentTest({ testName: '', testResult: '', testDate: '' }); }
+                    }} className={`px-6 py-2 rounded-lg font-medium transition-colors duration-200 ${hasOtherTests ? 'bg-purple-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'}`}>
+                      Yes
+                    </button>
+                    <button type="button" onClick={() => {
+                      setHasOtherTests(false);
+                      setOtherTests([]);
+                      setCurrentTest({ testName: '', testResult: '', testDate: '' });
+                    }} className={`px-6 py-2 rounded-lg font-medium transition-colors duration-200 ${!hasOtherTests ? 'bg-gray-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'}`}>
+                      No
                     </button>
                   </div>
+                </div>
 
-                  {formData.inhibitors && formData.inhibitors.length > 0 ? (
-                    <div className="space-y-4">
-                      {formData.inhibitors.map((inhibitor, index) => (
-                        <div key={index} className="bg-white p-4 rounded-lg border border-gray-200">
-                          <div className="flex justify-between items-start mb-3">
-                            <h5 className="font-medium text-gray-800">Inhibitor Record #{index + 1}</h5>
-                            <button
-                              type="button"
-                              onClick={() => removePatientInhibitor(index)}
-                              className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors duration-200"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            <div>
-                              <label className="block text-xs text-gray-600 mb-1">Inhibitor Level</label>
-                              <input
-                                type="number"
-                                value={inhibitor.inhibitorLevel !== undefined ? String(inhibitor.inhibitorLevel) : ''}
-                                onChange={(e) => {
-                                  const v = e.target.value;
-                                  updatePatientInhibitor(index, 'inhibitorLevel', v === '' ? undefined : parseFloat(v));
-                                }}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs text-gray-600 mb-1">Screening Date</label>
-                              <input
-                                type="date"
-                                value={inhibitor.inhibitorScreeningDate || ''}
-                                onChange={(e) => updatePatientInhibitor(index, 'inhibitorScreeningDate', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                              />
-                            </div>
-                          </div>
+                {hasOtherTests && (
+                  <>
+                    <div className="bg-white p-4 rounded-lg border border-purple-200 mb-4">
+                      <h5 className="text-sm font-semibold text-gray-700 mb-3">Add New Test</h5>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Test Name</label>
+                          <input type="text" value={currentTest.testName} onChange={(e) => setCurrentTest({ ...currentTest, testName: e.target.value })} placeholder="e.g., CBC, Liver Function" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-sm" />
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-gray-500 text-center py-4">No additional inhibitor records. Click "Add Inhibitor Record" to add one.</p>
-                  )}
-                </div>
-              </>
-            )}
-
-            {/* Chronic Diseases */}
-            <div className="mb-4">
-              <div className="mb-3">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Has Chronic Diseases?</label>
-                <select value={hasChronicDiseases ? 'true' : 'false'} onChange={(e) => {
-                  const value = e.target.value === 'true';
-                  setHasChronicDiseases(value);
-                  if (!value) {
-                    setFormData(prev => ({ ...prev, HasChronicDiseases: false, chronicDiseases: [], chronicDiseaseOther: '' }));
-                  } else {
-                    setFormData(prev => ({ ...prev, HasChronicDiseases: true, chronicDiseases: Array.isArray(prev.chronicDiseases) ? prev.chronicDiseases : [] }));
-                  }
-                }} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                  <option value="false">No</option>
-                  <option value="true">Yes</option>
-                </select>
-              </div>
-
-              {hasChronicDiseases && (
-                <>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Select Chronic Diseases</label>
-                  <div className="space-y-2">
-                    {(lookupChronicDiseases.length > 0 ? lookupChronicDiseases : CHRONIC_DISEASES.map((name, i) => ({ id: String(i + 1), name, type: 'ChronicDiseaseOptions' }))).map(disease => {
-                      const chronicDiseasesArray = Array.isArray(formData.chronicDiseases) ? formData.chronicDiseases : [];
-                      const isChecked = chronicDiseasesArray.includes(disease.name);
-                      return (
-                        <label key={disease.id} className="flex items-center cursor-pointer">
-                          <input type="checkbox" checked={isChecked} onChange={(e) => handleChronicDiseaseChange(disease.name, e.target.checked)} className="mr-2 h-4 w-4 cursor-pointer" />
-                          {disease.name}
-                        </label>
-                      );
-                    })}
-                  </div>
-                  {formData.chronicDiseases?.includes('Other') && (
-                    <input type="text" name="chronicDiseaseOther" value={formData.chronicDiseaseOther} onChange={handleChange} placeholder="Specify other chronic disease" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none mt-2" />
-                  )}
-                </>
-              )}
-            </div>
-
-            {/* Family History */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Has Family History?</label>
-              <select value={hasFamilyHistory ? 'true' : 'false'} onChange={(e) => {
-                const value = e.target.value === 'true';
-                setHasFamilyHistory(value);
-                if (!value) setFormData(prev => ({ ...prev, familyHistory: '' }));
-              }} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                <option value="false">No</option>
-                <option value="true">Yes</option>
-              </select>
-            </div>
-
-            {hasFamilyHistory && (
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Family History</label>
-                <select name="familyHistory" value={formData.familyHistory || ''} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                  <option value="">Select Family History</option>
-                  <option value="first_degree">First Degree</option>
-                  <option value="second_degree">Second Degree</option>
-                  <option value="third_degree">Third Degree</option>
-                </select>
-              </div>
-            )}
-          </div>
-
-          {/* ===== VIRAL SCREENING ===== */}
-          <div className="bg-teal-50 border border-teal-200 rounded-lg p-4">
-            <h4 className="text-lg font-semibold text-teal-900 mb-4">Viral Screening</h4>
-
-            <div className="space-y-4">
-              {/* HBV */}
-              <div className="border-b border-teal-200 pb-4">
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-medium text-gray-700">HBV Test</label>
-                  <select value={testDates.HBV?.hasTaken ? 'true' : 'false'} onChange={(e) => {
-                    const hasTaken = e.target.value === 'true';
-                    setTestDates(prev => ({ ...prev, HBV: { hasTaken, testDate: hasTaken ? prev.HBV?.testDate || '' : '', result: hasTaken ? prev.HBV?.result : undefined } }));
-                  }} className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                    <option value="false">No</option>
-                    <option value="true">Yes</option>
-                  </select>
-                </div>
-                {testDates.HBV?.hasTaken && (
-                  <div className="space-y-2 mt-2">
-                    <input type="date" value={testDates.HBV.testDate} onChange={(e) => setTestDates(prev => ({ ...prev, HBV: { ...prev.HBV!, testDate: e.target.value } }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Test Date" />
-                    <select value={testDates.HBV.result || ''} onChange={(e) => setTestDates(prev => ({ ...prev, HBV: { ...prev.HBV!, result: e.target.value as 'positive' | 'negative' | undefined } }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                      <option value="">Select Result</option>
-                      <option value="positive">Positive</option>
-                      <option value="negative">Negative</option>
-                    </select>
-                  </div>
-                )}
-              </div>
-
-              {/* HCV */}
-              <div className="border-b border-teal-200 pb-4">
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-medium text-gray-700">HCV Test</label>
-                  <select value={testDates.HCV?.hasTaken ? 'true' : 'false'} onChange={(e) => {
-                    const hasTaken = e.target.value === 'true';
-                    setTestDates(prev => ({ ...prev, HCV: { hasTaken, testDate: hasTaken ? prev.HCV?.testDate || '' : '', result: hasTaken ? prev.HCV?.result : undefined } }));
-                  }} className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                    <option value="false">No</option>
-                    <option value="true">Yes</option>
-                  </select>
-                </div>
-                {testDates.HCV?.hasTaken && (
-                  <div className="space-y-2 mt-2">
-                    <input type="date" value={testDates.HCV.testDate} onChange={(e) => setTestDates(prev => ({ ...prev, HCV: { ...prev.HCV!, testDate: e.target.value } }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Test Date" />
-                    <select value={testDates.HCV.result || ''} onChange={(e) => setTestDates(prev => ({ ...prev, HCV: { ...prev.HCV!, result: e.target.value as 'positive' | 'negative' | undefined } }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                      <option value="">Select Result</option>
-                      <option value="positive">Positive</option>
-                      <option value="negative">Negative</option>
-                    </select>
-                  </div>
-                )}
-              </div>
-
-              {/* HIV */}
-              <div className="border-b border-teal-200 pb-4">
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-medium text-gray-700">HIV Test</label>
-                  <select value={testDates.HIV?.hasTaken ? 'true' : 'false'} onChange={(e) => {
-                    const hasTaken = e.target.value === 'true';
-                    setTestDates(prev => ({ ...prev, HIV: { hasTaken, testDate: hasTaken ? prev.HIV?.testDate || '' : '', result: hasTaken ? prev.HIV?.result : undefined } }));
-                  }} className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                    <option value="false">No</option>
-                    <option value="true">Yes</option>
-                  </select>
-                </div>
-                {testDates.HIV?.hasTaken && (
-                  <div className="space-y-2 mt-2">
-                    <input type="date" value={testDates.HIV.testDate} onChange={(e) => setTestDates(prev => ({ ...prev, HIV: { ...prev.HIV!, testDate: e.target.value } }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Test Date" />
-                    <select value={testDates.HIV.result || ''} onChange={(e) => setTestDates(prev => ({ ...prev, HIV: { ...prev.HIV!, result: e.target.value as 'positive' | 'negative' | undefined } }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                      <option value="">Select Result</option>
-                      <option value="positive">Positive</option>
-                      <option value="negative">Negative</option>
-                    </select>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* ===== ADDITIONAL HEALTH INFORMATION ===== */}
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <h4 className="text-lg font-semibold text-red-900 mb-4">Additional Health Information</h4>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <input type="checkbox" name="hasHBVVaccination" checked={formData.hasHBVVaccination || false} onChange={handleChange} className="mr-2 h-4 w-4 cursor-pointer" />
-                  Has HBV Vaccination
-                </label>
-                {formData.hasHBVVaccination && (
-                  <input type="date" name="hbvVaccinationDate" value={formData.hbvVaccinationDate || ''} onChange={handleChange} placeholder="Vaccination Date" className="mt-2 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none" />
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* ===== OTHER MEDICAL TESTS ===== */}
-          <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-            <div className="mb-4">
-              <label className="block text-lg font-semibold text-purple-900 mb-2">Other Medical Tests</label>
-              <div className="flex items-center space-x-4">
-                <button type="button" onClick={() => {
-                  setHasOtherTests(true);
-                  if (!hasOtherTests) { setOtherTests([]); setCurrentTest({ testName: '', testResult: '', testDate: '' }); }
-                }} className={`px-6 py-2 rounded-lg font-medium transition-colors duration-200 ${hasOtherTests ? 'bg-purple-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'}`}>
-                  Yes
-                </button>
-                <button type="button" onClick={() => {
-                  setHasOtherTests(false);
-                  setOtherTests([]);
-                  setCurrentTest({ testName: '', testResult: '', testDate: '' });
-                }} className={`px-6 py-2 rounded-lg font-medium transition-colors duration-200 ${!hasOtherTests ? 'bg-gray-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'}`}>
-                  No
-                </button>
-              </div>
-            </div>
-
-            {hasOtherTests && (
-              <>
-                <div className="bg-white p-4 rounded-lg border border-purple-200 mb-4">
-                  <h5 className="text-sm font-semibold text-gray-700 mb-3">Add New Test</h5>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Test Name</label>
-                      <input type="text" value={currentTest.testName} onChange={(e) => setCurrentTest({ ...currentTest, testName: e.target.value })} placeholder="e.g., CBC, Liver Function" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-sm" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Test Result</label>
-                      <input type="text" value={currentTest.testResult} onChange={(e) => setCurrentTest({ ...currentTest, testResult: e.target.value })} placeholder="e.g., Normal, Positive" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-sm" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Test Date</label>
-                      <input type="date" value={currentTest.testDate} onChange={(e) => setCurrentTest({ ...currentTest, testDate: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-sm" />
-                    </div>
-                  </div>
-                  <button type="button" onClick={addOtherTest} disabled={!currentTest.testName.trim() || !currentTest.testResult.trim()} className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200 text-sm font-medium disabled:bg-gray-300 disabled:cursor-not-allowed">
-                    <Plus className="h-4 w-4" />
-                    <span>Add Test</span>
-                  </button>
-                </div>
-
-                {otherTests.length > 0 && (
-                  <div className="space-y-3">
-                    <h5 className="text-sm font-semibold text-gray-700">Added Tests ({otherTests.length})</h5>
-                    {otherTests.map((test, index) => (
-                      <div key={index} className="bg-white p-3 rounded-lg border border-purple-200">
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
-                            <div><span className="font-medium text-gray-600">Test:</span> <span className="ml-1 text-gray-900">{test.testName}</span></div>
-                            <div><span className="font-medium text-gray-600">Result:</span> <span className="ml-1 text-gray-900">{test.testResult}</span></div>
-                            <div><span className="font-medium text-gray-600">Date:</span> <span className="ml-1 text-gray-900">{test.testDate || 'N/A'}</span></div>
-                          </div>
-                          <button type="button" onClick={() => removeOtherTest(index)} className="ml-2 p-1 text-red-600 hover:bg-red-50 rounded transition-colors duration-200">
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Test Result</label>
+                          <input type="text" value={currentTest.testResult} onChange={(e) => setCurrentTest({ ...currentTest, testResult: e.target.value })} placeholder="e.g., Normal, Positive" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-sm" />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Test Date</label>
+                          <input type="date" value={currentTest.testDate} onChange={(e) => setCurrentTest({ ...currentTest, testDate: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-sm" />
                         </div>
                       </div>
-                    ))}
-                  </div>
+                      <button type="button" onClick={addOtherTest} disabled={!currentTest.testName.trim() || !currentTest.testResult.trim()} className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200 text-sm font-medium disabled:bg-gray-300 disabled:cursor-not-allowed">
+                        <Plus className="h-4 w-4" />
+                        <span>Add Test</span>
+                      </button>
+                    </div>
+
+                    {otherTests.length > 0 && (
+                      <div className="space-y-3">
+                        <h5 className="text-sm font-semibold text-gray-700">Added Tests ({otherTests.length})</h5>
+                        {otherTests.map((test, index) => (
+                          <div key={index} className="bg-white p-3 rounded-lg border border-purple-200">
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
+                                <div><span className="font-medium text-gray-600">Test:</span> <span className="ml-1 text-gray-900">{test.testName}</span></div>
+                                <div><span className="font-medium text-gray-600">Result:</span> <span className="ml-1 text-gray-900">{test.testResult}</span></div>
+                                <div><span className="font-medium text-gray-600">Date:</span> <span className="ml-1 text-gray-900">{test.testDate || 'N/A'}</span></div>
+                              </div>
+                              <button type="button" onClick={() => removeOtherTest(index)} className="ml-2 p-1 text-red-600 hover:bg-red-50 rounded transition-colors duration-200">
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
                 )}
-              </>
-            )}
-          </div>
+              </div>
+            </>
+          )}
 
           {/* ===== FORM BUTTONS ===== */}
           <div className="flex space-x-3 pt-4 sticky bottom-0 bg-white border-t border-gray-200 -mx-6 px-6 py-4">
