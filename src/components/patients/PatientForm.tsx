@@ -113,6 +113,13 @@ const composePhoneNumber = (code: string | undefined, number: string | undefined
   return `${code || '+249'}${cleanNumber}`;
 };
 
+const getSeverityFromFactorPercent = (factorPercent: number | undefined): string => {
+  if (factorPercent === undefined || Number.isNaN(factorPercent)) return '';
+  if (factorPercent < 1) return 'severe';
+  if (factorPercent <= 5) return 'moderate';
+  return 'mild';
+};
+
 export const PatientForm: React.FC<PatientFormProps> = ({
   patient,
   onSave,
@@ -378,8 +385,8 @@ export const PatientForm: React.FC<PatientFormProps> = ({
         diagnosisType: patient.diagnosisType || '',
         diagnosisYear: patient.diagnosisYear ? Number(patient.diagnosisYear) : undefined,
         incidenceDate,
-        severity: patient.severity?.toLowerCase() || '',
-        factorPercent: patient.factorPercent ? Number(patient.factorPercent) : undefined,
+        severity: getSeverityFromFactorPercent(patient.factorPercent !== undefined && patient.factorPercent !== null ? Number(patient.factorPercent) : undefined) || patient.severity?.toLowerCase() || '',
+        factorPercent: patient.factorPercent !== undefined && patient.factorPercent !== null ? Number(patient.factorPercent) : undefined,
         factorPercentDate: factorPercentDate,
         familyHistory: (() => {
           const reverseMap: Record<string, string> = {
@@ -521,6 +528,9 @@ const handleSubmit = (e: React.FormEvent) => {
   };
 
   const resolvedContactNumber1 = composePhoneNumber(formData.contactNumber1CountryCode, formData.contactNumber1);
+  const resolvedSeverity = hasFactorLevel
+    ? getSeverityFromFactorPercent(formData.factorPercent)
+    : formData.severity;
   const resolvedContactNumber2 = composePhoneNumber(formData.contactNumber2CountryCode, formData.contactNumber2);
   const hbvTestState = testDates.HBV;
   const hcvTestState = testDates.HCV;
@@ -564,8 +574,8 @@ const handleSubmit = (e: React.FormEvent) => {
     gender: formData.gender,
     contactNumber1: resolvedContactNumber1,
     hemophiliaCenterId: formData.hemophiliaCenterId,
-    severity: formData.severity
-      ? (severityMap[formData.severity as string] || capitalizeFirstLetter(formData.severity as string))
+    severity: resolvedSeverity
+      ? (severityMap[resolvedSeverity as string] || capitalizeFirstLetter(resolvedSeverity as string))
       : '',
     bloodGroup: formData.bloodGroup,
     vitalStatus: (formData.vitalStatus || 'Alive') as 'Alive' | 'Died' | 'Unknown',
@@ -617,7 +627,7 @@ const handleSubmit = (e: React.FormEvent) => {
   if (formData.diagnosisYear && formData.diagnosisYear > 0) submitData.diagnosisYear = formData.diagnosisYear;
   if (formData.incidenceDate) submitData.incidenceDate = formData.incidenceDate;
   if (hasFamilyHistory && formData.familyHistory) submitData.familyHistory = familyHistoryMap[formData.familyHistory] || formData.familyHistory;
-  if (hasFactorLevel && formData.factorPercent) submitData.factorPercent = formData.factorPercent;
+  if (hasFactorLevel && formData.factorPercent !== undefined && formData.factorPercent !== null) submitData.factorPercent = formData.factorPercent;
   if (hasFactorLevel && factorTestDate) submitData.factorPercentDate = factorTestDate;
   if (formData.hasInhibitors) submitData.hasInhibitors = formData.hasInhibitors;
   if (formData.inhibitorLevel) submitData.inhibitorLevel = formData.inhibitorLevel;
@@ -722,7 +732,12 @@ const handleSubmit = (e: React.FormEvent) => {
         inhibitorScreeningDate: inhibitorValue ? prev.inhibitorScreeningDate : ''
       }));
     } else if (type === 'number') {
-      setFormData(prev => ({ ...prev, [name]: value === '' ? undefined : parseFloat(value) }));
+      const numericValue = value === '' ? undefined : parseFloat(value);
+      setFormData(prev => ({
+        ...prev,
+        [name]: numericValue,
+        ...(name === 'factorPercent' ? { severity: getSeverityFromFactorPercent(numericValue) } : {})
+      }));
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
@@ -1114,7 +1129,7 @@ const handleSubmit = (e: React.FormEvent) => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Diagnosis Type</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Diagnosis Type/Notes</label>
                     <input type="text" name="diagnosisType" value={formData.diagnosisType || ''} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="e.g., new_patient, followup" />
                   </div>
                 </div>
@@ -1160,55 +1175,6 @@ const handleSubmit = (e: React.FormEvent) => {
                   </select>
                 </div>
 
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Severity *</label>
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-4">
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={
-                          formData.severity === 'mild' ? 12 :
-                          formData.severity === 'moderate' ? 38 :
-                          formData.severity === 'severe' ? 63 :
-                          formData.severity === 'unknown' ? 88 : 0
-                        }
-                        onChange={(e) => {
-                          const val = parseInt(e.target.value);
-                          let severity = '';
-                          if (val <= 25) severity = 'mild';
-                          else if (val <= 50) severity = 'moderate';
-                          else if (val <= 75) severity = 'severe';
-                          else severity = 'unknown';
-                          setFormData((prev) => ({ ...prev, severity }));
-                        }}
-                        className="flex-1 h-2 bg-gradient-to-r from-green-500 via-yellow-500 to-red-500 rounded-lg appearance-none cursor-pointer accent-violet-600"
-                        style={{
-                          backgroundImage: 'linear-gradient(to right, rgb(34, 197, 94) 0%, rgb(34, 197, 94) 25%, rgb(234, 179, 8) 25%, rgb(234, 179, 8) 50%, rgb(239, 68, 68) 50%, rgb(239, 68, 68) 75%, rgb(107, 114, 128) 75%, rgb(107, 114, 128) 100%)'
-                        }}
-                        required
-                      />
-                      <span className="text-sm font-semibold px-3 py-1 rounded-lg min-w-24 text-center" style={{
-                        backgroundColor: formData.severity === 'mild' ? '#22c55e' :
-                                         formData.severity === 'moderate' ? '#eab308' :
-                                         formData.severity === 'severe' ? '#ef4444' :
-                                         formData.severity === 'unknown' ? '#6b7280' : '#e5e7eb',
-                        color: (formData.severity === 'moderate' || formData.severity === 'unknown') ? '#000' : '#fff'
-                      }}>
-                        {formData.severity ? formData.severity.charAt(0).toUpperCase() + formData.severity.slice(1) : 'Select'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-xs text-gray-600 px-1">
-                      <span>Mild</span>
-                      <span>Moderate</span>
-                      <span>Severe</span>
-                      <span>Unknown</span>
-                    </div>
-                  </div>
-                  <input type="hidden" name="severity" value={formData.severity || ''} required />
-                </div>
-
                 {/* Factor Level */}
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">Has Factor Level Test?</label>
@@ -1216,7 +1182,7 @@ const handleSubmit = (e: React.FormEvent) => {
                     const value = e.target.value === 'true';
                     setHasFactorLevel(value);
                     if (!value) {
-                      setFormData(prev => ({ ...prev, factorPercent: undefined, factorPercentDate: undefined }));
+                      setFormData(prev => ({ ...prev, factorPercent: undefined, factorPercentDate: undefined, severity: '' }));
                       setFactorTestDate('');
                     }
                   }} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
@@ -1226,16 +1192,68 @@ const handleSubmit = (e: React.FormEvent) => {
                 </div>
 
                 {hasFactorLevel && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Level of factor </label>
-                      <input type="number" name="factorPercent" value={formData.factorPercent || ''} onChange={handleChange} min="0" max="100" step="0.01" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Factor %" />
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Level of factor </label>
+                        <input type="number" name="factorPercent" value={formData.factorPercent || ''} onChange={handleChange} min="0" max="100" step="0.01" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Factor %" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Factor Test Date</label>
+                        <input type="date" value={factorTestDate} onChange={(e) => setFactorTestDate(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Factor Test Date</label>
-                      <input type="date" value={factorTestDate} onChange={(e) => setFactorTestDate(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
+
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Severity *</label>
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-4">
+                          <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            value={
+                              formData.severity === 'mild' ? 12 :
+                              formData.severity === 'moderate' ? 38 :
+                              formData.severity === 'severe' ? 63 :
+                              formData.severity === 'unknown' ? 88 : 0
+                            }
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value);
+                              let severity = '';
+                              if (val <= 25) severity = 'mild';
+                              else if (val <= 50) severity = 'moderate';
+                              else if (val <= 75) severity = 'severe';
+                              else severity = 'unknown';
+                              setFormData((prev) => ({ ...prev, severity }));
+                            }}
+                            disabled
+                            className="flex-1 h-2 bg-gradient-to-r from-green-500 via-yellow-500 to-red-500 rounded-lg appearance-none cursor-not-allowed accent-violet-600"
+                            style={{
+                              backgroundImage: 'linear-gradient(to right, rgb(34, 197, 94) 0%, rgb(34, 197, 94) 25%, rgb(234, 179, 8) 25%, rgb(234, 179, 8) 50%, rgb(239, 68, 68) 50%, rgb(239, 68, 68) 75%, rgb(107, 114, 128) 75%, rgb(107, 114, 128) 100%)'
+                            }}
+                            required
+                          />
+                          <span className="text-sm font-semibold px-3 py-1 rounded-lg min-w-24 text-center" style={{
+                            backgroundColor: formData.severity === 'mild' ? '#22c55e' :
+                                             formData.severity === 'moderate' ? '#eab308' :
+                                             formData.severity === 'severe' ? '#ef4444' :
+                                             formData.severity === 'unknown' ? '#6b7280' : '#e5e7eb',
+                            color: (formData.severity === 'moderate' || formData.severity === 'unknown') ? '#000' : '#fff'
+                          }}>
+                            {formData.severity ? formData.severity.charAt(0).toUpperCase() + formData.severity.slice(1) : 'Select'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-xs text-gray-600 px-1">
+                          <span>Mild</span>
+                          <span>Moderate</span>
+                          <span>Severe</span>
+                          <span>Unknown</span>
+                        </div>
+                      </div>
+                      <input type="hidden" name="severity" value={formData.severity || ''} required />
                     </div>
-                  </div>
+                  </>
                 )}
 
                 {/* Inhibitor Section - with multiple inhibitors support */}
