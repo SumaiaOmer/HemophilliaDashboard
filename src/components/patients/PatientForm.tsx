@@ -1129,7 +1129,7 @@ const handleSubmit = (e: React.FormEvent) => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Diagnosis Type/Notes</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Diagnosis Type/Note</label>
                     <input type="text" name="diagnosisType" value={formData.diagnosisType || ''} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="e.g., new_patient, followup" />
                   </div>
                 </div>
