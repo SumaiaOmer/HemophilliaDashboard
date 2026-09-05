@@ -826,6 +826,52 @@ const handleSubmit = (e: React.FormEvent) => {
               </div>
             </div>
 
+            {!isPatientAlive && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Diagnosis</label>
+                  <select name="diagnosis" value={formData.diagnosis || ''} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    <option value="">Select Diagnosis</option>
+                    {(lookupDiagnoses.length > 0 ? lookupDiagnoses : [
+                      { id: '1', name: 'Hemophilia A' }, { id: '2', name: 'Hemophilia B' },
+                      { id: '3', name: 'Hemophilia A carrier' }, { id: '4', name: 'Hemophilia B carrier' },
+                      { id: '5', name: 'Acquired hemophilia' }, { id: '6', name: 'Von Willebrand Disease' },
+                      { id: '7', name: 'Afibrinogenemia' }, { id: '8', name: 'Hypofibrinogenemia' },
+                      { id: '9', name: 'Dysfibrinogenemia' }, { id: '10', name: 'Platelete dysfunction' },
+                      { id: '11', name: 'Bernard Soulier syndrome' }, { id: '12', name: 'Glanzmann thrombasthenia' },
+                      { id: '13', name: 'Prothrombin deficiency' }, { id: '14', name: 'Factor V deficiency' },
+                      { id: '15', name: 'Combined factor V and VIII deficiency' }, { id: '16', name: 'Factor VII deficiency' },
+                      { id: '17', name: 'Factor X deficiency' }, { id: '18', name: 'Factor XI deficiency' },
+                      { id: '19', name: 'Factor XII deficiency' }, { id: '20', name: 'Factor XIII deficiency' },
+                      { id: '21', name: 'Vitamin K dependent factor deficiency' }, { id: '22', name: 'Other bleeding disorder' }
+                    ]).map(d => (
+                      <option key={d.id} value={d.name}>{d.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">State</label>
+                  <select name="state" value={formData.state || ''} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    <option value="">Select State</option>
+                    {(lookupSudanStates.length > 0 ? lookupSudanStates : [
+                      { id: '1', name: 'Khartoum' }, { id: '2', name: 'Al Jazirah' }, { id: '3', name: 'White Nile' },
+                      { id: '4', name: 'Blue Nile' }, { id: '5', name: 'Northern' }, { id: '6', name: 'River Nile' },
+                      { id: '7', name: 'Red Sea' }, { id: '8', name: 'Kassala' }, { id: '9', name: 'Al Qadarif' },
+                      { id: '10', name: 'Sennar' }, { id: '11', name: 'North Kordofan' }, { id: '12', name: 'South Kordofan' },
+                      { id: '13', name: 'West Kordofan' }, { id: '14', name: 'Central Darfur' }, { id: '15', name: 'North Darfur' },
+                      { id: '16', name: 'South Darfur' }, { id: '17', name: 'East Darfur' }, { id: '18', name: 'West Darfur' }
+                    ]).map(s => (
+                      <option key={s.id} value={s.name}>{s.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Hemophilia Center ID</label>
+                  <input type="text" name="hemophiliaCenterId" value={formData.hemophiliaCenterId || ''} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Center ID" />
+                </div>
+              </div>
+            )}
+
             {isPatientAlive && (
               <>
                 <div className="mb-4">
