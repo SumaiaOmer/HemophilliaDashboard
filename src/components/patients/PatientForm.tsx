@@ -1215,31 +1215,28 @@ const handleSubmit = (e: React.FormEvent) => {
                             value={
                               formData.severity === 'mild' ? 12 :
                               formData.severity === 'moderate' ? 38 :
-                              formData.severity === 'severe' ? 63 :
-                              formData.severity === 'unknown' ? 88 : 0
+                              formData.severity === 'severe' ? 63 : 0
                             }
                             onChange={(e) => {
                               const val = parseInt(e.target.value);
                               let severity = '';
                               if (val <= 25) severity = 'mild';
                               else if (val <= 50) severity = 'moderate';
-                              else if (val <= 75) severity = 'severe';
-                              else severity = 'unknown';
+                              else severity = 'severe';
                               setFormData((prev) => ({ ...prev, severity }));
                             }}
                             disabled
                             className="flex-1 h-2 bg-gradient-to-r from-green-500 via-yellow-500 to-red-500 rounded-lg appearance-none cursor-not-allowed accent-violet-600"
                             style={{
-                              backgroundImage: 'linear-gradient(to right, rgb(34, 197, 94) 0%, rgb(34, 197, 94) 25%, rgb(234, 179, 8) 25%, rgb(234, 179, 8) 50%, rgb(239, 68, 68) 50%, rgb(239, 68, 68) 75%, rgb(107, 114, 128) 75%, rgb(107, 114, 128) 100%)'
+                              backgroundImage: 'linear-gradient(to right, rgb(34, 197, 94) 0%, rgb(34, 197, 94) 33%, rgb(234, 179, 8) 33%, rgb(234, 179, 8) 66%, rgb(239, 68, 68) 66%, rgb(239, 68, 68) 100%)'
                             }}
                             required
                           />
                           <span className="text-sm font-semibold px-3 py-1 rounded-lg min-w-24 text-center" style={{
                             backgroundColor: formData.severity === 'mild' ? '#22c55e' :
                                              formData.severity === 'moderate' ? '#eab308' :
-                                             formData.severity === 'severe' ? '#ef4444' :
-                                             formData.severity === 'unknown' ? '#6b7280' : '#e5e7eb',
-                            color: (formData.severity === 'moderate' || formData.severity === 'unknown') ? '#000' : '#fff'
+                                             formData.severity === 'severe' ? '#ef4444' : '#e5e7eb',
+                            color: formData.severity === 'moderate' ? '#000' : '#fff'
                           }}>
                             {formData.severity ? formData.severity.charAt(0).toUpperCase() + formData.severity.slice(1) : 'Select'}
                           </span>
@@ -1248,7 +1245,6 @@ const handleSubmit = (e: React.FormEvent) => {
                           <span>Mild</span>
                           <span>Moderate</span>
                           <span>Severe</span>
-                          <span>Unknown</span>
                         </div>
                       </div>
                       <input type="hidden" name="severity" value={formData.severity || ''} required />
