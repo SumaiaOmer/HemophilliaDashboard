@@ -1,28 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X, LogOut, Droplets, ChevronDown, FileText } from 'lucide-react';
+import { Menu, X, LogOut, Droplets, ChevronDown } from 'lucide-react';
 import { AuthService } from '../services/auth';
 import { ScreensService, ScreenTreeNode } from '../services/screens';
 import { getIcon } from '../lib/iconMap';
-
-const DEATH_NOTIFICATION_SCREEN: ScreenTreeNode = {
-  id: -1,
-  name: 'Death Notifications',
-  displayName: 'Death Notifications',
-  code: 'DEATH-NOTIFICATION',
-  route: 'death-notifications',
-  icon: 'death-notification',
-  children: [],
-};
-
-const LOOKUP_SCREEN: ScreenTreeNode = {
-  id: -2,
-  name: 'Lookups',
-  displayName: 'Lookup Management',
-  code: 'LOOKUPS',
-  route: 'lookups',
-  icon: 'database',
-  children: [],
-};
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -32,7 +12,6 @@ interface LayoutProps {
   onLogout?: () => void;
 }
 
-// Helper functions
 const normalize = (s?: string): string => {
   if (!s) return '';
   return s
@@ -43,16 +22,16 @@ const normalize = (s?: string): string => {
 
 const nodeContainsActive = (node: ScreenTreeNode, activeSection?: string): boolean => {
   if (!activeSection) return false;
-  
+
   const activeNorm = normalize(activeSection);
   const nodeRoute = normalize(node.route || node.code || node.name);
-  
+
   if (nodeRoute === activeNorm) return true;
-  
+
   if (node.children && node.children.length > 0) {
     return node.children.some((child) => nodeContainsActive(child, activeSection));
   }
-  
+
   return false;
 };
 
@@ -70,7 +49,6 @@ export const Layout: React.FC<LayoutProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Load user-specific screens from /api/screens/my-screens
   useEffect(() => {
     const loadMyScreens = async () => {
       if (!user) {
@@ -82,174 +60,38 @@ export const Layout: React.FC<LayoutProps> = ({
       try {
         setLoading(true);
         setError(null);
-        
-        console.log('📱 Loading role-based screens for user:', user);
-        
+
         const screens = await ScreensService.getMyScreens();
-        console.log('✅ Role-based screens loaded:', screens);
-        
-        // Group patient-related screens under a single "Patient" parent menu.
-        // Works whether the backend already nests them or returns them as flat
-        // top-level items. Deduped by route at every level.
-        const deathRoute = normalize(DEATH_NOTIFICATION_SCREEN.route || DEATH_NOTIFICATION_SCREEN.code);
-        const visitRoute = 'patient-visits';
-        const patientListRoute = 'patients';
 
-        const routeOf = (n: ScreenTreeNode) => normalize(n.route || n.code || n.name);
-
-        const isPatientGroup = (n: ScreenTreeNode): boolean => {
-          const code = (n.code || '').toUpperCase();
-          const name = (n.name || '').toLowerCase();
-          const display = (n.displayName || '').toLowerCase();
-          return (
-            (code === 'PATIENT' || code === 'PATIENTS') &&
-            !!(n.children && n.children.length > 0)
-          ) || (
-            name === 'patient' || name === 'patients' ||
-            display === 'patient' || display === 'patients'
-          );
-        };
-
-        const collectAllRoutes = (items: ScreenTreeNode[], acc: Set<string> = new Set()): Set<string> => {
-          items.forEach(n => {
-            acc.add(routeOf(n));
-            if (n.children) collectAllRoutes(n.children, acc);
-          });
-          return acc;
-        };
-
-        const existingRoutes = collectAllRoutes(screens);
-        const hasVisit = existingRoutes.has(visitRoute);
-        const hasPatientList = existingRoutes.has(patientListRoute);
-
-        const PATIENT_GROUP: ScreenTreeNode = {
-          id: -3,
-          name: 'Patient',
-          displayName: 'Patient',
-          code: 'PATIENT',
-          route: 'patient',
-          icon: 'patient',
-          children: [],
-        };
-
-        let screensGrouped: ScreenTreeNode[];
-        let groupedIntoParent = false;
-
-        const groupPatientScreens = (items: ScreenTreeNode[]): ScreenTreeNode[] => {
-          let usedParent = false;
-          const result = items.map((node) => {
-            // Recurse first
-            let children = node.children ? groupPatientScreens(node.children) : [];
-
-            if (!usedParent && isPatientGroup({ ...node, children })) {
-              usedParent = true;
-              return { ...node, children };
-            }
-
-            return { ...node, children };
-          });
-
-          if (usedParent) groupedIntoParent = true;
-          return result;
-        };
-
-        const grouped = groupPatientScreens(screens);
-
-        if (groupedIntoParent) {
-          screensGrouped = grouped;
-        } else {
-          // No Patient parent existed — build one from loose top-level screens
-          const looseChildren: ScreenTreeNode[] = [];
-
-          const patientListScreen = screens.find(s => routeOf(s) === patientListRoute || routeOf(s) === 'patient');
-          if (patientListScreen) looseChildren.push({ ...patientListScreen, children: [] });
-
-          const visitScreen = screens.find(s => routeOf(s) === visitRoute || routeOf(s) === 'patientvisit');
-          if (visitScreen) looseChildren.push({ ...visitScreen, children: [] });
-
-          const deathScreen = screens.find(s => routeOf(s) === deathRoute) || DEATH_NOTIFICATION_SCREEN;
-          looseChildren.push({ ...deathScreen, children: [] });
-
-          // Only create the Patient group if at least one child was found
-          if (looseChildren.length > 0) {
-            const childRoutes = new Set(looseChildren.map(routeOf));
-            const remaining = screens.filter(s => !childRoutes.has(routeOf(s)));
-            screensGrouped = [...remaining, { ...PATIENT_GROUP, children: looseChildren }];
-          } else {
-            screensGrouped = screens;
-          }
-        }
-
-        // Keep Death Notifications under the Patient parent, including when
-        // the backend already provides that parent.
-        const patientParentIndex = screensGrouped.findIndex(isPatientGroup);
-        const hasDeathChild = screensGrouped.some((screen) =>
-          screen.children?.some((child) => routeOf(child) === deathRoute)
-        );
-        const topLevelDeath = screensGrouped.find((screen) => routeOf(screen) === deathRoute);
-        let screensWithDeath = screensGrouped.filter((screen) => routeOf(screen) !== deathRoute);
-
-        if (patientParentIndex >= 0 && !hasDeathChild) {
-          const patientParent = screensWithDeath[patientParentIndex];
-          const deathScreen = topLevelDeath || DEATH_NOTIFICATION_SCREEN;
-          screensWithDeath[patientParentIndex] = {
-            ...patientParent,
-            children: [...(patientParent.children || []), { ...deathScreen, children: [] }],
-          };
-        }
-
-        // Include the Lookup Management screen for admins only, deduped by route
-        const lookupRoute = normalize(LOOKUP_SCREEN.route || LOOKUP_SCREEN.code);
-        const hasLookupScreen = screensWithDeath.some(s => normalize(s.route || s.code || s.name) === lookupRoute);
-        const isAdmin = user?.role?.toLowerCase() === 'admin';
-        const screensFinal = !hasLookupScreen && isAdmin
-          ? [...screensWithDeath, LOOKUP_SCREEN]
-          : screensWithDeath;
-
-        if (!screensFinal || screensFinal.length === 0) {
+        if (!screens || screens.length === 0) {
           setError('No menu items available for your role');
           setMenuItems([]);
           setLoading(false);
           return;
         }
 
-        setMenuItems(screensFinal);
-        
-        // Auto-expand menus that contain the active section
+        setMenuItems(screens);
+
         const autoExpanded: Record<number, boolean> = {};
         const expandParentsOfActive = (items: ScreenTreeNode[], parentIds: number[] = []) => {
           items.forEach(item => {
             const currentPath = [...parentIds, item.id];
-            
+
             if (nodeContainsActive(item, activeSection)) {
               currentPath.forEach(id => {
                 autoExpanded[id] = true;
               });
             }
-            
+
             if (item.children && item.children.length > 0) {
               expandParentsOfActive(item.children, currentPath);
             }
           });
         };
-        
-        expandParentsOfActive(screensFinal);
-        
-        // Also expand default menus
-        const expandDefaultParents = (items: ScreenTreeNode[]) => {
-          items.forEach(item => {
-            if (item.code === 'PATIENT' || item.code === 'DISTRIBUTION') {
-              autoExpanded[item.id] = true;
-            }
-            if (item.children && item.children.length > 0) {
-              expandDefaultParents(item.children);
-            }
-          });
-        };
-        expandDefaultParents(screensFinal);
-        
+
+        expandParentsOfActive(screens);
         setExpandedMenus(autoExpanded);
-        
+
       } catch (error) {
         console.error('Error loading screens:', error);
         setError('Failed to load menu');
