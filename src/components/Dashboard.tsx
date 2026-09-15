@@ -328,8 +328,8 @@ export const Dashboard: React.FC = () => {
             <div className="text-xs text-gray-600 mt-1">Patients</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">{stats.totalTreatments}</div>
-            <div className="text-xs text-gray-600 mt-1">Treatments</div>
+            <div className="text-2xl font-bold text-green-600">{stats.totalFactors}</div>
+            <div className="text-xs text-gray-600 mt-1">Total Drugs</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-yellow-600">{stats.pendingDistributions}</div>
