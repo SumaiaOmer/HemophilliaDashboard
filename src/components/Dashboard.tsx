@@ -108,14 +108,6 @@ export const Dashboard: React.FC = () => {
       textColor: 'text-red-600',
     },
     {
-      title: 'Active Treatments',
-      value: stats.totalTreatments,
-      icon: Stethoscope,
-      color: 'bg-green-500',
-      bgColor: 'bg-green-50',
-      textColor: 'text-green-600',
-    },
-    {
       title: 'Available Drugs',
       value: stats.totalFactors,
       icon: Pill,
