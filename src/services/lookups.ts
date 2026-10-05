@@ -29,8 +29,11 @@ const normalizeItem = (item: any): LookupItem => ({
 
 const buildApiBody = (item: LookupItemRequest) => {
   const body: any = { Name: item.name, Type: item.type };
-  const pid = item.parentId ? parseInt(String(item.parentId), 10) : 0;
-  body.ParentId = isNaN(pid) ? 0 : pid;
+  if (item.parentId && item.parentId !== '0' && item.parentId !== '') {
+    body.ParentId = parseInt(String(item.parentId), 10);
+  } else {
+    body.ParentId = null;
+  }
   return body;
 };
 
