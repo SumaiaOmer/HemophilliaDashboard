@@ -9,15 +9,15 @@ import {
   ChevronRight,
   Pencil,
   Inbox,
-  Filter,
   Layers,
   List,
 } from 'lucide-react';
 import {
   LookupItem,
   LookupItemRequest,
-  LookupType,
-  LookupTypeRequest,
+  TypeMeta,
+  TypeMetaStore,
+  PREDEFINED_TYPES,
   LookupsService,
 } from '../../services/lookups';
 import { AuthService } from '../../services/auth';
@@ -26,11 +26,11 @@ import { LookupItemForm } from './LookupItemForm';
 
 interface ViewMode {
   kind: 'items' | 'types';
-  typeId?: string;
+  typeKey?: string;
 }
 
 export const LookupsManager: React.FC = () => {
-  const [allTypes, setAllTypes] = useState<LookupType[]>([]);
+  const [allTypes, setAllTypes] = useState<TypeMeta[]>([]);
   const [allItems, setAllItems] = useState<LookupItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +41,7 @@ export const LookupsManager: React.FC = () => {
 
   // Form state
   const [showTypeForm, setShowTypeForm] = useState(false);
-  const [editingType, setEditingType] = useState<LookupType | null>(null);
+  const [editingType, setEditingType] = useState<TypeMeta | null>(null);
   const [showItemForm, setShowItemForm] = useState(false);
   const [editingItem, setEditingItem] = useState<LookupItem | null>(null);
   const [defaultItemType, setDefaultItemType] = useState<string | undefined>(undefined);
@@ -55,11 +55,27 @@ export const LookupsManager: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const [types, items] = await Promise.all([
-        LookupsService.getAllTypes(),
-        LookupsService.getAll(),
-      ]);
-      setAllTypes(types);
+
+      // Build type list: predefined types + user-created types from localStorage
+      const userTypes = TypeMetaStore.getAll();
+      const userMap = new Map(userTypes.map((t) => [t.name, t]));
+
+      // Merge: predefined types get user overrides if they exist
+      const merged: TypeMeta[] = PREDEFINED_TYPES.map((pt) => {
+        const userMeta = userMap.get(pt.value);
+        return userMeta ?? { name: pt.value, label: pt.label, parentType: null };
+      });
+
+      // Add user-created types that aren't in the predefined list
+      for (const ut of userTypes) {
+        if (!PREDEFINED_TYPES.some((pt) => pt.value === ut.name)) {
+          merged.push(ut);
+        }
+      }
+
+      setAllTypes(merged);
+
+      const items = await LookupsService.getAll();
       setAllItems(items);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load lookup data');
@@ -72,37 +88,33 @@ export const LookupsManager: React.FC = () => {
     loadAll();
   }, [loadAll]);
 
-  // ---- Type CRUD ----
+  // ---- Type CRUD (client-side metadata) ----
 
-  const handleSaveType = async (typeData: LookupTypeRequest) => {
-    if (editingType) {
-      await LookupsService.updateType(editingType.id, typeData);
-    } else {
-      await LookupsService.createType(typeData);
+  const handleSaveType = async (name: string, label: string, parentType: string | null) => {
+    const existing = TypeMetaStore.get(name);
+    if (existing && !editingType) {
+      throw new Error('A type with this key already exists');
     }
+    TypeMetaStore.upsert({ name, label, parentType });
     await loadAll();
     setShowTypeForm(false);
     setEditingType(null);
   };
 
-  const handleDeleteType = async (id: string, name: string) => {
-    const childCount = allItems.filter((i) => i.type === id).length;
-    const subTypeCount = allTypes.filter((t) => t.parentId === id).length;
+  const handleDeleteType = async (typeKey: string, label: string) => {
+    const childCount = allItems.filter((i) => i.type === typeKey).length;
+    const subTypeCount = allTypes.filter((t) => t.parentType === typeKey).length;
     const msg =
       childCount > 0 || subTypeCount > 0
-        ? `Delete "${name}"? It has ${childCount} item(s) and ${subTypeCount} sub-type(s). This cannot be undone.`
-        : `Delete "${name}"? This cannot be undone.`;
+        ? `Remove type "${label}"? It has ${childCount} item(s) and ${subTypeCount} sub-type(s) in the system. The type will be removed locally but items may still exist in the API.`
+        : `Remove type "${label}"?`;
     if (!window.confirm(msg)) return;
-    try {
-      await LookupsService.deleteType(id);
-      await loadAll();
-      if (view.typeId === id) setView({ kind: 'types' });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete lookup type');
-    }
+    TypeMetaStore.remove(typeKey);
+    await loadAll();
+    if (view.typeKey === typeKey) setView({ kind: 'types' });
   };
 
-  // ---- Item CRUD ----
+  // ---- Item CRUD (API) ----
 
   const handleSaveItem = async (itemData: LookupItemRequest) => {
     if (editingItem) {
@@ -129,24 +141,26 @@ export const LookupsManager: React.FC = () => {
   // ---- Derived data ----
 
   const typeMap = useMemo(() => {
-    const m = new Map<string, LookupType>();
-    allTypes.forEach((t) => m.set(t.id, t));
+    const m = new Map<string, TypeMeta>();
+    allTypes.forEach((t) => m.set(t.name, t));
     return m;
   }, [allTypes]);
 
   // Build a tree of types (parent -> children)
   const typeTree = useMemo(() => {
-    const roots: LookupType[] = [];
-    const childrenMap = new Map<string, LookupType[]>();
+    const roots: TypeMeta[] = [];
+    const childrenMap = new Map<string, TypeMeta[]>();
     allTypes.forEach((t) => {
-      if (t.parentId && typeMap.has(t.parentId)) {
-        const arr = childrenMap.get(t.parentId) ?? [];
+      if (t.parentType && typeMap.has(t.parentType)) {
+        const arr = childrenMap.get(t.parentType) ?? [];
         arr.push(t);
-        childrenMap.set(t.parentId, arr);
+        childrenMap.set(t.parentType, arr);
       } else {
         roots.push(t);
       }
     });
+    roots.sort((a, b) => a.label.localeCompare(b.label));
+    childrenMap.forEach((arr) => arr.sort((a, b) => a.label.localeCompare(b.label)));
     return { roots, childrenMap };
   }, [allTypes, typeMap]);
 
@@ -162,36 +176,37 @@ export const LookupsManager: React.FC = () => {
   const filteredItems = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
     return allItems.filter((item) => {
-      if (view.typeId && item.type !== view.typeId) return false;
+      if (view.typeKey && item.type !== view.typeKey) return false;
       if (!term) return true;
       return item.name.toLowerCase().includes(term);
     });
-  }, [allItems, searchTerm, view.typeId]);
+  }, [allItems, searchTerm, view.typeKey]);
 
-  const toggleType = (id: string) => {
-    setCollapsedTypes((prev) => ({ ...prev, [id]: !prev[id] }));
+  const toggleType = (key: string) => {
+    setCollapsedTypes((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
   const dismissError = () => setError(null);
 
   // Recursively render type nodes
-  const renderTypeNode = (type: LookupType, level: number): React.ReactNode => {
-    const children = typeTree.childrenMap.get(type.id) ?? [];
-    const collapsed = collapsedTypes[type.id];
+  const renderTypeNode = (type: TypeMeta, level: number): React.ReactNode => {
+    const children = typeTree.childrenMap.get(type.name) ?? [];
+    const collapsed = collapsedTypes[type.name];
     const hasChildren = children.length > 0;
-    const isActive = view.kind === 'items' && view.typeId === type.id;
+    const isActive = view.kind === 'items' && view.typeKey === type.name;
 
-    const padding = level === 0 ? 'px-5' : `pl-${5 + level * 4} pr-5`;
+    const paddingLeft = level === 0 ? 20 : 20 + level * 24;
 
     return (
-      <div key={type.id}>
+      <div key={type.name}>
         <div
-          className={`flex items-center justify-between ${padding} py-3 hover:bg-gray-50/80 transition-colors duration-150 border-b border-gray-50`}
+          className="flex items-center justify-between py-3 hover:bg-gray-50/80 transition-colors duration-150 border-b border-gray-50"
+          style={{ paddingLeft, paddingRight: 20 }}
         >
           <div className="flex items-center gap-2 flex-1 min-w-0">
             {hasChildren ? (
               <button
-                onClick={() => toggleType(type.id)}
+                onClick={() => toggleType(type.name)}
                 className="flex-shrink-0 p-1 hover:bg-gray-100 rounded"
               >
                 {collapsed ? (
@@ -204,15 +219,15 @@ export const LookupsManager: React.FC = () => {
               <div className="w-6 flex-shrink-0" />
             )}
             <button
-              onClick={() => setView({ kind: 'items', typeId: type.id })}
+              onClick={() => setView({ kind: 'items', typeKey: type.name })}
               className={`flex items-center gap-2 text-left flex-1 min-w-0 ${
                 isActive ? 'text-red-600 font-semibold' : 'text-gray-700 hover:text-red-600'
               }`}
             >
               <Layers className={`h-4 w-4 flex-shrink-0 ${isActive ? 'text-red-600' : 'text-gray-400'}`} />
-              <span className="truncate text-sm">{type.name}</span>
+              <span className="truncate text-sm">{type.label}</span>
               <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full flex-shrink-0">
-                {itemCounts[type.id] || 0}
+                {itemCounts[type.name] || 0}
               </span>
             </button>
           </div>
@@ -228,9 +243,9 @@ export const LookupsManager: React.FC = () => {
               <Pencil className="h-3.5 w-3.5" />
             </button>
             <button
-              onClick={() => handleDeleteType(type.id, type.name)}
+              onClick={() => handleDeleteType(type.name, type.label)}
               className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-              title="Delete type"
+              title="Remove type"
             >
               <Trash2 className="h-3.5 w-3.5" />
             </button>
@@ -271,8 +286,8 @@ export const LookupsManager: React.FC = () => {
   }
 
   // ---- Items View ----
-  if (view.kind === 'items' && view.typeId) {
-    const currentType = typeMap.get(view.typeId);
+  if (view.kind === 'items' && view.typeKey) {
+    const currentType = typeMap.get(view.typeKey);
     return (
       <div className="space-y-6 max-w-6xl mx-auto">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
@@ -285,7 +300,7 @@ export const LookupsManager: React.FC = () => {
               Back to Types
             </button>
             <h2 className="text-2xl font-bold text-gray-800">
-              {currentType?.name ?? 'Unknown'} — Items
+              {currentType?.label ?? view.typeKey} — Items
             </h2>
             <p className="text-gray-500 mt-1 text-sm">
               {filteredItems.length} item{filteredItems.length !== 1 ? 's' : ''} in this type
@@ -294,7 +309,7 @@ export const LookupsManager: React.FC = () => {
           <button
             onClick={() => {
               setEditingItem(null);
-              setDefaultItemType(view.typeId);
+              setDefaultItemType(view.typeKey);
               setShowItemForm(true);
             }}
             className="inline-flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white px-4 py-2.5 rounded-lg shadow-sm transition-colors duration-200"
@@ -343,7 +358,7 @@ export const LookupsManager: React.FC = () => {
             <button
               onClick={() => {
                 setEditingItem(null);
-                setDefaultItemType(view.typeId);
+                setDefaultItemType(view.typeKey);
                 setShowItemForm(true);
               }}
               className="mt-4 inline-flex items-center gap-2 text-sm text-red-600 hover:text-red-700 font-medium"
@@ -509,7 +524,7 @@ export const LookupsManager: React.FC = () => {
       {showTypeForm && (
         <LookupTypeForm
           type={editingType}
-          parentTypes={allTypes.filter((t) => !t.parentId)}
+          parentTypes={allTypes.filter((t) => !t.parentType)}
           onSave={handleSaveType}
           onCancel={() => {
             setShowTypeForm(false);

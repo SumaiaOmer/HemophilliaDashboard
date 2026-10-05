@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import { LookupType, LookupTypeRequest } from '../../services/lookups';
+import { TypeMeta, TypeMetaStore } from '../../services/lookups';
 
 interface LookupTypeFormProps {
-  type?: LookupType | null;
-  parentTypes?: LookupType[];
-  onSave: (type: LookupTypeRequest) => Promise<void>;
+  type?: TypeMeta | null;
+  parentTypes: TypeMeta[];
+  onSave: (name: string, label: string, parentType: string | null) => Promise<void>;
   onCancel: () => void;
 }
 
@@ -16,7 +16,8 @@ export const LookupTypeForm: React.FC<LookupTypeFormProps> = ({
   onCancel,
 }) => {
   const [name, setName] = useState(type?.name ?? '');
-  const [parentId, setParentId] = useState<string>(type?.parentId ?? '');
+  const [label, setLabel] = useState(type?.label ?? '');
+  const [parentType, setParentType] = useState<string>(type?.parentType ?? '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,14 +35,16 @@ export const LookupTypeForm: React.FC<LookupTypeFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) {
-      setError('Name is required');
+    const trimmedName = name.trim();
+    const trimmedLabel = label.trim() || trimmedName;
+    if (!trimmedName) {
+      setError('Type key is required');
       return;
     }
     setError(null);
     setIsSubmitting(true);
     try {
-      await onSave({ name: name.trim(), parentId: parentId || null });
+      await onSave(trimmedName, trimmedLabel, parentType || null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save lookup type');
     } finally {
@@ -65,7 +68,6 @@ export const LookupTypeForm: React.FC<LookupTypeFormProps> = ({
             onClick={onCancel}
             disabled={isSubmitting}
             className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors duration-200 disabled:opacity-50"
-            aria-label="Close"
           >
             <X className="h-5 w-5" />
           </button>
@@ -75,11 +77,7 @@ export const LookupTypeForm: React.FC<LookupTypeFormProps> = ({
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
               <span className="text-sm text-red-700 flex-1">{error}</span>
-              <button
-                type="button"
-                onClick={() => setError(null)}
-                className="text-red-400 hover:text-red-600"
-              >
+              <button type="button" onClick={() => setError(null)} className="text-red-400 hover:text-red-600">
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -87,7 +85,7 @@ export const LookupTypeForm: React.FC<LookupTypeFormProps> = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Type Name <span className="text-red-500">*</span>
+              Type Key <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -95,27 +93,44 @@ export const LookupTypeForm: React.FC<LookupTypeFormProps> = ({
               onChange={(e) => setName(e.target.value)}
               required
               autoFocus
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors"
+              disabled={!!type}
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none disabled:bg-gray-50 disabled:cursor-not-allowed transition-colors"
               placeholder="e.g. SudanStates, Occupations"
+            />
+            <p className="mt-1.5 text-xs text-gray-400">
+              This is the internal key sent to the API. Cannot be changed after creation.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Display Label
+            </label>
+            <input
+              type="text"
+              value={label}
+              onChange={(e) => setLabel(e.target.value)}
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors"
+              placeholder="Human-readable name (defaults to key)"
             />
           </div>
 
-          {parentTypes && parentTypes.length > 0 && (
+          {parentTypes.length > 0 && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
                 Parent Type <span className="text-gray-400 font-normal">(optional)</span>
               </label>
               <select
-                value={parentId}
-                onChange={(e) => setParentId(e.target.value)}
+                value={parentType}
+                onChange={(e) => setParentType(e.target.value)}
                 className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors"
               >
                 <option value="">None (top-level type)</option>
                 {parentTypes
-                  .filter((pt) => pt.id !== type?.id)
+                  .filter((pt) => pt.name !== type?.name)
                   .map((pt) => (
-                    <option key={pt.id} value={pt.id}>
-                      {pt.name}
+                    <option key={pt.name} value={pt.name}>
+                      {pt.label}
                     </option>
                   ))}
               </select>

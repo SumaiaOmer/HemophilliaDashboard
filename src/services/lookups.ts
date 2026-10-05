@@ -1,16 +1,5 @@
 import { apiClient } from '../lib/api';
 
-export interface LookupType {
-  id: string;
-  name: string;
-  parentId?: string | null;
-}
-
-export interface LookupTypeRequest {
-  name: string;
-  parentId?: string | null;
-}
-
 export interface LookupItem {
   id: string;
   name: string;
@@ -24,11 +13,84 @@ export interface LookupItemRequest {
   parentId?: string | null;
 }
 
-const normalizeType = (t: any): LookupType => ({
-  id: String(t.id ?? t.Id ?? ''),
-  name: t.name ?? t.Name ?? '',
-  parentId: t.parentId ?? t.ParentId ?? t.parentTypeId ?? t.ParentTypeId ?? null,
-});
+/**
+ * Predefined lookup types from the API Swagger spec.
+ * Each has a human-readable label and the type string the API expects.
+ */
+export const PREDEFINED_TYPES: { value: string; label: string }[] = [
+  { value: 'SudanStates', label: 'Sudan States' },
+  { value: 'States', label: 'States' },
+  { value: 'Occupations', label: 'Occupations' },
+  { value: 'Complaints', label: 'Complaints' },
+  { value: 'ComplaintOptions', label: 'Complaint Options' },
+  { value: 'BloodGroups', label: 'Blood Groups' },
+  { value: 'Genders', label: 'Genders' },
+  { value: 'DiagnosisTypes', label: 'Diagnosis Types' },
+  { value: 'Severities', label: 'Severities' },
+  { value: 'MaritalStatuses', label: 'Marital Statuses' },
+  { value: 'ResidenceTypes', label: 'Residence Types' },
+  { value: 'FamilyHistories', label: 'Family Histories' },
+  { value: 'ChronicDiseases', label: 'Chronic Diseases' },
+  { value: 'ChronicDiseaseOptions', label: 'Chronic Disease Options' },
+  { value: 'VitalStatuses', label: 'Vital Statuses' },
+  { value: 'InhibitorStatuses', label: 'Inhibitor Statuses' },
+  { value: 'ResidenceRegions', label: 'Residence Regions' },
+  { value: 'ResidenceCountries', label: 'Residence Countries' },
+  { value: 'MedicalCenters', label: 'Medical Centers' },
+  { value: 'StateCenters', label: 'State Centers' },
+  { value: 'Cities', label: 'Cities' },
+  { value: 'LocalAreas', label: 'Local Areas' },
+  { value: 'DiagnosisYears', label: 'Diagnosis Years' },
+  { value: 'DrugTypeOptions', label: 'Drug Type Options' },
+];
+
+/**
+ * Type metadata stored in localStorage — tracks user-created types
+ * and parent-child relationships between types. The API has no
+ * separate type entity, so this is client-side only.
+ */
+export interface TypeMeta {
+  name: string;
+  label: string;
+  parentType?: string | null;
+}
+
+const TYPE_META_KEY = 'hemocore_lookup_type_meta';
+
+const getTypeMetaMap = (): Record<string, TypeMeta> => {
+  try {
+    const raw = localStorage.getItem(TYPE_META_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+};
+
+const saveTypeMetaMap = (map: Record<string, TypeMeta>) => {
+  localStorage.setItem(TYPE_META_KEY, JSON.stringify(map));
+};
+
+export const TypeMetaStore = {
+  getAll(): TypeMeta[] {
+    return Object.values(getTypeMetaMap());
+  },
+
+  get(name: string): TypeMeta | undefined {
+    return getTypeMetaMap()[name];
+  },
+
+  upsert(meta: TypeMeta) {
+    const map = getTypeMetaMap();
+    map[meta.name] = meta;
+    saveTypeMetaMap(map);
+  },
+
+  remove(name: string) {
+    const map = getTypeMetaMap();
+    delete map[name];
+    saveTypeMetaMap(map);
+  },
+};
 
 const normalizeItem = (item: any): LookupItem => ({
   id: String(item.id ?? item.Id ?? ''),
@@ -38,38 +100,6 @@ const normalizeItem = (item: any): LookupItem => ({
 });
 
 export class LookupsService {
-  // ---- Lookup Types ----
-
-  static async getAllTypes(): Promise<LookupType[]> {
-    try {
-      const data = await apiClient.get<any>('/Lookups/types');
-      const list = Array.isArray(data) ? data : [];
-      return list.map(normalizeType);
-    } catch (error) {
-      console.error('Error fetching lookup types:', error);
-      return [];
-    }
-  }
-
-  static async createType(type: LookupTypeRequest): Promise<LookupType> {
-    const body: any = { Name: type.name };
-    if (type.parentId) body.ParentId = type.parentId;
-    const data = await apiClient.post<any>('/Lookups/types', body);
-    return normalizeType(data ?? { name: type.name, parentId: type.parentId ?? null });
-  }
-
-  static async updateType(id: string, type: LookupTypeRequest): Promise<void> {
-    const body: any = { Name: type.name };
-    if (type.parentId) body.ParentId = type.parentId;
-    await apiClient.put(`/Lookups/types/${id}`, body);
-  }
-
-  static async deleteType(id: string): Promise<void> {
-    await apiClient.delete(`/Lookups/types/${id}`);
-  }
-
-  // ---- Lookup Items ----
-
   static async getByType(type: string): Promise<LookupItem[]> {
     try {
       const data = await apiClient.get<any>(`/Lookups/${type}`);
@@ -96,7 +126,7 @@ export class LookupsService {
     const body: any = { Name: item.name, Type: item.type };
     if (item.parentId) body.ParentId = item.parentId;
     const data = await apiClient.post<any>('/Lookups/create-body', body);
-    return normalizeItem(data ?? item);
+    return normalizeItem(data ?? { name: item.name, type: item.type, parentId: item.parentId });
   }
 
   static async update(id: string, item: LookupItemRequest): Promise<void> {
