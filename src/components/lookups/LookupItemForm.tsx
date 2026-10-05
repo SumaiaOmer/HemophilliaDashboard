@@ -19,6 +19,8 @@ export const LookupItemForm: React.FC<LookupItemFormProps> = ({
 }) => {
   const [name, setName] = useState(item?.name ?? '');
   const [typeKey, setTypeKey] = useState<string>(item?.type ?? defaultType ?? '');
+  const [parentId, setParentId] = useState<string>(item?.parentId ?? '0');
+  const [parentItems, setParentItems] = useState<LookupItem[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,6 +38,26 @@ export const LookupItemForm: React.FC<LookupItemFormProps> = ({
     };
   }, [isSubmitting, onCancel]);
 
+  // Reset parentId when type changes (unless editing)
+  useEffect(() => {
+    if (item && item.type === typeKey) {
+      setParentId(item.parentId ?? '0');
+    } else {
+      setParentId('0');
+    }
+  }, [typeKey, item]);
+
+  // Always fetch items of the selected type to populate the parent dropdown
+  useEffect(() => {
+    if (typeKey) {
+      LookupsService.getByType(typeKey)
+        .then((items) => setParentItems(items.filter((i) => i.name.toLowerCase() !== i.type.toLowerCase())))
+        .catch(() => setParentItems([]));
+    } else {
+      setParentItems([]);
+    }
+  }, [typeKey]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !typeKey) {
@@ -45,12 +67,10 @@ export const LookupItemForm: React.FC<LookupItemFormProps> = ({
     setError(null);
     setIsSubmitting(true);
     try {
-      // ParentId = the selected lookup type's root item ID
-      const parentId = selectedType?.rootItemId ?? '0';
       await onSave({
         name: name.trim(),
         type: typeKey,
-        parentId,
+        parentId: parentId || '0',
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save lookup item');
@@ -118,6 +138,27 @@ export const LookupItemForm: React.FC<LookupItemFormProps> = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Parent Item <span className="text-gray-400 font-normal">(from "{selectedType?.label ?? typeKey}")</span>
+            </label>
+            <select
+              value={parentId}
+              onChange={(e) => setParentId(e.target.value)}
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors"
+            >
+              <option value="0">None (top-level item)</option>
+              {parentItems.map((pi) => (
+                <option key={pi.id} value={pi.id}>
+                  {pi.name} (ID: {pi.id})
+                </option>
+              ))}
+            </select>
+            <p className="mt-1.5 text-xs text-gray-400">
+              Selecting an item makes this a sub-item of it. The selected item's ID becomes the parent ID.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
               Name <span className="text-red-500">*</span>
             </label>
             <input
@@ -129,11 +170,6 @@ export const LookupItemForm: React.FC<LookupItemFormProps> = ({
               className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors"
               placeholder="Enter lookup item name"
             />
-            {selectedType?.rootItemId && (
-              <p className="mt-1.5 text-xs text-gray-400">
-                This item will be linked to the "{selectedType.label}" type (parent ID: {selectedType.rootItemId}).
-              </p>
-            )}
           </div>
 
           <div className="flex gap-3 pt-2">
