@@ -15,8 +15,10 @@ import { LookupItem, LookupItemRequest, LookupsService, LOOKUP_TYPES } from '../
 import { AuthService } from '../../services/auth';
 import { LookupForm } from './LookupForm';
 
-const typeLabel = (type: string) =>
-  LOOKUP_TYPES.find((t) => t.value === type)?.label ?? type;
+const typeLabel = (type: string, extra?: { value: string; label: string }[]) => {
+  const found = LOOKUP_TYPES.find((t) => t.value === type) ?? extra?.find((t) => t.value === type);
+  return found?.label ?? type;
+};
 
 export const LookupsManager: React.FC = () => {
   const [allItems, setAllItems] = useState<LookupItem[]>([]);
@@ -29,6 +31,17 @@ export const LookupsManager: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+
+  // Merge the static LOOKUP_TYPES with any types discovered in the loaded data
+  const allLookupTypes = useMemo(() => {
+    const staticMap = new Map(LOOKUP_TYPES.map((t) => [t.value, t.label]));
+    for (const t of Object.keys(typeCounts)) {
+      if (!staticMap.has(t)) {
+        staticMap.set(t, t);
+      }
+    }
+    return Array.from(staticMap, ([value, label]) => ({ value, label }));
+  }, [typeCounts]);
 
   const isAdmin = useMemo(() => {
     const user = AuthService.getCurrentUser();
@@ -111,7 +124,7 @@ export const LookupsManager: React.FC = () => {
       return (
         item.name.toLowerCase().includes(term) ||
         item.type.toLowerCase().includes(term) ||
-        typeLabel(item.type).toLowerCase().includes(term)
+        typeLabel(item.type, allLookupTypes).toLowerCase().includes(term)
       );
     });
   }, [allItems, searchTerm, typeFilter]);
@@ -166,7 +179,7 @@ export const LookupsManager: React.FC = () => {
       {showType && (
         <td className="px-6 py-3.5 text-sm">
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700 ring-1 ring-inset ring-red-200">
-            {typeLabel(item.type)}
+            {typeLabel(item.type, allLookupTypes)}
           </span>
         </td>
       )}
@@ -284,7 +297,7 @@ export const LookupsManager: React.FC = () => {
               className="w-full appearance-none pl-9 pr-9 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none bg-white transition-colors"
             >
               <option value="all">All Types ({allItems.length})</option>
-              {LOOKUP_TYPES.map((t) => (
+              {allLookupTypes.map((t) => (
                 <option key={t.value} value={t.value}>
                   {t.label} ({typeCounts[t.value] || 0})
                 </option>
@@ -352,7 +365,7 @@ export const LookupsManager: React.FC = () => {
                     ) : (
                       <ChevronDown className="h-4 w-4 text-gray-400" />
                     )}
-                    <span className="text-sm font-semibold text-gray-700">{typeLabel(type)}</span>
+                    <span className="text-sm font-semibold text-gray-700">{typeLabel(type, allLookupTypes)}</span>
                     <span className="text-xs font-medium text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
                       {items.length}
                     </span>
@@ -404,6 +417,7 @@ export const LookupsManager: React.FC = () => {
         <LookupForm
           item={editingItem}
           defaultType={defaultType}
+          availableTypes={allLookupTypes}
           onSave={handleSave}
           onCancel={() => {
             setShowForm(false);

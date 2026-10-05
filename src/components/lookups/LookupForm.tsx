@@ -5,6 +5,7 @@ import { LookupItem, LookupItemRequest, LOOKUP_TYPES } from '../../services/look
 interface LookupFormProps {
   item?: LookupItem | null;
   defaultType?: string;
+  availableTypes?: { value: string; label: string }[];
   onSave: (item: LookupItemRequest) => Promise<void>;
   onCancel: () => void;
 }
@@ -12,11 +13,13 @@ interface LookupFormProps {
 export const LookupForm: React.FC<LookupFormProps> = ({
   item,
   defaultType,
+  availableTypes,
   onSave,
   onCancel,
 }) => {
+  const types = availableTypes && availableTypes.length > 0 ? availableTypes : LOOKUP_TYPES;
   const [name, setName] = useState(item?.name ?? '');
-  const [type, setType] = useState(item?.type ?? defaultType ?? LOOKUP_TYPES[0].value);
+  const [type, setType] = useState(item?.type ?? defaultType ?? types[0].value);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -99,7 +102,7 @@ export const LookupForm: React.FC<LookupFormProps> = ({
               disabled={!!item}
               className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none disabled:bg-gray-50 disabled:cursor-not-allowed transition-colors"
             >
-              {LOOKUP_TYPES.map((t) => (
+              {types.map((t) => (
                 <option key={t.value} value={t.value}>
                   {t.label}
                 </option>
