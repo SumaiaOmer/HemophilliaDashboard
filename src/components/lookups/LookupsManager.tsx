@@ -32,17 +32,6 @@ export const LookupsManager: React.FC = () => {
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
 
-  // Merge the static LOOKUP_TYPES with any types discovered in the loaded data
-  const allLookupTypes = useMemo(() => {
-    const staticMap = new Map(LOOKUP_TYPES.map((t) => [t.value, t.label]));
-    for (const t of Object.keys(typeCounts)) {
-      if (!staticMap.has(t)) {
-        staticMap.set(t, t);
-      }
-    }
-    return Array.from(staticMap, ([value, label]) => ({ value, label }));
-  }, [typeCounts]);
-
   const isAdmin = useMemo(() => {
     const user = AuthService.getCurrentUser();
     return user?.role?.toLowerCase() === 'admin';
@@ -113,6 +102,17 @@ export const LookupsManager: React.FC = () => {
     });
     return counts;
   }, [allItems]);
+
+  // Merge the static LOOKUP_TYPES with any types discovered in the loaded data
+  const allLookupTypes = useMemo(() => {
+    const staticMap = new Map(LOOKUP_TYPES.map((t) => [t.value, t.label]));
+    for (const t of Object.keys(typeCounts)) {
+      if (!staticMap.has(t)) {
+        staticMap.set(t, t);
+      }
+    }
+    return Array.from(staticMap, ([value, label]) => ({ value, label }));
+  }, [typeCounts]);
 
   // Memoized filtered items
   const filteredItems = useMemo(() => {
