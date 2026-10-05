@@ -32,7 +32,7 @@ const buildApiBody = (item: LookupItemRequest) => {
   if (item.parentId && item.parentId !== '0' && item.parentId !== '') {
     body.ParentId = parseInt(String(item.parentId), 10);
   } else {
-    body.ParentId = null;
+    body.ParentId = 0;
   }
   return body;
 };

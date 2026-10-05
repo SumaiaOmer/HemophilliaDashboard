@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import { LookupType, LookupItem, LookupsService } from '../../services/lookups';
+import { LookupType } from '../../services/lookups';
 
 interface LookupTypeFormProps {
   type?: LookupType | null;
-  parentTypes: LookupType[];
   existingTypeNames: string[];
   onSave: (typeName: string, parentTypeId: string | null) => Promise<void>;
   onCancel: () => void;
@@ -12,13 +11,11 @@ interface LookupTypeFormProps {
 
 export const LookupTypeForm: React.FC<LookupTypeFormProps> = ({
   type,
-  parentTypes,
   existingTypeNames,
   onSave,
   onCancel,
 }) => {
   const [typeName, setTypeName] = useState(type?.name ?? '');
-  const [parentTypeId, setParentTypeId] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,7 +46,7 @@ export const LookupTypeForm: React.FC<LookupTypeFormProps> = ({
     setError(null);
     setIsSubmitting(true);
     try {
-      await onSave(trimmed, parentTypeId || null);
+      await onSave(trimmed, null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save lookup type');
     } finally {
@@ -103,34 +100,9 @@ export const LookupTypeForm: React.FC<LookupTypeFormProps> = ({
               placeholder="e.g. BloodGroups, SudanStates"
             />
             <p className="mt-1.5 text-xs text-gray-400">
-              A root item with Name = Type will be created in the API. Cannot be renamed later.
+              A root item with Name = Type will be created with parentId = 0. Cannot be renamed later.
             </p>
           </div>
-
-          {parentTypes.length > 0 && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Parent Type <span className="text-gray-400 font-normal">(optional)</span>
-              </label>
-              <select
-                value={parentTypeId}
-                onChange={(e) => setParentTypeId(e.target.value)}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors"
-              >
-                <option value="">None (top-level type)</option>
-                {parentTypes
-                  .filter((pt) => pt.name !== type?.name)
-                  .map((pt) => (
-                    <option key={pt.name} value={pt.rootItemId ?? pt.name}>
-                      {pt.label}
-                    </option>
-                  ))}
-              </select>
-              <p className="mt-1.5 text-xs text-gray-400">
-                Selecting a parent links this type's root item to the parent type's root item
-              </p>
-            </div>
-          )}
 
           <div className="flex gap-3 pt-2">
             <button

@@ -19,7 +19,7 @@ export const LookupItemForm: React.FC<LookupItemFormProps> = ({
 }) => {
   const [name, setName] = useState(item?.name ?? '');
   const [typeKey, setTypeKey] = useState<string>(item?.type ?? defaultType ?? '');
-  const [parentId, setParentId] = useState<string>(item?.parentId ?? '');
+  const [parentId, setParentId] = useState<string>(item?.parentId ?? '0');
   const [parentItems, setParentItems] = useState<LookupItem[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,22 +41,22 @@ export const LookupItemForm: React.FC<LookupItemFormProps> = ({
   // Reset parentId when type changes (unless editing)
   useEffect(() => {
     if (item && item.type === typeKey) {
-      setParentId(item.parentId ?? '');
+      setParentId(item.parentId ?? '0');
     } else {
-      setParentId('');
+      setParentId('0');
     }
   }, [typeKey, item]);
 
-  // If selected type has a parent type, fetch parent type's items
+  // Always fetch items of the selected type to populate the parent dropdown
   useEffect(() => {
-    if (selectedType?.parentType) {
-      LookupsService.getByType(selectedType.parentType)
+    if (typeKey) {
+      LookupsService.getByType(typeKey)
         .then((items) => setParentItems(items.filter((i) => i.name.toLowerCase() !== i.type.toLowerCase())))
         .catch(() => setParentItems([]));
     } else {
       setParentItems([]);
     }
-  }, [selectedType]);
+  }, [typeKey]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,7 +70,7 @@ export const LookupItemForm: React.FC<LookupItemFormProps> = ({
       await onSave({
         name: name.trim(),
         type: typeKey,
-        parentId: parentId || null,
+        parentId: parentId || '0',
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save lookup item');
@@ -136,25 +136,26 @@ export const LookupItemForm: React.FC<LookupItemFormProps> = ({
             )}
           </div>
 
-          {selectedType?.parentType && parentItems.length > 0 && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Parent Item <span className="text-gray-400 font-normal">(from "{selectedType.parentType}")</span>
-              </label>
-              <select
-                value={parentId}
-                onChange={(e) => setParentId(e.target.value)}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors"
-              >
-                <option value="">None (top-level item)</option>
-                {parentItems.map((pi) => (
-                  <option key={pi.id} value={pi.id}>
-                    {pi.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Parent Item <span className="text-gray-400 font-normal">(from "{selectedType?.label ?? typeKey}")</span>
+            </label>
+            <select
+              value={parentId}
+              onChange={(e) => setParentId(e.target.value)}
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors"
+            >
+              <option value="0">None (top-level item)</option>
+              {parentItems.map((pi) => (
+                <option key={pi.id} value={pi.id}>
+                  {pi.name} (ID: {pi.id})
+                </option>
+              ))}
+            </select>
+            <p className="mt-1.5 text-xs text-gray-400">
+              Selecting an item makes this a sub-item of it. The selected item's ID becomes the parent ID.
+            </p>
+          </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
