@@ -1,25 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import { LookupItem, LookupItemRequest, LOOKUP_TYPES } from '../../services/lookups';
+import { LookupItem, LookupItemRequest, LookupType } from '../../services/lookups';
 
-interface LookupFormProps {
+interface LookupItemFormProps {
   item?: LookupItem | null;
   defaultType?: string;
-  availableTypes?: { value: string; label: string }[];
+  availableTypes: LookupType[];
   onSave: (item: LookupItemRequest) => Promise<void>;
   onCancel: () => void;
 }
 
-export const LookupForm: React.FC<LookupFormProps> = ({
+export const LookupItemForm: React.FC<LookupItemFormProps> = ({
   item,
   defaultType,
   availableTypes,
   onSave,
   onCancel,
 }) => {
-  const types = availableTypes && availableTypes.length > 0 ? availableTypes : LOOKUP_TYPES;
   const [name, setName] = useState(item?.name ?? '');
-  const [type, setType] = useState(item?.type ?? defaultType ?? types[0].value);
+  const [typeId, setTypeId] = useState<string>(item?.type ?? defaultType ?? '');
+  const [parentId, setParentId] = useState<string>(item?.parentId ?? '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,17 +35,47 @@ export const LookupForm: React.FC<LookupFormProps> = ({
     };
   }, [isSubmitting, onCancel]);
 
+  // When the type changes, reset parentId
+  useEffect(() => {
+    if (item && item.type === typeId) {
+      setParentId(item.parentId ?? '');
+    } else {
+      setParentId('');
+    }
+  }, [typeId, item]);
+
+  const selectedType = availableTypes.find((t) => t.id === typeId);
+  // Parent items come from items of the parent type (if the selected type has a parent type)
+  // Fetched dynamically when a type with a parent is selected
+  const [parentTypeItems, setParentTypeItems] = useState<LookupItem[]>([]);
+
+  useEffect(() => {
+    if (selectedType?.parentId) {
+      const parentType = availableTypes.find((t) => t.id === selectedType.parentId);
+      if (parentType) {
+        LookupsService.getByType(parentType.name)
+          .then(setParentTypeItems)
+          .catch(() => setParentTypeItems([]));
+      }
+    } else {
+      setParentTypeItems([]);
+    }
+  }, [selectedType, availableTypes]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !type) {
+    if (!name.trim() || !typeId) {
       setError('Both name and type are required');
       return;
     }
-
     setError(null);
     setIsSubmitting(true);
     try {
-      await onSave({ name: name.trim(), type });
+      await onSave({
+        name: name.trim(),
+        type: typeId,
+        parentId: parentId || null,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save lookup item');
     } finally {
@@ -55,13 +85,12 @@ export const LookupForm: React.FC<LookupFormProps> = ({
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in"
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
       onClick={(e) => {
         if (e.target === e.currentTarget && !isSubmitting) onCancel();
       }}
     >
       <div className="bg-white rounded-2xl w-full max-w-md mx-auto shadow-2xl overflow-hidden">
-        {/* Header */}
         <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100">
           <h3 className="text-lg font-semibold text-gray-800">
             {item ? 'Edit Lookup Item' : 'Add Lookup Item'}
@@ -76,7 +105,6 @@ export const LookupForm: React.FC<LookupFormProps> = ({
           </button>
         </div>
 
-        {/* Body */}
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-5">
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
@@ -96,15 +124,16 @@ export const LookupForm: React.FC<LookupFormProps> = ({
               Lookup Type <span className="text-red-500">*</span>
             </label>
             <select
-              value={type}
-              onChange={(e) => setType(e.target.value)}
+              value={typeId}
+              onChange={(e) => setTypeId(e.target.value)}
               required
               disabled={!!item}
               className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none disabled:bg-gray-50 disabled:cursor-not-allowed transition-colors"
             >
-              {types.map((t) => (
-                <option key={t.value} value={t.value}>
-                  {t.label}
+              <option value="">Select a type</option>
+              {availableTypes.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
                 </option>
               ))}
             </select>
@@ -113,7 +142,32 @@ export const LookupForm: React.FC<LookupFormProps> = ({
                 Type cannot be changed after creation
               </p>
             )}
+            {availableTypes.length === 0 && (
+              <p className="mt-1.5 text-xs text-red-500">
+                No lookup types found. Create a type first.
+              </p>
+            )}
           </div>
+
+          {selectedType?.parentId && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Parent Item <span className="text-gray-400 font-normal">(from parent type)</span>
+              </label>
+              <select
+                value={parentId}
+                onChange={(e) => setParentId(e.target.value)}
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors"
+              >
+                <option value="">None (top-level item)</option>
+                {parentTypeItems.map((pi) => (
+                  <option key={pi.id} value={pi.id}>
+                    {pi.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -130,7 +184,6 @@ export const LookupForm: React.FC<LookupFormProps> = ({
             />
           </div>
 
-          {/* Actions */}
           <div className="flex gap-3 pt-2">
             <button
               type="button"
@@ -142,7 +195,7 @@ export const LookupForm: React.FC<LookupFormProps> = ({
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !typeId}
               className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 active:bg-red-800 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isSubmitting ? (

@@ -1,49 +1,75 @@
 import { apiClient } from '../lib/api';
 
+export interface LookupType {
+  id: string;
+  name: string;
+  parentId?: string | null;
+}
+
+export interface LookupTypeRequest {
+  name: string;
+  parentId?: string | null;
+}
+
 export interface LookupItem {
   id: string;
   name: string;
   type: string;
+  parentId?: string | null;
 }
 
 export interface LookupItemRequest {
   name: string;
   type: string;
+  parentId?: string | null;
 }
 
-// Curated list of lookup types exposed by the API. These map to the
-// /api/Lookups/<type> endpoints and are surfaced in the admin UI.
-export const LOOKUP_TYPES: { value: string; label: string }[] = [
-  { value: 'SudanStates', label: 'Sudan States' },
-  { value: 'ComplaintOptions', label: 'Complaint Options' },
-  { value: 'Occupations', label: 'Occupations' },
-  { value: 'DrugTypeOptions', label: 'Drug Type Options' },
-  { value: 'StateCenters', label: 'State Centers' },
-  { value: 'BloodGroups', label: 'Blood Groups' },
-  { value: 'Genders', label: 'Genders' },
-  { value: 'DiagnosisTypes', label: 'Diagnosis Types' },
-  { value: 'Severities', label: 'Severities' },
-  { value: 'MaritalStatuses', label: 'Marital Statuses' },
-  { value: 'ResidenceTypes', label: 'Residence Types' },
-  { value: 'FamilyHistories', label: 'Family Histories' },
-  { value: 'ChronicDiseases', label: 'Chronic Diseases' },
-  { value: 'VitalStatuses', label: 'Vital Statuses' },
-  { value: 'InhibitorStatuses', label: 'Inhibitor Statuses' },
-  { value: 'ResidenceRegions', label: 'Residence Regions' },
-  { value: 'ResidenceCountries', label: 'Residence Countries' },
-];
+const normalizeType = (t: any): LookupType => ({
+  id: String(t.id ?? t.Id ?? ''),
+  name: t.name ?? t.Name ?? '',
+  parentId: t.parentId ?? t.ParentId ?? t.parentTypeId ?? t.ParentTypeId ?? null,
+});
 
 const normalizeItem = (item: any): LookupItem => ({
   id: String(item.id ?? item.Id ?? ''),
   name: item.name ?? item.Name ?? '',
   type: item.type ?? item.Type ?? '',
+  parentId: item.parentId ?? item.ParentId ?? item.parentTypeId ?? item.ParentTypeId ?? null,
 });
 
 export class LookupsService {
-  /**
-   * Fetches lookup items dynamically based on the type
-   * @param type Example: 'ComplaintOptions', 'Occupations', or 'SudanStates'
-   */
+  // ---- Lookup Types ----
+
+  static async getAllTypes(): Promise<LookupType[]> {
+    try {
+      const data = await apiClient.get<any>('/Lookups/types');
+      const list = Array.isArray(data) ? data : [];
+      return list.map(normalizeType);
+    } catch (error) {
+      console.error('Error fetching lookup types:', error);
+      return [];
+    }
+  }
+
+  static async createType(type: LookupTypeRequest): Promise<LookupType> {
+    const body: any = { Name: type.name };
+    if (type.parentId) body.ParentId = type.parentId;
+    const data = await apiClient.post<any>('/Lookups/types', body);
+    return normalizeType(data ?? { name: type.name, parentId: type.parentId ?? null });
+  }
+
+  static async updateType(id: string, type: LookupTypeRequest): Promise<void> {
+    const body: any = { Name: type.name };
+    if (type.parentId) body.ParentId = type.parentId;
+    await apiClient.put(`/Lookups/types/${id}`, body);
+  }
+
+  static async deleteType(id: string): Promise<void> {
+    await apiClient.delete(`/Lookups/types/${id}`);
+  }
+
+  // ---- Lookup Items ----
+
   static async getByType(type: string): Promise<LookupItem[]> {
     try {
       const data = await apiClient.get<any>(`/Lookups/${type}`);
@@ -67,18 +93,16 @@ export class LookupsService {
   }
 
   static async create(item: LookupItemRequest): Promise<LookupItem> {
-    const data = await apiClient.post<any>('/Lookups/create-body', {
-      Name: item.name,
-      Type: item.type,
-    });
+    const body: any = { Name: item.name, Type: item.type };
+    if (item.parentId) body.ParentId = item.parentId;
+    const data = await apiClient.post<any>('/Lookups/create-body', body);
     return normalizeItem(data ?? item);
   }
 
   static async update(id: string, item: LookupItemRequest): Promise<void> {
-    await apiClient.put(`/Lookups/update-body/${id}`, {
-      Name: item.name,
-      Type: item.type,
-    });
+    const body: any = { Name: item.name, Type: item.type };
+    if (item.parentId) body.ParentId = item.parentId;
+    await apiClient.put(`/Lookups/update-body/${id}`, body);
   }
 
   static async remove(id: string): Promise<void> {
