@@ -1,23 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import { TypeMeta, TypeMetaStore } from '../../services/lookups';
+import { LookupType, LookupItem, LookupsService } from '../../services/lookups';
 
 interface LookupTypeFormProps {
-  type?: TypeMeta | null;
-  parentTypes: TypeMeta[];
-  onSave: (name: string, label: string, parentType: string | null) => Promise<void>;
+  type?: LookupType | null;
+  parentTypes: LookupType[];
+  existingTypeNames: string[];
+  onSave: (typeName: string, parentTypeId: string | null) => Promise<void>;
   onCancel: () => void;
 }
 
 export const LookupTypeForm: React.FC<LookupTypeFormProps> = ({
   type,
   parentTypes,
+  existingTypeNames,
   onSave,
   onCancel,
 }) => {
-  const [name, setName] = useState(type?.name ?? '');
-  const [label, setLabel] = useState(type?.label ?? '');
-  const [parentType, setParentType] = useState<string>(type?.parentType ?? '');
+  const [typeName, setTypeName] = useState(type?.name ?? '');
+  const [parentTypeId, setParentTypeId] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,16 +36,20 @@ export const LookupTypeForm: React.FC<LookupTypeFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const trimmedName = name.trim();
-    const trimmedLabel = label.trim() || trimmedName;
-    if (!trimmedName) {
-      setError('Type key is required');
+    const trimmed = typeName.trim();
+    if (!trimmed) {
+      setError('Type name is required');
+      return;
+    }
+    const lower = trimmed.toLowerCase();
+    if (!type && existingTypeNames.some((n) => n.toLowerCase() === lower)) {
+      setError('A type with this name already exists');
       return;
     }
     setError(null);
     setIsSubmitting(true);
     try {
-      await onSave(trimmedName, trimmedLabel, parentType || null);
+      await onSave(trimmed, parentTypeId || null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save lookup type');
     } finally {
@@ -85,34 +90,21 @@ export const LookupTypeForm: React.FC<LookupTypeFormProps> = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Type Key <span className="text-red-500">*</span>
+              Type Name <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              value={typeName}
+              onChange={(e) => setTypeName(e.target.value)}
               required
               autoFocus
               disabled={!!type}
               className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none disabled:bg-gray-50 disabled:cursor-not-allowed transition-colors"
-              placeholder="e.g. SudanStates, Occupations"
+              placeholder="e.g. BloodGroups, SudanStates"
             />
             <p className="mt-1.5 text-xs text-gray-400">
-              This is the internal key sent to the API. Cannot be changed after creation.
+              A root item with Name = Type will be created in the API. Cannot be renamed later.
             </p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Display Label
-            </label>
-            <input
-              type="text"
-              value={label}
-              onChange={(e) => setLabel(e.target.value)}
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors"
-              placeholder="Human-readable name (defaults to key)"
-            />
           </div>
 
           {parentTypes.length > 0 && (
@@ -121,21 +113,21 @@ export const LookupTypeForm: React.FC<LookupTypeFormProps> = ({
                 Parent Type <span className="text-gray-400 font-normal">(optional)</span>
               </label>
               <select
-                value={parentType}
-                onChange={(e) => setParentType(e.target.value)}
+                value={parentTypeId}
+                onChange={(e) => setParentTypeId(e.target.value)}
                 className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors"
               >
                 <option value="">None (top-level type)</option>
                 {parentTypes
                   .filter((pt) => pt.name !== type?.name)
                   .map((pt) => (
-                    <option key={pt.name} value={pt.name}>
+                    <option key={pt.name} value={pt.rootItemId ?? pt.name}>
                       {pt.label}
                     </option>
                   ))}
               </select>
               <p className="mt-1.5 text-xs text-gray-400">
-                Selecting a parent creates a sub-type hierarchy
+                Selecting a parent links this type's root item to the parent type's root item
               </p>
             </div>
           )}

@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import { LookupItem, LookupItemRequest, TypeMeta, LookupsService } from '../../services/lookups';
+import { LookupItem, LookupItemRequest, LookupType, LookupsService } from '../../services/lookups';
 
 interface LookupItemFormProps {
   item?: LookupItem | null;
   defaultType?: string;
-  availableTypes: TypeMeta[];
+  availableTypes: LookupType[];
   onSave: (item: LookupItemRequest) => Promise<void>;
   onCancel: () => void;
 }
@@ -38,7 +38,7 @@ export const LookupItemForm: React.FC<LookupItemFormProps> = ({
     };
   }, [isSubmitting, onCancel]);
 
-  // Reset parentId when type changes (unless editing existing item)
+  // Reset parentId when type changes (unless editing)
   useEffect(() => {
     if (item && item.type === typeKey) {
       setParentId(item.parentId ?? '');
@@ -47,11 +47,11 @@ export const LookupItemForm: React.FC<LookupItemFormProps> = ({
     }
   }, [typeKey, item]);
 
-  // If selected type has a parent type, fetch parent type's items for the parent dropdown
+  // If selected type has a parent type, fetch parent type's items
   useEffect(() => {
     if (selectedType?.parentType) {
       LookupsService.getByType(selectedType.parentType)
-        .then(setParentItems)
+        .then((items) => setParentItems(items.filter((i) => i.name.toLowerCase() !== i.type.toLowerCase())))
         .catch(() => setParentItems([]));
     } else {
       setParentItems([]);
