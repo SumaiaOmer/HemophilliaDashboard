@@ -121,14 +121,53 @@ export const PatientVisitsManager: React.FC = () => {
     group.sort((a, b) => new Date(b.visitDate).getTime() - new Date(a.visitDate).getTime())
   );
 
-  const patientEntries = Object.entries(groupedByPatient)
-    .map(([patientId, patientVisits]) => ({
-      patientId: Number(patientId),
-      visits: patientVisits,
-      patient: getPatient(Number(patientId)),
-      latestVisit: patientVisits[0]
-    }))
-    .sort((a, b) => new Date(b.latestVisit.visitDate).getTime() - new Date(a.latestVisit.visitDate).getTime());
+  // Include all patients, even those without any visits
+  // Filter patients by search term (name/national ID), and filter their visits by date range
+  const searchLower = searchTerm.toLowerCase();
+  const patientEntries = patients
+    .filter(patient => {
+      if (!searchTerm) return true;
+      return (
+        (patient.fullName?.toLowerCase() ?? '').includes(searchLower) ||
+        (patient.nationalIdNumber?.toLowerCase() ?? '').includes(searchLower)
+      );
+    })
+    .map(patient => {
+      let patientVisits = groupedByPatient[patient.id] || [];
+      // If date filters are active, only show patients who have visits in that range
+      if (fromDate || toDate) {
+        patientVisits = patientVisits.filter(visit => {
+          const visitDate = new Date(visit.visitDate);
+          if (fromDate) {
+            const from = new Date(fromDate);
+            from.setHours(0, 0, 0, 0);
+            if (visitDate < from) return false;
+          }
+          if (toDate) {
+            const to = new Date(toDate);
+            to.setHours(23, 59, 59, 999);
+            if (visitDate > to) return false;
+          }
+          return true;
+        });
+      }
+      return {
+        patientId: patient.id,
+        visits: patientVisits,
+        patient,
+        latestVisit: patientVisits[0]
+      };
+    })
+    .filter(entry => {
+      // When date filters are active, only show patients with matching visits
+      if (fromDate || toDate) return entry.visits.length > 0;
+      return true;
+    })
+    .sort((a, b) => {
+      const aDate = a.latestVisit ? new Date(a.latestVisit.visitDate).getTime() : 0;
+      const bDate = b.latestVisit ? new Date(b.latestVisit.visitDate).getTime() : 0;
+      return bDate - aDate;
+    });
 
   const formatVisitType = (type?: string) => {
     if (!type) return 'N/A';
@@ -421,11 +460,18 @@ export const PatientVisitsManager: React.FC = () => {
                     {patient?.age && <span>{patient.age} yrs</span>}
                   </div>
                   <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-400">
-                    <span className="flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
-                      Last: {formatDate(lastVisit.visitDate)}
-                    </span>
-                    {firstVisit && firstVisit.id !== lastVisit.id && (
+                    {lastVisit ? (
+                      <span className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        Last: {formatDate(lastVisit.visitDate)}
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        No visits yet
+                      </span>
+                    )}
+                    {firstVisit && lastVisit && firstVisit.id !== lastVisit.id && (
                       <span className="flex items-center gap-1">
                         First: {formatDate(firstVisit.visitDate)}
                       </span>
@@ -456,9 +502,13 @@ export const PatientVisitsManager: React.FC = () => {
               {/* Expanded visits list */}
               {isExpanded && (
                 <div className="border-t border-gray-100 px-6 pb-5 space-y-3">
-                  {/* Visit summary row */}
                   <div className="pt-3">
-                    {patientVisits.map((visit) => {
+                    {patientVisits.length === 0 ? (
+                      <div className="text-center py-6 text-sm text-gray-400">
+                        No visit records for this patient yet. Click "Add Visit" to create one.
+                      </div>
+                    ) : (
+                      patientVisits.map((visit) => {
                       const isVisitExpanded = expandedVisit === visit.id;
 
                       return (
@@ -510,7 +560,8 @@ export const PatientVisitsManager: React.FC = () => {
                           )}
                         </div>
                       );
-                    })}
+                    })
+                    )}
                   </div>
                 </div>
               )}
@@ -522,7 +573,7 @@ export const PatientVisitsManager: React.FC = () => {
       {patientEntries.length === 0 && (
         <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
           <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-500">No visits found</p>
+          <p className="text-gray-500">No patients found</p>
           {searchTerm && (
             <p className="text-sm text-gray-400 mt-1">Try adjusting your search criteria</p>
           )}
