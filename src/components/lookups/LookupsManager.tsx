@@ -185,6 +185,42 @@ export const LookupsManager: React.FC = () => {
     });
   }, [allItems, searchTerm, view.typeKey]);
 
+  // Filtered type tree for the types view (search by label/name)
+  const filteredTypeTree = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return typeTree;
+
+    const filterTypes = (types: LookupType[]): LookupType[] => {
+      return types
+        .filter((t) => {
+          const children = typeTree.childrenMap.get(t.name) ?? [];
+          const matchesSelf = t.label.toLowerCase().includes(term) || t.name.toLowerCase().includes(term);
+          const matchingChildren = filterTypes(children);
+          return matchesSelf || matchingChildren.length > 0;
+        });
+    };
+
+    const filteredRoots = filterTypes(typeTree.roots);
+    return { roots: filteredRoots, childrenMap: typeTree.childrenMap };
+  }, [typeTree, searchTerm]);
+
+  // Auto-expand all types when searching so matching children are visible
+  const searchedExpandedTypes = useMemo(() => {
+    if (!searchTerm.trim()) return collapsedTypes;
+    const expanded: Record<string, boolean> = {};
+    const collectAll = (types: LookupType[]) => {
+      types.forEach((t) => {
+        const children = typeTree.childrenMap.get(t.name) ?? [];
+        if (children.length > 0) {
+          expanded[t.name] = true;
+          collectAll(children);
+        }
+      });
+    };
+    collectAll(filteredTypeTree.roots);
+    return expanded;
+  }, [searchTerm, filteredTypeTree, typeTree.childrenMap, collapsedTypes]);
+
   const toggleType = (key: string) => {
     setCollapsedTypes((prev) => ({ ...prev, [key]: !prev[key] }));
   };
@@ -194,7 +230,7 @@ export const LookupsManager: React.FC = () => {
   // Recursively render type nodes
   const renderTypeNode = (type: LookupType, level: number): React.ReactNode => {
     const children = typeTree.childrenMap.get(type.name) ?? [];
-    const collapsed = collapsedTypes[type.name];
+    const collapsed = searchedExpandedTypes[type.name];
     const hasChildren = children.length > 0;
     const isActive = view.kind === 'items' && view.typeKey === type.name;
 
@@ -500,7 +536,7 @@ export const LookupsManager: React.FC = () => {
         </span>
       </div>
 
-      {typeTree.roots.length === 0 ? (
+      {filteredTypeTree.roots.length === 0 ? (
         <div className="text-center py-16 bg-white rounded-xl border border-gray-200">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-gray-100">
             <Inbox className="h-7 w-7 text-gray-400" />
@@ -520,7 +556,7 @@ export const LookupsManager: React.FC = () => {
         </div>
       ) : (
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          {typeTree.roots.map((type) => renderTypeNode(type, 0))}
+          {filteredTypeTree.roots.map((type) => renderTypeNode(type, 0))}
         </div>
       )}
 
