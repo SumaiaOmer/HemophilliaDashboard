@@ -111,7 +111,7 @@ class ApiClient {
         parsed = parsed.data;
       }
 
-      if (parsed && typeof parsed === 'object') {
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
         if ('result' in parsed) {
           parsed = parsed.result;
         } else if ('items' in parsed && Object.keys(parsed).length === 1) {
@@ -123,6 +123,8 @@ class ApiClient {
           'items' in parsed.data
         ) {
           parsed = parsed.data.items;
+        } else if ('data' in parsed && Array.isArray(parsed.data)) {
+          parsed = parsed.data;
         }
       }
     }

@@ -190,7 +190,18 @@ export class PatientsService {
 
     let data: any;
     if (isAdmin) {
-      data = await apiClient.get<Patient[]>('/Patients');
+      try {
+        data = await apiClient.get<Patient[]>('/Patients');
+      } catch {
+        data = await apiClient.get<Patient[]>('/Patients/by-state');
+      }
+      if (!Array.isArray(data) || data.length === 0) {
+        try {
+          data = await apiClient.get<Patient[]>('/Patients/by-state');
+        } catch {
+          // keep whatever data we have
+        }
+      }
     } else {
       data = await apiClient.get<Patient[]>('/Patients/by-state');
     }
