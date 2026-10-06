@@ -1,4 +1,5 @@
 import { apiClient } from '../lib/api';
+import { AuthService } from './auth';
 import { Patient, PatientRequest } from '../types/api';
 
 export class PatientsService {
@@ -184,8 +185,29 @@ export class PatientsService {
   }
 
   static async getAll(): Promise<Patient[]> {
-    const data = await apiClient.get<Patient[]>('/Patients');
-    return (Array.isArray(data) ? data : []).map(p => this.normalizePatient(p));
+    const user = AuthService.getCurrentUser();
+    const isAdmin = user?.role?.toLowerCase() === 'admin';
+
+    let data: any;
+    if (isAdmin) {
+      data = await apiClient.get<Patient[]>('/Patients');
+    } else {
+      data = await apiClient.get<Patient[]>('/Patients/by-state');
+    }
+
+    const patients = Array.isArray(data) ? data : [];
+
+    if (!isAdmin && user?.state) {
+      const userState = user.state.toLowerCase().trim();
+      return patients
+        .map(p => this.normalizePatient(p))
+        .filter(p => {
+          const patientState = (p.state || p.residenceState || p.homeState || '').toLowerCase().trim();
+          return patientState === userState;
+        });
+    }
+
+    return patients.map(p => this.normalizePatient(p));
   }
 
   static async getById(id: number): Promise<Patient> {
