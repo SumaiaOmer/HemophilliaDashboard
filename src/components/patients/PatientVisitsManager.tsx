@@ -474,7 +474,7 @@ export const PatientVisitsManager: React.FC = () => {
                         First: {formatDate(firstVisit.visitDate)}
                       </span>
                     )}
-                    {lastVisit.centerName && (
+                    {lastVisit?.centerName && (
                       <span className="flex items-center gap-1">
                         <MapPin className="h-3 w-3" />
                         {lastVisit.centerName}
