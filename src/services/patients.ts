@@ -188,52 +188,18 @@ export class PatientsService {
     const user = AuthService.getCurrentUser();
     const isAdmin = user?.role?.toLowerCase() === 'admin';
 
-    let data: any;
-    try {
-      data = await apiClient.get<Patient[]>('/Patients');
-    } catch {
-      data = await apiClient.get<Patient[]>('/Patients/by-state');
-    }
-    if (!Array.isArray(data) || data.length === 0) {
-      try {
-        data = await apiClient.get<Patient[]>('/Patients/by-state');
-      } catch {
-        // keep whatever data we have
-      }
+    if (!isAdmin) {
+      const data = await apiClient.get<Patient[]>('/Patients/by-state');
+      return (Array.isArray(data) ? data : []).map(p => this.normalizePatient(p));
     }
 
-    const patients = Array.isArray(data) ? data : [];
-
-    if (!isAdmin && user?.state) {
-      const userState = user.state.toLowerCase().trim();
-      return patients
-        .map(p => this.normalizePatient(p))
-        .filter(p => {
-          const patientState = (p.state || p.residenceState || p.homeState || '').toLowerCase().trim();
-          return patientState === userState;
-        });
-    }
-
-    return patients.map(p => this.normalizePatient(p));
+    const data = await apiClient.get<Patient[]>('/Patients');
+    return (Array.isArray(data) ? data : []).map(p => this.normalizePatient(p));
   }
 
   static async getAllUnfiltered(): Promise<Patient[]> {
-    let data: any;
-    try {
-      data = await apiClient.get<Patient[]>('/Patients');
-    } catch {
-      data = await apiClient.get<Patient[]>('/Patients/by-state');
-    }
-    if (!Array.isArray(data) || data.length === 0) {
-      try {
-        data = await apiClient.get<Patient[]>('/Patients/by-state');
-      } catch {
-        // keep whatever data we have
-      }
-    }
-
-    const patients = Array.isArray(data) ? data : [];
-    return patients.map(p => this.normalizePatient(p));
+    const data = await apiClient.get<Patient[]>('/Patients');
+    return (Array.isArray(data) ? data : []).map(p => this.normalizePatient(p));
   }
 
   static async getById(id: number): Promise<Patient> {
