@@ -217,6 +217,25 @@ export class PatientsService {
     return patients.map(p => this.normalizePatient(p));
   }
 
+  static async getAllUnfiltered(): Promise<Patient[]> {
+    let data: any;
+    try {
+      data = await apiClient.get<Patient[]>('/Patients');
+    } catch {
+      data = await apiClient.get<Patient[]>('/Patients/by-state');
+    }
+    if (!Array.isArray(data) || data.length === 0) {
+      try {
+        data = await apiClient.get<Patient[]>('/Patients/by-state');
+      } catch {
+        // keep whatever data we have
+      }
+    }
+
+    const patients = Array.isArray(data) ? data : [];
+    return patients.map(p => this.normalizePatient(p));
+  }
+
   static async getById(id: number): Promise<Patient> {
     const data = await apiClient.get<Patient>(`/Patients/${id}`);
     return this.normalizePatient(data);

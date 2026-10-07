@@ -27,7 +27,7 @@ export const PatientVisitsManager: React.FC = () => {
 
     const [visitsResult, patientsResult, factorsResult] = await Promise.allSettled([
       PatientVisitsService.getAll(),
-      PatientsService.getAll(),
+      PatientsService.getAllUnfiltered(),
       FactorsService.getAll()
     ]);
 
