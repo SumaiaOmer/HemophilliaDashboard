@@ -112,7 +112,9 @@ class ApiClient {
       }
 
       if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-        if ('result' in parsed) {
+        if ('$values' in parsed && Array.isArray(parsed.$values)) {
+          parsed = parsed.$values;
+        } else if ('result' in parsed) {
           parsed = parsed.result;
         } else if ('items' in parsed && Object.keys(parsed).length === 1) {
           parsed = parsed.items;
@@ -126,6 +128,11 @@ class ApiClient {
         } else if ('data' in parsed && Array.isArray(parsed.data)) {
           parsed = parsed.data;
         }
+      }
+
+      // .NET may nest $values inside data or result after the first unwrap
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed) && '$values' in parsed && Array.isArray((parsed as any).$values)) {
+        parsed = (parsed as any).$values;
       }
     }
 

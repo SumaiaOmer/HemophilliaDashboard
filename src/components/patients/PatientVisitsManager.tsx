@@ -23,21 +23,19 @@ export const PatientVisitsManager: React.FC = () => {
   useEffect(() => { loadData(); }, []);
 
   const loadData = async () => {
-    try {
-      setLoading(true);
-      const [visitsData, patientsData, factorsData] = await Promise.all([
-        PatientVisitsService.getAll(),
-        PatientsService.getAll(),
-        FactorsService.getAll()
-      ]);
-      setVisits(visitsData);
-      setPatients(patientsData);
-      setFactors(factorsData);
-    } catch (error) {
-      console.error('Error loading data:', error);
-    } finally {
-      setLoading(false);
-    }
+    setLoading(true);
+
+    const [visitsResult, patientsResult, factorsResult] = await Promise.allSettled([
+      PatientVisitsService.getAll(),
+      PatientsService.getAll(),
+      FactorsService.getAll()
+    ]);
+
+    if (visitsResult.status === 'fulfilled') setVisits(visitsResult.value);
+    if (patientsResult.status === 'fulfilled') setPatients(patientsResult.value);
+    if (factorsResult.status === 'fulfilled') setFactors(factorsResult.value);
+
+    setLoading(false);
   };
 
   const handleSave = async (visitData: PatientVisitRequest) => {

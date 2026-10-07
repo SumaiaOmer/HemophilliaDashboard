@@ -189,21 +189,17 @@ export class PatientsService {
     const isAdmin = user?.role?.toLowerCase() === 'admin';
 
     let data: any;
-    if (isAdmin) {
-      try {
-        data = await apiClient.get<Patient[]>('/Patients');
-      } catch {
-        data = await apiClient.get<Patient[]>('/Patients/by-state');
-      }
-      if (!Array.isArray(data) || data.length === 0) {
-        try {
-          data = await apiClient.get<Patient[]>('/Patients/by-state');
-        } catch {
-          // keep whatever data we have
-        }
-      }
-    } else {
+    try {
+      data = await apiClient.get<Patient[]>('/Patients');
+    } catch {
       data = await apiClient.get<Patient[]>('/Patients/by-state');
+    }
+    if (!Array.isArray(data) || data.length === 0) {
+      try {
+        data = await apiClient.get<Patient[]>('/Patients/by-state');
+      } catch {
+        // keep whatever data we have
+      }
     }
 
     const patients = Array.isArray(data) ? data : [];
