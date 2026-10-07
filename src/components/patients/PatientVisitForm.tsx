@@ -3,6 +3,8 @@ import { X, Search, Plus, Trash2 } from 'lucide-react';
 import { PatientVisit, PatientVisitRequest, Patient, Factor, VisitDrug } from '../../types/api';
 import { toDateInputValue } from '../../lib/dateUtils';
 import { LookupsService, LookupItem } from '../../services/lookups';
+import { MedicineDistributionService } from '../../services/medicineDistribution';
+import { MedicineDistribution } from '../../types/api';
 
 interface PatientVisitFormProps {
   visit?: PatientVisit | null;
@@ -103,6 +105,7 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
   const [lookupComplaints, setLookupComplaints] = useState<LookupItem[]>([]);
   const [lookupSudanStates, setLookupSudanStates] = useState<LookupItem[]>([]);
   const [lookupStateCenters, setLookupStateCenters] = useState<Record<string, string[]>>(FALLBACK_STATE_CENTERS);
+  const [distributedFactorIds, setDistributedFactorIds] = useState<Set<number>>(new Set());
 
   const complaintOptions = lookupComplaints.length > 0
     ? lookupComplaints.map(c => c.name)
@@ -141,6 +144,14 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
       }
     };
     loadLookups();
+  }, []);
+
+  useEffect(() => {
+    MedicineDistributionService.getAll()
+      .then((distributions: MedicineDistribution[]) => {
+        setDistributedFactorIds(new Set(distributions.map(d => d.factorId)));
+      })
+      .catch(() => setDistributedFactorIds(new Set()));
   }, []);
 
   useEffect(() => {
@@ -707,7 +718,7 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                         >
                           <option value="">Select a drug from inventory</option>
-                          {factors.filter(f => f.quantity > 0).map(factor => (
+                          {factors.filter(f => f.quantity > 0 && !distributedFactorIds.has(f.id)).map(factor => (
                             <option key={factor.id} value={factor.id}>
                               {factor.name} - {factor.drugType} ({factor.mg} mg) - Stock: {factor.quantity}
                             </option>
