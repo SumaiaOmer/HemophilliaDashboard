@@ -3,6 +3,7 @@ import { Plus, Check, ChevronDown, ChevronUp, ChevronRight, Trash2 } from 'lucid
 import { RolesService } from '../../services/roles';
 import { ScreensService, ScreenTreeNode } from '../../services/screens';
 import { UsersService } from '../../services/users';
+import { Pagination } from '../Pagination';
 
 interface ExpandedRole {
   roleId: number;
@@ -54,6 +55,12 @@ export const RoleManager: React.FC = () => {
   const [selectedScreensByRole, setSelectedScreensByRole] = useState<Record<number, number[]>>({});
   const [selectedUsersByRole, setSelectedUsersByRole] = useState<Record<number, number[]>>({});
   const [userRoles, setUserRoles] = useState<Record<number, UserRole[]>>({});
+  const [rolesPage, setRolesPage] = useState(1);
+  const [rolesPageSize, setRolesPageSize] = useState(10);
+  const [screensPage, setScreensPage] = useState(1);
+  const [screensPageSize, setScreensPageSize] = useState(10);
+  const [usersPage, setUsersPage] = useState(1);
+  const [usersPageSize, setUsersPageSize] = useState(10);
 
   useEffect(() => {
     loadInitialData();
@@ -226,6 +233,8 @@ export const RoleManager: React.FC = () => {
     }
   };
 
+  const paginatedRoles = roles.slice((rolesPage - 1) * rolesPageSize, rolesPage * rolesPageSize);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -264,7 +273,7 @@ export const RoleManager: React.FC = () => {
       </div>
 
       <div className="space-y-4">
-        {roles.map((role) => {
+        {paginatedRoles.map((role) => {
           const expanded = expandedRoles.find(r => r.roleId === role.id);
           const selectedScreens = selectedScreensByRole[role.id] || [];
 
@@ -304,7 +313,7 @@ export const RoleManager: React.FC = () => {
                         Select parent screens (main) and their child screens (sub) below:
                       </div>
                       <div className="space-y-1 max-h-96 overflow-y-auto">
-                        {screenTree.map((parent) => {
+                        {screenTree.slice((screensPage - 1) * screensPageSize, screensPage * screensPageSize).map((parent) => {
                           const hasChildren = parent.children && parent.children.length > 0;
                           const isExpanded = isParentExpanded(role.id, parent.id);
                           const childIds = parent.children?.map(c => c.id) || [];
@@ -402,6 +411,13 @@ export const RoleManager: React.FC = () => {
                           );
                         })}
                       </div>
+                      <Pagination
+                        page={screensPage}
+                        pageSize={screensPageSize}
+                        totalItems={screenTree.length}
+                        onPageChange={setScreensPage}
+                        onPageSizeChange={(size) => { setScreensPageSize(size); setScreensPage(1); }}
+                      />
 
                       {selectedScreens.length > 0 && (
                         <div className="mt-4 p-3 bg-white rounded-lg border border-red-200">
@@ -442,7 +458,7 @@ export const RoleManager: React.FC = () => {
                   {expanded?.expandedType === 'users' && (
                     <div className="mt-3 p-4 bg-green-50 rounded-lg border border-green-200">
                       <div className="space-y-2 max-h-64 overflow-y-auto">
-                        {users.map((user) => {
+                        {users.slice((usersPage - 1) * usersPageSize, usersPage * usersPageSize).map((user) => {
                           const hasRole = userRoles[user.id]?.some(r => r.name === role.name);
                           return (
                             <div
@@ -471,6 +487,13 @@ export const RoleManager: React.FC = () => {
                           );
                         })}
                       </div>
+                      <Pagination
+                        page={usersPage}
+                        pageSize={usersPageSize}
+                        totalItems={users.length}
+                        onPageChange={setUsersPage}
+                        onPageSizeChange={(size) => { setUsersPageSize(size); setUsersPage(1); }}
+                      />
                     </div>
                   )}
                 </div>
@@ -479,6 +502,18 @@ export const RoleManager: React.FC = () => {
           );
         })}
       </div>
+
+      {roles.length > 0 && (
+        <div className="bg-white rounded-lg border border-red-200 shadow-sm">
+          <Pagination
+            page={rolesPage}
+            pageSize={rolesPageSize}
+            totalItems={roles.length}
+            onPageChange={setRolesPage}
+            onPageSizeChange={(size) => { setRolesPageSize(size); setRolesPage(1); }}
+          />
+        </div>
+      )}
 
       {roles.length === 0 && (
         <div className="text-center py-12 bg-white rounded-lg border border-red-200">

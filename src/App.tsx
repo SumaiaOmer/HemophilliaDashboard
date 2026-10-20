@@ -192,6 +192,8 @@ function App() {
       case 'roles':
       case 'roles-screens':
         return <RoleManager />;
+      case 'lookupsmanager':
+        return <LookupsManager />;
       case 'reports':
         return <ReportsManager />;
       case 'death-notifications':

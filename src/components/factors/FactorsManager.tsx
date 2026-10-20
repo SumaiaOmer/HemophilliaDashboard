@@ -4,6 +4,7 @@ import { Factor, FactorRequest } from '../../types/api';
 import { FactorsService } from '../../services/factors';
 import { FactorForm } from './FactorForm';
 import { formatDate } from '../../lib/dateUtils';
+import { Pagination } from '../Pagination';
 
 export const FactorsManager: React.FC = () => {
   const [factors, setFactors] = useState<Factor[]>([]);
@@ -11,6 +12,8 @@ export const FactorsManager: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingFactor, setEditingFactor] = useState<Factor | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   useEffect(() => {
     loadFactors();
@@ -68,6 +71,11 @@ export const FactorsManager: React.FC = () => {
     factor.lotNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
     factor.drugType.toLowerCase().includes(searchTerm.toLowerCase())
   );
+  const paginatedFactors = filteredFactors.slice((page - 1) * pageSize, page * pageSize);
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm]);
 
 
   const isExpired = (expiryDate: string) => {
@@ -119,7 +127,7 @@ export const FactorsManager: React.FC = () => {
 
       {/* Factors Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredFactors.map((factor) => (
+        {paginatedFactors.map((factor) => (
           <div
             key={factor.id}
             className={`bg-white rounded-lg border-2 shadow-sm hover:shadow-md transition-shadow duration-200 p-6 ${
@@ -198,6 +206,18 @@ export const FactorsManager: React.FC = () => {
           </div>
         ))}
       </div>
+
+      {filteredFactors.length > 0 && (
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+          <Pagination
+            page={page}
+            pageSize={pageSize}
+            totalItems={filteredFactors.length}
+            onPageChange={setPage}
+            onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+          />
+        </div>
+      )}
 
       {filteredFactors.length === 0 && !searchTerm && factors.length === 0 && (
         <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-lg p-12 text-center">

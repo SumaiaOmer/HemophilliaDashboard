@@ -4,6 +4,7 @@ import { MedicineDistributionService } from '../../services/medicineDistribution
 import { FactorsService } from '../../services/factors';
 import { MedicineDistribution, MedicineDistributionRequest, Factor } from '../../types/api';
 import { formatDate, getDistributionDate } from '../../lib/dateUtils';
+import { Pagination } from '../Pagination';
 
 export const DeliveredManager: React.FC = () => {
   const [distributions, setDistributions] = useState<MedicineDistribution[]>([]);
@@ -16,6 +17,8 @@ export const DeliveredManager: React.FC = () => {
   const [endDate, setEndDate] = useState('');
   const [deliveryStartDate, setDeliveryStartDate] = useState('');
   const [deliveryEndDate, setDeliveryEndDate] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   useEffect(() => {
     loadDistributions();
@@ -122,6 +125,11 @@ export const DeliveredManager: React.FC = () => {
   };
 
   const uniqueStates = Array.from(new Set(distributions.map(d => d.state))).sort();
+  const paginatedDistributions = filteredDistributions.slice((page - 1) * pageSize, page * pageSize);
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, filterState, startDate, endDate, deliveryStartDate, deliveryEndDate]);
 
 
   if (loading) {
@@ -248,7 +256,7 @@ export const DeliveredManager: React.FC = () => {
               </tr>
             </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-  {filteredDistributions.map((dist) => {
+  {paginatedDistributions.map((dist) => {
     const isExpired = new Date(dist.expiryDate) < new Date();
     const isExpiringSoon = new Date(dist.expiryDate) < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     const isDelivered = dist.status === 'Delivered';
@@ -321,6 +329,16 @@ export const DeliveredManager: React.FC = () => {
 </tbody>
 
           </table>
+
+          {filteredDistributions.length > 0 && (
+            <Pagination
+              page={page}
+              pageSize={pageSize}
+              totalItems={filteredDistributions.length}
+              onPageChange={setPage}
+              onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+            />
+          )}
 
           {filteredDistributions.length === 0 && (
             <div className="text-center py-12">

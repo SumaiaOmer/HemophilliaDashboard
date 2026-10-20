@@ -4,6 +4,7 @@ import { Patient, PatientRequest } from '../../types/api';
 import { PatientsService } from '../../services/patients';
 import { PatientForm } from './PatientForm';
 import { formatDate } from '../../lib/dateUtils';
+import { Pagination } from '../Pagination';
 
 export const PatientsManager: React.FC = () => {
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -12,6 +13,8 @@ export const PatientsManager: React.FC = () => {
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedPatient, setExpandedPatient] = useState<number | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   useEffect(() => {
     loadPatients();
@@ -87,6 +90,11 @@ export const PatientsManager: React.FC = () => {
     patient.state?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     patient.hemophiliaCenterId?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+  const paginatedPatients = filteredPatients.slice((page - 1) * pageSize, page * pageSize);
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm]);
 
   const formatOccupation = (occupation?: string) => {
     if (!occupation) return 'N/A';
@@ -182,7 +190,7 @@ export const PatientsManager: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredPatients.map((patient) => (
+              {paginatedPatients.map((patient) => (
                 <React.Fragment key={patient.id}>
                   <tr className={isDeceased(patient) ? 'bg-red-50 border-l-4 border-red-600' : 'hover:bg-gray-50'}>
                     <td className="px-6 py-4">
@@ -522,6 +530,13 @@ export const PatientsManager: React.FC = () => {
             </tbody>
           </table>
         </div>
+        <Pagination
+          page={page}
+          pageSize={pageSize}
+          totalItems={filteredPatients.length}
+          onPageChange={setPage}
+          onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+        />
       </div>
 
       {filteredPatients.length === 0 && (

@@ -12,6 +12,7 @@ import {
   Layers,
   List,
 } from 'lucide-react';
+import { Pagination } from '../Pagination';
 import {
   LookupItem,
   LookupItemRequest,
@@ -36,6 +37,9 @@ export const LookupsManager: React.FC = () => {
   const [view, setView] = useState<ViewMode>({ kind: 'types' });
   const [searchTerm, setSearchTerm] = useState('');
   const [collapsedTypes, setCollapsedTypes] = useState<Record<string, boolean>>({});
+  const [itemsPage, setItemsPage] = useState(1);
+  const [typesPage, setTypesPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   // Form state
   const [showTypeForm, setShowTypeForm] = useState(false);
@@ -184,6 +188,15 @@ export const LookupsManager: React.FC = () => {
       return item.name.toLowerCase().includes(term);
     });
   }, [allItems, searchTerm, view.typeKey]);
+  const paginatedItems = useMemo(
+    () => filteredItems.slice((itemsPage - 1) * pageSize, itemsPage * pageSize),
+    [filteredItems, itemsPage, pageSize]
+  );
+
+  useEffect(() => {
+    setItemsPage(1);
+    setTypesPage(1);
+  }, [searchTerm, view.typeKey]);
 
   // Filtered type tree for the types view (search by label/name)
   const filteredTypeTree = useMemo(() => {
@@ -203,6 +216,10 @@ export const LookupsManager: React.FC = () => {
     const filteredRoots = filterTypes(typeTree.roots);
     return { roots: filteredRoots, childrenMap: typeTree.childrenMap };
   }, [typeTree, searchTerm]);
+  const paginatedTypeRoots = useMemo(
+    () => filteredTypeTree.roots.slice((typesPage - 1) * pageSize, typesPage * pageSize),
+    [filteredTypeTree.roots, typesPage, pageSize]
+  );
 
   // Auto-expand all types when searching so matching children are visible
   const searchedExpandedTypes = useMemo(() => {
@@ -421,7 +438,7 @@ export const LookupsManager: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-100">
-                  {filteredItems.map((item) => (
+                  {paginatedItems.map((item) => (
                     <tr key={item.id} className="group hover:bg-red-50/40 transition-colors duration-150">
                       <td className="px-6 py-3.5 text-sm text-gray-900">
                         <span className="block truncate max-w-xs">{item.name}</span>
@@ -452,6 +469,13 @@ export const LookupsManager: React.FC = () => {
                 </tbody>
               </table>
             </div>
+            <Pagination
+              page={itemsPage}
+              pageSize={pageSize}
+              totalItems={filteredItems.length}
+              onPageChange={setItemsPage}
+              onPageSizeChange={(size) => { setPageSize(size); setItemsPage(1); }}
+            />
           </div>
         )}
 
@@ -556,7 +580,14 @@ export const LookupsManager: React.FC = () => {
         </div>
       ) : (
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          {filteredTypeTree.roots.map((type) => renderTypeNode(type, 0))}
+          {paginatedTypeRoots.map((type) => renderTypeNode(type, 0))}
+          <Pagination
+            page={typesPage}
+            pageSize={pageSize}
+            totalItems={filteredTypeTree.roots.length}
+            onPageChange={setTypesPage}
+            onPageSizeChange={(size) => { setPageSize(size); setTypesPage(1); }}
+          />
         </div>
       )}
 

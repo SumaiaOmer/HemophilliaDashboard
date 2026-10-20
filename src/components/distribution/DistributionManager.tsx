@@ -5,6 +5,7 @@ import { MedicineDistributionService } from '../../services/medicineDistribution
 import { FactorsService } from '../../services/factors';
 import { DistributionForm } from './DistributionForm';
 import { formatDate, getDistributionDate } from '../../lib/dateUtils';
+import { Pagination } from '../Pagination';
 
 export const DistributionManager: React.FC = () => {
   const [distributions, setDistributions] = useState<MedicineDistribution[]>([]);
@@ -17,6 +18,8 @@ export const DistributionManager: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   useEffect(() => {
     loadData();
@@ -123,6 +126,11 @@ export const DistributionManager: React.FC = () => {
 
     return matchesSearch && matchesState && matchesStatus && matchesDateRange;
   });
+  const paginatedDistributions = filteredDistributions.slice((page - 1) * pageSize, page * pageSize);
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, stateFilter, statusFilter, startDate, endDate]);
 
   const clearFilters = () => {
     setSearchTerm('');
@@ -334,7 +342,7 @@ export const DistributionManager: React.FC = () => {
 
       {/* Distribution Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {filteredDistributions.map((distribution) => {
+        {paginatedDistributions.map((distribution) => {
           const isDelivered = distribution.status === 'Delivered';
           const isPending = !distribution.status || distribution.status === 'Pending';
 
@@ -445,6 +453,18 @@ export const DistributionManager: React.FC = () => {
           );
         })}
       </div>
+
+      {filteredDistributions.length > 0 && (
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+          <Pagination
+            page={page}
+            pageSize={pageSize}
+            totalItems={filteredDistributions.length}
+            onPageChange={setPage}
+            onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+          />
+        </div>
+      )}
 
       {filteredDistributions.length === 0 && !searchTerm && distributions.length === 0 && (
         <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-lg p-12 text-center">
