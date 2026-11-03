@@ -5,6 +5,7 @@ import { LookupItem, LookupItemRequest, LookupType, LookupsService } from '../..
 interface LookupItemFormProps {
   item?: LookupItem | null;
   defaultType?: string;
+  defaultParentId?: string;
   availableTypes: LookupType[];
   onSave: (item: LookupItemRequest) => Promise<void>;
   onCancel: () => void;
@@ -13,13 +14,14 @@ interface LookupItemFormProps {
 export const LookupItemForm: React.FC<LookupItemFormProps> = ({
   item,
   defaultType,
+  defaultParentId,
   availableTypes,
   onSave,
   onCancel,
 }) => {
   const [name, setName] = useState(item?.name ?? '');
   const [typeKey, setTypeKey] = useState<string>(item?.type ?? defaultType ?? '');
-  const [parentId, setParentId] = useState<string>(item?.parentId ?? '0');
+  const [parentId, setParentId] = useState<string>(item?.parentId ?? defaultParentId ?? '0');
   const [parentItems, setParentItems] = useState<LookupItem[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,15 +42,6 @@ export const LookupItemForm: React.FC<LookupItemFormProps> = ({
       document.body.style.overflow = '';
     };
   }, [isSubmitting, onCancel]);
-
-  // Reset parentId when type changes (unless editing)
-  useEffect(() => {
-    if (item && item.type === typeKey) {
-      setParentId(item.parentId ?? '0');
-    } else {
-      setParentId('0');
-    }
-  }, [typeKey, item]);
 
   // Parent options come from the selected type's parent type
   useEffect(() => {
@@ -119,7 +112,10 @@ export const LookupItemForm: React.FC<LookupItemFormProps> = ({
             </label>
             <select
               value={typeKey}
-              onChange={(e) => setTypeKey(e.target.value)}
+              onChange={(e) => {
+                setTypeKey(e.target.value);
+                setParentId('0');
+              }}
               required
               disabled={!!item}
               className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none disabled:bg-gray-50 disabled:cursor-not-allowed transition-colors"

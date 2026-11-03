@@ -8,6 +8,7 @@ import {
   ChevronDown,
   ChevronRight,
   Pencil,
+  CornerDownRight,
   Inbox,
   Layers,
   List,
@@ -46,7 +47,7 @@ export const LookupsManager: React.FC = () => {
   const [editingType, setEditingType] = useState<LookupType | null>(null);
   const [showItemForm, setShowItemForm] = useState(false);
   const [editingItem, setEditingItem] = useState<LookupItem | null>(null);
-  const [defaultItemType, setDefaultItemType] = useState<string | undefined>(undefined);
+  const [itemDefaults, setItemDefaults] = useState<{ type?: string; parentId?: string } | undefined>(undefined);
 
   const isAdmin = useMemo(() => {
     const user = AuthService.getCurrentUser();
@@ -129,7 +130,7 @@ export const LookupsManager: React.FC = () => {
     await loadAll();
     setShowItemForm(false);
     setEditingItem(null);
-    setDefaultItemType(undefined);
+    setItemDefaults(undefined);
   };
 
   const handleDeleteItem = async (id: string, name: string) => {
@@ -345,6 +346,7 @@ export const LookupsManager: React.FC = () => {
   // ---- Items View ----
   if (view.kind === 'items' && view.typeKey) {
     const currentType = typeMap.get(view.typeKey);
+    const childTypes = allTypes.filter((t) => t.parentType === view.typeKey);
     return (
       <div className="space-y-6 max-w-6xl mx-auto">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
@@ -366,7 +368,7 @@ export const LookupsManager: React.FC = () => {
           <button
             onClick={() => {
               setEditingItem(null);
-              setDefaultItemType(view.typeKey);
+              setItemDefaults({ type: view.typeKey });
               setShowItemForm(true);
             }}
             className="inline-flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white px-4 py-2.5 rounded-lg shadow-sm transition-colors duration-200"
@@ -415,7 +417,7 @@ export const LookupsManager: React.FC = () => {
             <button
               onClick={() => {
                 setEditingItem(null);
-                setDefaultItemType(view.typeKey);
+                setItemDefaults({ type: view.typeKey });
                 setShowItemForm(true);
               }}
               className="mt-4 inline-flex items-center gap-2 text-sm text-red-600 hover:text-red-700 font-medium"
@@ -446,6 +448,19 @@ export const LookupsManager: React.FC = () => {
                       </td>
                       <td className="px-6 py-3.5 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex justify-end items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
+                          {childTypes.length > 0 && (
+                            <button
+                              onClick={() => {
+                                setEditingItem(null);
+                                setItemDefaults({ type: childTypes[0].name, parentId: item.id });
+                                setShowItemForm(true);
+                              }}
+                              className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
+                              title={`Add ${childTypes[0].label} under this item`}
+                            >
+                              <CornerDownRight className="h-4 w-4" />
+                            </button>
+                          )}
                           <button
                             onClick={() => {
                               setEditingItem(item);
@@ -483,13 +498,14 @@ export const LookupsManager: React.FC = () => {
         {showItemForm && (
           <LookupItemForm
             item={editingItem}
-            defaultType={defaultItemType}
+            defaultType={itemDefaults?.type}
+            defaultParentId={itemDefaults?.parentId}
             availableTypes={allTypes}
             onSave={handleSaveItem}
             onCancel={() => {
               setShowItemForm(false);
               setEditingItem(null);
-              setDefaultItemType(undefined);
+              setItemDefaults(undefined);
             }}
           />
         )}
@@ -608,13 +624,14 @@ export const LookupsManager: React.FC = () => {
       {showItemForm && (
         <LookupItemForm
           item={editingItem}
-          defaultType={defaultItemType}
+          defaultType={itemDefaults?.type}
+          defaultParentId={itemDefaults?.parentId}
           availableTypes={allTypes}
           onSave={handleSaveItem}
           onCancel={() => {
             setShowItemForm(false);
             setEditingItem(null);
-            setDefaultItemType(undefined);
+            setItemDefaults(undefined);
           }}
         />
       )}
