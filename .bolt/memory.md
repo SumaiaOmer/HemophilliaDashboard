@@ -2,33 +2,24 @@
 
 ## Product intent & audience
 
-- React/Vite lookup-management application for hierarchical location data used by patient-facing forms.
-- Core hierarchy: State → City → Local Area.
-- Users need to create, edit, list, and delete lookup types/items while preserving parent-child relationships.
-- Current workflow issue addressed: adding a child directly under a specific City.
+- React/Vite lookup-management application supporting patient-facing location forms.
+- Location hierarchy is State → City → Local Area.
+- Patient-form State, City, and Local Area dropdowns are intended to read dynamically from configured lookup records rather than legacy or built-in lists.
+- Administrators manage lookup types and items, including parent-child relationships.
 
 ## Brand personality & voice
 
 - No project-specific brand language established.
 - Use clear, operational labels and explicit hierarchy terminology: “State,” “City,” and “Local Area.”
-- Explain required parent context directly in forms and actions.
+- Make parent context and loading/empty states understandable in forms.
 
 ## Visual design & UX direction
 
 - Preserve existing lookup-manager patterns, JSX/Tailwind styling, React hooks, Lucide icons, and component conventions.
-- Each lookup item may expose a child/sub-item action when a configured child type exists.
-- The child action should:
-  - Open the new-item form for the child level.
-  - Preselect the child lookup type.
-  - Preselect the clicked item as the parent.
-- Do not show a child action when no child lookup type is configured.
-- Keep parent context visible in item forms and lists where practical.
-- Parent selectors should only offer valid hierarchy options:
-  - City items under State.
-  - Local Area items under City.
-- Preserve existing parent relationships when editing.
-- Prefer dependent loading through `/api/Lookups/parent/{parentId}` where appropriate.
-- Validate responsive behavior and browser interaction for the new per-item child flow; code-level checks alone are insufficient.
+- Keep hierarchy context visible in lookup-item forms and patient location controls.
+- City options should depend on the selected State; Local Area options should depend on the selected City.
+- Clear dependent-dropdown behavior is important: reset or invalidate descendants when an upstream selection changes, and provide useful loading and empty states.
+- Validate the complete flow in the browser, including configured lookup data, dependent selections, and responsive behavior.
 
 ## Decisions, constraints & rationale
 
@@ -39,19 +30,20 @@
   - CRUD operations at `/api/Lookups/{id}`
 - `LookupTypeForm` supports configuring a type’s parent type.
 - `LookupItemForm` derives the valid parent level from the selected lookup type and loads valid parent items.
-- A per-item child/sub-item button was added so a child can be created from the specific City row rather than only creating another item at the current level.
-- The new child-entry behavior is implemented and lookup-related type checking reported no errors; browser testing has not yet been completed.
-- The child action depends on the child lookup type already existing with the correct parent type. For City → Local Area, “Local Area” must be configured as a child of “City.”
-- Existing application data may use internal names such as `StateCities` and `CityLocalities`; verify persisted identifiers before migration or record creation.
-- Patient forms currently load legacy location types independently and may not yet use parent-dependent loading.
-- Production build remains blocked by a pre-existing missing login-screen image unrelated to lookup hierarchy work.
+- A per-item child action allows creating a child from a specific parent row; it depends on the child lookup type being configured with the correct parent type.
+- Patient forms have not yet been migrated to the new lookup hierarchy. They currently use older location lists and may fall back to a built-in list when data is empty.
+- The intended migration is for all patient-form State, City, and Local Area dropdowns to use the administrator-created lookup types/items, with dependent loading through the live API.
+- Existing application data may use internal names such as `StateCities` and `CityLocalities`; persisted identifiers must be checked before migration or record creation.
+- The lookup code and the supplied API documentation may currently reference different URL conventions. Do not assume the documented endpoints are live until confirmed; surfaced load failures rather than silently treating them as empty data.
 - Do not create live State, City, or Local Area records without the user’s concrete list and confirmation.
+- Production build remains blocked by a pre-existing missing login-screen image unrelated to lookup hierarchy work.
 
 ## Open questions & assumptions
 
-- Verify in the browser that the per-item child action appears for City rows and opens a correctly prefilled Local Area form.
-- Confirm exact persisted type names and whether legacy names must remain compatible.
-- Determine whether patient forms should dynamically load cities by State and local areas by City.
+- Confirm that the configured lookup type names are exactly “State,” “City,” and “Local Area,” or determine the required mapping to legacy identifiers.
+- Confirm which API version/base paths are live so patient dropdown loading uses the correct endpoints.
+- Determine whether patient forms should preserve existing selections when valid, and how to handle records whose legacy location values no longer exist in lookups.
+- Verify browser behavior for State → City → Local Area loading, selection changes, empty states, and API errors.
+- Confirm whether patient forms should dynamically load all three levels everywhere they currently expose location dropdowns.
 - Decide how orphaned children are handled when parent items or types are edited or deleted.
-- Confirm whether lookup nesting is limited to the three location levels or should support arbitrary configured depth.
-- Test creation, editing, parent changes, deletion, and dependent loading against existing data.
+- Confirm whether nesting is limited to the three location levels or should support arbitrary configured depth.
