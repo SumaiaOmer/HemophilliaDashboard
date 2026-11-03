@@ -20,6 +20,20 @@ export interface LookupType {
   parentType: string | null;
 }
 
+export interface LocationHierarchy {
+  states: string[];
+  citiesByState: Record<string, string[]>;
+  localAreasByCity: Record<string, string[]>;
+}
+
+const LOCATION_LEVEL_KEYS = {
+  state: ['state'],
+  city: ['city', 'citytown'],
+  localArea: ['localarea'],
+};
+
+const normalizeTypeKey = (value: string) => value.toLowerCase().replace(/[^a-z]/g, '');
+
 const normalizeItem = (item: any): LookupItem => ({
   id: String(item.id ?? item.Id ?? ''),
   name: item.name ?? item.Name ?? '',
@@ -93,6 +107,47 @@ export class LookupsService {
     }
 
     return Array.from(typeMap.values()).sort((a, b) => a.label.localeCompare(b.label));
+  }
+
+  static async getLocationHierarchy(): Promise<LocationHierarchy> {
+    const items = await this.getAll();
+    const typeNames = Array.from(new Set(items.map((i) => i.type)));
+    const findType = (keys: string[]) => typeNames.find((n) => keys.includes(normalizeTypeKey(n)));
+    const stateType = findType(LOCATION_LEVEL_KEYS.state);
+    const cityType = findType(LOCATION_LEVEL_KEYS.city);
+    const localAreaType = findType(LOCATION_LEVEL_KEYS.localArea);
+    const childrenOf = (type: string | undefined) =>
+      items.filter((i) => i.type === type && i.name.toLowerCase() !== i.type.toLowerCase());
+
+    const states = childrenOf(stateType);
+    const cities = childrenOf(cityType);
+    const localAreas = childrenOf(localAreaType);
+    const stateNameById = new Map(states.map((s) => [s.id, s.name]));
+    const cityNameById = new Map(cities.map((c) => [c.id, c.name]));
+
+    const citiesByState: Record<string, string[]> = {};
+    cities.forEach((c) => {
+      const stateName = stateNameById.get(c.parentId ?? '');
+      if (!stateName) return;
+      (citiesByState[stateName] = citiesByState[stateName] || []).push(c.name);
+    });
+
+    const localAreasByCity: Record<string, string[]> = {};
+    localAreas.forEach((la) => {
+      const cityName = cityNameById.get(la.parentId ?? '');
+      if (!cityName) return;
+      (localAreasByCity[cityName] = localAreasByCity[cityName] || []).push(la.name);
+    });
+
+    const sortNames = (names: string[]) => [...names].sort((a, b) => a.localeCompare(b));
+    Object.keys(citiesByState).forEach((k) => (citiesByState[k] = sortNames(citiesByState[k])));
+    Object.keys(localAreasByCity).forEach((k) => (localAreasByCity[k] = sortNames(localAreasByCity[k])));
+
+    return {
+      states: sortNames(states.map((s) => s.name)),
+      citiesByState,
+      localAreasByCity,
+    };
   }
 
   static async create(item: LookupItemRequest): Promise<LookupItem> {

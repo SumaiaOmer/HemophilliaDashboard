@@ -19,50 +19,6 @@ const OCCUPATIONS = [
   'Child', 'Other'
 ];
 
-const STATE_CITIES: Record<string, string[]> = {
-  'Khartoum': ['Khartoum', 'Omdurman', 'Bahri (Khartoum North)', 'Shambat'],
-  'Al Jazirah': ['Wad Madani', 'Al Managil', 'Al Hasaheisa'],
-  'White Nile': ['Rabak', 'Kosti', 'Ed Dueim'],
-  'Blue Nile': ['Ad-Damazin', 'Ar Roseires'],
-  'Northern': ['Dongola', 'Karima', 'Merowe'],
-  'River Nile': ['Atbara', 'Ed Damer', 'Shendi', 'Berber'],
-  'Red Sea': ['Port Sudan', 'Suakin', 'Halaib'],
-  'Kassala': ['Kassala', 'Wad al Hilaiw'],
-  'Al Qadarif': ['Al Qadarif', 'Al Faw', 'Doka'],
-  'Sennar': ['Sennar', 'Singa'],
-  'North Kordofan': ['El Obeid', 'Bara', 'Sodiri'],
-  'South Kordofan': ['Kadugli', 'Dilling', 'Talodi'],
-  'West Kordofan': ['El Fula', 'Babanusa'],
-  'Central Darfur': ['Zalingei', 'Wadi Salih'],
-  'North Darfur': ['El Fasher', 'Kutum', 'Mellit'],
-  'South Darfur': ['Nyala', 'Ed Daein', 'Tulus'],
-  'East Darfur': ['Ed Daein', 'Yassin'],
-  'West Darfur': ['El Geneina', 'Beida']
-};
-
-const CITY_LOCALITIES: Record<string, string[]> = {
-  'Khartoum': ['Al Riyadh', 'Al Amarat', 'Al Manshiya', 'Al Daim', 'Burri', 'Kalakla', 'Soba', 'Al Muhandiseen', 'Al Sahafa', 'Jabra'],
-  'Omdurman': ['Al Thawra', 'Al Murada', 'Wad Nubawi', 'Umbada', 'Al Abbasiya', 'Karari'],
-  'Bahri (Khartoum North)': ['Shambat', 'Halfaya', 'Al Haj Yousif', 'Al Azhari', 'Dar El Salam', 'Al Kadaro'],
-  'Wad Madani': ['Central Wad Madani', 'Al Andalus', 'Al Muwaylih'],
-  'Port Sudan': ['Central Port Sudan', 'Deim Al Arab', 'Al Malaab'],
-  'Kassala': ['Central Kassala', 'Al Khatmiya', 'Toteel'],
-  'El Obeid': ['Central El Obeid', 'Al Ibaydiya', 'Al Suq'],
-  'Nyala': ['Central Nyala', 'Al Wahda', 'Al Jeer'],
-  'El Fasher': ['Central El Fasher', 'Al Fasher South'],
-  'El Geneina': ['Central El Geneina', 'Riyad'],
-  'Atbara': ['Central Atbara', 'Al Girf'],
-  'Al Qadarif': ['Central Al Qadarif', 'Al Suq'],
-  'Kosti': ['Central Kosti', 'Al Hilla'],
-  'Ad-Damazin': ['Central Ad-Damazin'],
-  'Sennar': ['Central Sennar'],
-  'Dongola': ['Central Dongola', 'New Dongola'],
-  'Shendi': ['Central Shendi'],
-  'Merowe': ['Central Merowe'],
-  'Rabak': ['Central Rabak'],
-  'Zalingei': ['Central Zalingei']
-};
-
 const COUNTRIES = [
   'Egypt', 'Saudi Arabia', 'United Arab Emirates', 'Qatar', 'Kuwait', 'Bahrain', 'Oman',
   'Jordan', 'Lebanon', 'Turkey', 'Ethiopia', 'Eritrea', 'Kenya', 'Uganda', 'Chad',
@@ -128,65 +84,28 @@ export const PatientForm: React.FC<PatientFormProps> = ({
   // Lookup data from API
   const [lookupDiagnoses, setLookupDiagnoses] = useState<LookupItem[]>([]);
   const [lookupOccupations, setLookupOccupations] = useState<LookupItem[]>([]);
-  const [lookupSudanStates, setLookupSudanStates] = useState<LookupItem[]>([]);
+  const [lookupStates, setLookupStates] = useState<string[]>([]);
   const [lookupMaritalStatuses, setLookupMaritalStatuses] = useState<LookupItem[]>([]);
   const [lookupChronicDiseases, setLookupChronicDiseases] = useState<LookupItem[]>([]);
-  const [lookupStateCities, setLookupStateCities] = useState<Record<string, string[]>>(STATE_CITIES);
-  const [lookupCityLocalities, setLookupCityLocalities] = useState<Record<string, string[]>>(CITY_LOCALITIES);
-
-  const stateCitiesMap = lookupStateCities;
-  const cityLocalitiesMap = lookupCityLocalities;
+  const [lookupCitiesByState, setLookupCitiesByState] = useState<Record<string, string[]>>({});
+  const [lookupLocalAreasByCity, setLookupLocalAreasByCity] = useState<Record<string, string[]>>({});
 
   useEffect(() => {
     const loadLookups = async () => {
-      const [diagnoses, occupations, sudanStates, maritalStatuses, chronicDiseases, citiesLookup, localitiesLookup] = await Promise.all([
+      const [diagnoses, occupations, maritalStatuses, chronicDiseases, hierarchy] = await Promise.all([
         LookupsService.getByType('DiagnosisOptions').catch(() => []),
         LookupsService.getByType('Occupations').catch(() => []),
-        LookupsService.getByType('SudanStates').catch(() => []),
         LookupsService.getByType('MaritalStatusOptions').catch(() => []),
         LookupsService.getByType('ChronicDiseaseOptions').catch(() => []),
-        LookupsService.getByType('StateCities').catch(() => []),
-        LookupsService.getByType('CityLocalities').catch(() => []),
+        LookupsService.getLocationHierarchy(),
       ]);
       setLookupDiagnoses(diagnoses);
       setLookupOccupations(occupations);
-      setLookupSudanStates(sudanStates);
       setLookupMaritalStatuses(maritalStatuses);
       setLookupChronicDiseases(chronicDiseases);
-
-      if (citiesLookup.length > 0) {
-        const citiesMap: Record<string, string[]> = { ...STATE_CITIES };
-        citiesLookup.forEach(item => {
-          const parts = item.name.split('|');
-          if (parts.length >= 2) {
-            const state = parts[0].trim();
-            const city = parts[1].trim();
-            if (!citiesMap[state]) citiesMap[state] = [];
-            if (!citiesMap[state].includes(city)) citiesMap[state].push(city);
-          } else if (item.type) {
-            if (!citiesMap[item.type]) citiesMap[item.type] = [];
-            if (!citiesMap[item.type].includes(item.name)) citiesMap[item.type].push(item.name);
-          }
-        });
-        setLookupStateCities(citiesMap);
-      }
-
-      if (localitiesLookup.length > 0) {
-        const localitiesMap: Record<string, string[]> = { ...CITY_LOCALITIES };
-        localitiesLookup.forEach(item => {
-          const parts = item.name.split('|');
-          if (parts.length >= 2) {
-            const city = parts[0].trim();
-            const locality = parts[1].trim();
-            if (!localitiesMap[city]) localitiesMap[city] = [];
-            if (!localitiesMap[city].includes(locality)) localitiesMap[city].push(locality);
-          } else if (item.type) {
-            if (!localitiesMap[item.type]) localitiesMap[item.type] = [];
-            if (!localitiesMap[item.type].includes(item.name)) localitiesMap[item.type].push(item.name);
-          }
-        });
-        setLookupCityLocalities(localitiesMap);
-      }
+      setLookupStates(hierarchy.states);
+      setLookupCitiesByState(hierarchy.citiesByState);
+      setLookupLocalAreasByCity(hierarchy.localAreasByCity);
     };
     loadLookups();
   }, []);
@@ -684,9 +603,9 @@ const handleSubmit = (e: React.FormEvent) => {
         state: value === 'OutsideSudan' ? prev.state : prev.state
       }));
     } else if (name === 'homeState') {
-      const cities = value ? stateCitiesMap[value] || [] : [];
+      const cities = value ? lookupCitiesByState[value] || [] : [];
       const autoSelectCity = cities.length === 1 ? cities[0] : '';
-      const localities = autoSelectCity ? cityLocalitiesMap[autoSelectCity] || [] : [];
+      const localities = autoSelectCity ? lookupLocalAreasByCity[autoSelectCity] || [] : [];
       const autoSelectLocality = localities.length === 1 ? localities[0] : '';
       setFormData(prev => ({
         ...prev,
@@ -695,7 +614,7 @@ const handleSubmit = (e: React.FormEvent) => {
         homeLocality: autoSelectLocality
       }));
     } else if (name === 'homeCityOrTown') {
-      const localities = value ? cityLocalitiesMap[value] || [] : [];
+      const localities = value ? lookupLocalAreasByCity[value] || [] : [];
       const autoSelectLocality = localities.length === 1 ? localities[0] : '';
       setFormData(prev => ({
         ...prev,
@@ -703,9 +622,9 @@ const handleSubmit = (e: React.FormEvent) => {
         homeLocality: autoSelectLocality
       }));
     } else if (name === 'state') {
-      const cities = value ? stateCitiesMap[value] || [] : [];
+      const cities = value ? lookupCitiesByState[value] || [] : [];
       const autoSelectCity = cities.length === 1 ? cities[0] : '';
-      const localities = autoSelectCity ? cityLocalitiesMap[autoSelectCity] || [] : [];
+      const localities = autoSelectCity ? lookupLocalAreasByCity[autoSelectCity] || [] : [];
       const autoSelectLocality = localities.length === 1 ? localities[0] : '';
       setFormData(prev => ({
         ...prev,
@@ -714,7 +633,7 @@ const handleSubmit = (e: React.FormEvent) => {
         locality: autoSelectLocality
       }));
     } else if (name === 'cityOrTown') {
-      const localities = value ? cityLocalitiesMap[value] || [] : [];
+      const localities = value ? lookupLocalAreasByCity[value] || [] : [];
       const autoSelectLocality = localities.length === 1 ? localities[0] : '';
       setFormData(prev => ({
         ...prev,
@@ -743,8 +662,8 @@ const handleSubmit = (e: React.FormEvent) => {
     }
   };
 
-  const availableCities = formData.state ? stateCitiesMap[formData.state] || [] : [];
-  const availableLocalities = formData.cityOrTown ? cityLocalitiesMap[formData.cityOrTown] || [] : [];
+  const availableCities = formData.state ? lookupCitiesByState[formData.state] || [] : [];
+  const availableLocalities = formData.cityOrTown ? lookupLocalAreasByCity[formData.cityOrTown] || [] : [];
 
   const handleChronicDiseaseChange = (disease: string, checked: boolean) => {
     setFormData(prev => {
@@ -868,15 +787,8 @@ const handleSubmit = (e: React.FormEvent) => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">State</label>
                   <select name="state" value={formData.state || ''} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                     <option value="">Select State</option>
-                    {(lookupSudanStates.length > 0 ? lookupSudanStates : [
-                      { id: '1', name: 'Khartoum' }, { id: '2', name: 'Al Jazirah' }, { id: '3', name: 'White Nile' },
-                      { id: '4', name: 'Blue Nile' }, { id: '5', name: 'Northern' }, { id: '6', name: 'River Nile' },
-                      { id: '7', name: 'Red Sea' }, { id: '8', name: 'Kassala' }, { id: '9', name: 'Al Qadarif' },
-                      { id: '10', name: 'Sennar' }, { id: '11', name: 'North Kordofan' }, { id: '12', name: 'South Kordofan' },
-                      { id: '13', name: 'West Kordofan' }, { id: '14', name: 'Central Darfur' }, { id: '15', name: 'North Darfur' },
-                      { id: '16', name: 'South Darfur' }, { id: '17', name: 'East Darfur' }, { id: '18', name: 'West Darfur' }
-                    ]).map(s => (
-                      <option key={s.id} value={s.name}>{s.name}</option>
+                    {lookupStates.map(s => (
+                      <option key={s} value={s}>{s}</option>
                     ))}
                   </select>
                 </div>
@@ -907,15 +819,8 @@ const handleSubmit = (e: React.FormEvent) => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Home State *</label>
                 <select name="homeState" value={formData.homeState || ''} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                   <option value="">Select State</option>
-                  {(lookupSudanStates.length > 0 ? lookupSudanStates : [
-                    { id: '1', name: 'Khartoum' }, { id: '2', name: 'Al Jazirah' }, { id: '3', name: 'White Nile' },
-                    { id: '4', name: 'Blue Nile' }, { id: '5', name: 'Northern' }, { id: '6', name: 'River Nile' },
-                    { id: '7', name: 'Red Sea' }, { id: '8', name: 'Kassala' }, { id: '9', name: 'Al Qadarif' },
-                    { id: '10', name: 'Sennar' }, { id: '11', name: 'North Kordofan' }, { id: '12', name: 'South Kordofan' },
-                    { id: '13', name: 'West Kordofan' }, { id: '14', name: 'Central Darfur' }, { id: '15', name: 'North Darfur' },
-                    { id: '16', name: 'South Darfur' }, { id: '17', name: 'East Darfur' }, { id: '18', name: 'West Darfur' }
-                  ]).map(s => (
-                    <option key={s.id} value={s.name}>{s.name}</option>
+                  {lookupStates.map(s => (
+                    <option key={s} value={s}>{s}</option>
                   ))}
                 </select>
               </div>
@@ -923,7 +828,7 @@ const handleSubmit = (e: React.FormEvent) => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">City or Town *</label>
                 <select name="homeCityOrTown" value={formData.homeCityOrTown || ''} onChange={handleChange} required disabled={!formData.homeState} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:bg-gray-100 disabled:cursor-not-allowed">
                   <option value="">{formData.homeState ? 'Select City or Town' : 'Select State First'}</option>
-                  {formData.homeState && stateCitiesMap[formData.homeState]?.map(city => (
+                  {formData.homeState && lookupCitiesByState[formData.homeState]?.map(city => (
                     <option key={city} value={city}>{city}</option>
                   ))}
                   <option value="Other">Other</option>
@@ -933,7 +838,7 @@ const handleSubmit = (e: React.FormEvent) => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Local area *</label>
                 <select name="homeLocality" value={formData.homeLocality || ''} onChange={handleChange} required disabled={!formData.homeCityOrTown} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:bg-gray-100 disabled:cursor-not-allowed">
                   <option value="">{formData.homeCityOrTown ? 'Select Local Area' : 'Select City First'}</option>
-                  {formData.homeCityOrTown && cityLocalitiesMap[formData.homeCityOrTown]?.map(locality => (
+                  {formData.homeCityOrTown && lookupLocalAreasByCity[formData.homeCityOrTown]?.map(locality => (
                     <option key={locality} value={locality}>{locality}</option>
                   ))}
                   <option value="Other">Other</option>
@@ -957,15 +862,8 @@ const handleSubmit = (e: React.FormEvent) => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">State *</label>
                   <select name="state" value={formData.state || ''} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                     <option value="">Select State</option>
-                    {(lookupSudanStates.length > 0 ? lookupSudanStates : [
-                      { id: '1', name: 'Khartoum' }, { id: '2', name: 'Al Jazirah' }, { id: '3', name: 'White Nile' },
-                      { id: '4', name: 'Blue Nile' }, { id: '5', name: 'Northern' }, { id: '6', name: 'River Nile' },
-                      { id: '7', name: 'Red Sea' }, { id: '8', name: 'Kassala' }, { id: '9', name: 'Al Qadarif' },
-                      { id: '10', name: 'Sennar' }, { id: '11', name: 'North Kordofan' }, { id: '12', name: 'South Kordofan' },
-                      { id: '13', name: 'West Kordofan' }, { id: '14', name: 'Central Darfur' }, { id: '15', name: 'North Darfur' },
-                      { id: '16', name: 'South Darfur' }, { id: '17', name: 'East Darfur' }, { id: '18', name: 'West Darfur' }
-                    ]).map(s => (
-                      <option key={s.id} value={s.name}>{s.name}</option>
+                    {lookupStates.map(s => (
+                      <option key={s} value={s}>{s}</option>
                     ))}
                   </select>
                 </div>
