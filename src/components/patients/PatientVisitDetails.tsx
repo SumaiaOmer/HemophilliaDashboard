@@ -143,6 +143,12 @@ export const PatientVisitDetails: React.FC<PatientVisitDetailsProps> = ({
                 <p className="text-sm text-gray-600">Visit Date</p>
                 <p className="font-semibold text-gray-900">{formatDate(visit.visitDate)}</p>
               </div>
+              {visit.weight != null && (
+                <div>
+                  <p className="text-sm text-gray-600">Weight</p>
+                  <p className="font-semibold text-gray-900">{visit.weight} kg</p>
+                </div>
+              )}
               <div>
                 <p className="text-sm text-gray-600">Visit Type</p>
                 <p className="font-semibold text-gray-900">
@@ -242,7 +248,7 @@ export const PatientVisitDetails: React.FC<PatientVisitDetailsProps> = ({
               <div className="space-y-2">
                 {visit.drugs.map((drug, index) => (
                   <div key={index} className="bg-white p-3 rounded border border-yellow-200">
-                    <p className="font-semibold text-gray-900">{getDrugName(drug.drugId)}</p>
+                    <p className="font-semibold text-gray-900">{getDrugName(drug.factorId)}</p>
                     <p className="text-sm text-gray-600">Quantity: {drug.quantity}</p>
                   </div>
                 ))}

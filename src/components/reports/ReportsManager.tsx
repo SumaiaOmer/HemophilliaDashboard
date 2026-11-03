@@ -17,15 +17,16 @@ import {
   Activity,
   PieChart
 } from 'lucide-react';
-import { CompaniesService } from '../../services/companies';
 import { FactorsService } from '../../services/factors';
 import { PatientsService } from '../../services/patients';
-import { Company, Factor, Patient } from '../../types/api';
+import { Factor, Patient, MedicineDistribution } from '../../types/api';
+import { MedicineDistributionService } from '../../services/medicineDistribution';
+import { Pagination } from '../Pagination';
 
 interface ReportData {
   patients: Patient[];
   factors: Factor[];
-  companies: Company[];
+  distributions: MedicineDistribution[];
 }
 
 interface StateStatistics {
@@ -44,36 +45,73 @@ interface CompanyStatistics {
 
 export const ReportsManager: React.FC = () => {
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [reportData, setReportData] = useState<ReportData>({
     patients: [],
     factors: [],
-    companies: []
+    distributions: [],
   });
   const [activeReport, setActiveReport] = useState<string>('overview');
+  const [patientSearch, setPatientSearch] = useState('');
+  const [patientStateFilter, setPatientStateFilter] = useState('all');
+  const [patientGenderFilter, setPatientGenderFilter] = useState('all');
+  const [patientSeverityFilter, setPatientSeverityFilter] = useState('all');
+  const [drugSearch, setDrugSearch] = useState('');
+  const [drugStateFilter, setDrugStateFilter] = useState('all');
+  const [drugCategoryFilter, setDrugCategoryFilter] = useState('all');
+  const [drugFromDate, setDrugFromDate] = useState('');
+  const [drugToDate, setDrugToDate] = useState('');
+  const [reportPageSize, setReportPageSize] = useState(10);
+  const [patientResultsPage, setPatientResultsPage] = useState(1);
+  const [patientSummaryPage, setPatientSummaryPage] = useState(1);
+  const [vitalStatusPage, setVitalStatusPage] = useState(1);
+  const [inventoryPage, setInventoryPage] = useState(1);
+  const [drugConsumptionPage, setDrugConsumptionPage] = useState(1);
 
   useEffect(() => {
     loadReportData();
   }, []);
 
-  const loadReportData = async () => {
-    try {
-      setLoading(true);
-      const [patients, factors, companies] = await Promise.all([
-        PatientsService.getAll(),
-        FactorsService.getAll(),
-        CompaniesService.getAll(),
-      ]);
+  useEffect(() => {
+    setPatientResultsPage(1);
+  }, [patientSearch, patientStateFilter, patientGenderFilter, patientSeverityFilter]);
 
-      setReportData({
-        patients,
-        factors,
-        companies
-      });
-    } catch (error) {
-      console.error('Error loading report data:', error);
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    setDrugConsumptionPage(1);
+  }, [drugSearch, drugStateFilter, drugCategoryFilter, drugFromDate, drugToDate]);
+
+  const loadReportData = async () => {
+    setLoading(true);
+    setLoadError(null);
+    const [patientsResult, factorsResult, distributionsResult] = await Promise.allSettled([
+      PatientsService.getAll(),
+      FactorsService.getAll(),
+      MedicineDistributionService.getAll(),
+    ]);
+
+    const failedSources: string[] = [];
+    if (patientsResult.status === 'rejected') {
+      failedSources.push('patients');
+      console.error('Error loading patient report data:', patientsResult.reason);
     }
+    if (factorsResult.status === 'rejected') {
+      failedSources.push('drug inventory');
+      console.error('Error loading inventory report data:', factorsResult.reason);
+    }
+    if (distributionsResult.status === 'rejected') {
+      failedSources.push('drug distribution');
+      console.error('Error loading drug distribution report data:', distributionsResult.reason);
+    }
+
+    setReportData({
+      patients: patientsResult.status === 'fulfilled' && Array.isArray(patientsResult.value) ? patientsResult.value : [],
+      factors: factorsResult.status === 'fulfilled' && Array.isArray(factorsResult.value) ? factorsResult.value : [],
+      distributions: distributionsResult.status === 'fulfilled' && Array.isArray(distributionsResult.value) ? distributionsResult.value : [],
+    });
+    if (failedSources.length > 0) {
+      setLoadError(`Could not load ${failedSources.join(', ')} data. Other available report data is still shown. Check the API connection and access permissions, then retry.`);
+    }
+    setLoading(false);
   };
 
   // Calculate state statistics
@@ -137,12 +175,26 @@ export const ReportsManager: React.FC = () => {
   // Export functions
   const exportToCSV = (data: any[], filename: string) => {
     if (data.length === 0) return;
-    
-    const headers = Object.keys(data[0]).join(',');
-    const rows = data.map(row => Object.values(row).join(',')).join('\n');
-    const csv = `${headers}\n${rows}`;
-    
-    const blob = new Blob([csv], { type: 'text/csv' });
+
+    const escapeCell = (value: unknown) => {
+      const text = value == null
+        ? ''
+        : typeof value === 'object'
+          ? JSON.stringify(value)
+          : String(value);
+      const safeText = /^[\t\r ]*[=+@]/.test(text) || /^[\t\r ]*-/.test(text)
+        ? `'${text}`
+        : text;
+      return `"${safeText.replace(/"/g, '""')}"`;
+    };
+    const headers = Object.keys(data[0]).map(escapeCell).join(',');
+    const rows = data
+      .map(row => Object.values(row).map(escapeCell).join(','))
+      .join('\r\n');
+    // UTF-8 BOM makes Excel recognize Arabic and other Unicode text in CSV files.
+    const csv = `\uFEFF${headers}\r\n${rows}`;
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -163,6 +215,83 @@ export const ReportsManager: React.FC = () => {
   const stateStats = getStateStatistics();
   const companyStats = getCompanyStatistics();
   const expiringFactors = getExpiringFactors();
+  const reportPatients = reportData.patients.filter((patient) => {
+    const state = patient.residenceState || patient.state || 'Unknown';
+    const matchesSearch = `${patient.fullName} ${patient.nationalIdNumber} ${patient.diagnosis || ''}`
+      .toLowerCase()
+      .includes(patientSearch.trim().toLowerCase());
+    return matchesSearch &&
+      (patientStateFilter === 'all' || state === patientStateFilter) &&
+      (patientGenderFilter === 'all' || patient.gender?.toLowerCase() === patientGenderFilter) &&
+      (patientSeverityFilter === 'all' || (patient.severity || 'unknown').toLowerCase() === patientSeverityFilter);
+  });
+  const diagnosisChartData = Array.from(reportPatients.reduce((counts, patient) => {
+    const diagnosis = patient.diagnosis || 'Not specified';
+    counts.set(diagnosis, (counts.get(diagnosis) || 0) + 1);
+    return counts;
+  }, new Map<string, number>()).entries())
+    .map(([diagnosis, count]) => ({ diagnosis, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 8);
+  const vitalStatusCounts = reportData.patients.reduce<Record<'Alive' | 'Died' | 'Unknown', number>>((counts, patient) => {
+    const status = patient.vitalStatus?.trim().toLowerCase();
+    const category = status === 'alive' ? 'Alive' : status === 'died' ? 'Died' : 'Unknown';
+    counts[category] += 1;
+    return counts;
+  }, { Alive: 0, Died: 0, Unknown: 0 });
+  const vitalStatusRows = [
+    { label: 'Alive', count: vitalStatusCounts.Alive, style: 'bg-green-500', text: 'text-green-700', card: 'border-green-200 bg-green-50' },
+    { label: 'Died', count: vitalStatusCounts.Died, style: 'bg-red-600', text: 'text-red-700', card: 'border-red-200 bg-red-50' },
+    { label: 'Unknown', count: vitalStatusCounts.Unknown, style: 'bg-gray-500', text: 'text-gray-700', card: 'border-gray-200 bg-gray-50' },
+  ];
+  const distributionStates = Array.from(new Set(reportData.distributions.map((item) => item.state).filter(Boolean))).sort();
+  const distributionCategories = Array.from(new Set(reportData.distributions.map((item) => item.category).filter(Boolean))).sort();
+  const filteredDrugDistributions = reportData.distributions.filter((item) => {
+    const distributionDate = (item.distributionDate || item.dateOfDistribution || '').slice(0, 10);
+    return (drugStateFilter === 'all' || item.state === drugStateFilter) &&
+      (drugCategoryFilter === 'all' || item.category === drugCategoryFilter) &&
+      (!drugSearch.trim() || (reportData.factors.find((factor) => factor.id === item.factorId)?.name || item.category || '').toLowerCase().includes(drugSearch.trim().toLowerCase())) &&
+      (!drugFromDate || (distributionDate !== '' && distributionDate >= drugFromDate)) &&
+      (!drugToDate || (distributionDate !== '' && distributionDate <= drugToDate));
+  });
+  const drugConsumptionByState = Array.from(filteredDrugDistributions.reduce((summary, item) => {
+    const factor = reportData.factors.find((candidate) => candidate.id === item.factorId);
+    const drug = factor?.name || item.category || `Drug #${item.factorId}`;
+    const key = `${item.state || 'Unknown'}\u0000${drug}`;
+    const existing = summary.get(key) || { state: item.state || 'Unknown', drug, quantity: 0, records: 0 };
+    existing.quantity += Number(item.quantityDistributed) || 0;
+    existing.records += 1;
+    summary.set(key, existing);
+    return summary;
+  }, new Map<string, { state: string; drug: string; quantity: number; records: number }>()).values())
+    .sort((a, b) => a.state.localeCompare(b.state) || a.drug.localeCompare(b.drug));
+  const stateDrugTotals = Array.from(drugConsumptionByState.reduce((totals, row) => {
+    totals.set(row.state, (totals.get(row.state) || 0) + row.quantity);
+    return totals;
+  }, new Map<string, number>()).entries())
+    .map(([state, quantity]) => ({ state, quantity }))
+    .sort((a, b) => b.quantity - a.quantity);
+  const totalDistributedQuantity = filteredDrugDistributions.reduce((sum, item) => sum + (Number(item.quantityDistributed) || 0), 0);
+  const paginatedReportPatients = reportPatients.slice(
+    (patientResultsPage - 1) * reportPageSize,
+    patientResultsPage * reportPageSize
+  );
+  const paginatedPatientSummary = reportData.patients.slice(
+    (patientSummaryPage - 1) * reportPageSize,
+    patientSummaryPage * reportPageSize
+  );
+  const paginatedVitalStatus = reportData.patients.slice(
+    (vitalStatusPage - 1) * reportPageSize,
+    vitalStatusPage * reportPageSize
+  );
+  const paginatedInventory = reportData.factors.slice(
+    (inventoryPage - 1) * reportPageSize,
+    inventoryPage * reportPageSize
+  );
+  const paginatedDrugConsumption = drugConsumptionByState.slice(
+    (drugConsumptionPage - 1) * reportPageSize,
+    drugConsumptionPage * reportPageSize
+  );
 
   return (
     <div className="space-y-6">
@@ -183,12 +312,28 @@ export const ReportsManager: React.FC = () => {
         </div>
       </div>
 
+      {loadError && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900" role="alert">
+          <span>{loadError}</span>
+          <button
+            type="button"
+            onClick={loadReportData}
+            className="rounded-lg border border-amber-400 px-3 py-1.5 font-medium hover:bg-amber-100"
+          >
+            Retry loading
+          </button>
+        </div>
+      )}
+
       {/* Report Navigation */}
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
         <div className="flex flex-wrap gap-2">
           {[
             { id: 'overview', label: 'Overview', icon: BarChart3 },
             { id: 'patients', label: 'Patient Summary', icon: Users },
+            { id: 'patient-analytics', label: 'Patient Analytics', icon: Activity },
+            { id: 'vital-status', label: 'Alive / Died / Unknown', icon: Users },
+            { id: 'drug-consumption', label: 'Drug Consumption by State', icon: Pill },
             { id: 'inventory', label: 'Inventory Report', icon: Package },
             { id: 'states', label: 'State Consumption', icon: MapPin },
             { id: 'companies', label: 'Company Analysis', icon: Building2 }
@@ -239,7 +384,7 @@ export const ReportsManager: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-orange-600 mb-1">Partner Companies</p>
-                  <p className="text-3xl font-bold text-orange-700">{reportData.companies.length}</p>
+                  <p className="text-3xl font-bold text-orange-700">{new Set(reportData.factors.map(factor => factor.companyName).filter(Boolean)).size}</p>
                 </div>
                 <Building2 className="h-8 w-8 text-orange-600" />
               </div>
@@ -308,7 +453,10 @@ export const ReportsManager: React.FC = () => {
                 {(() => {
                   const severityMap = new Map<string, number>();
                   reportData.patients.forEach(p => {
-                    const sev = p.severity || 'unknown';
+                    const rawSeverity = p.severity?.trim().toLowerCase() || 'unknown';
+                    const sev = ['severe', 'moderate', 'mild'].includes(rawSeverity)
+                      ? rawSeverity
+                      : 'unknown';
                     severityMap.set(sev, (severityMap.get(sev) || 0) + 1);
                   });
                   const items = Array.from(severityMap.entries())
@@ -358,27 +506,50 @@ export const ReportsManager: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Chart */}
               <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-3">Patient Distribution by State</h4>
-                <div className="space-y-2">
-                  {stateStats.slice(0, 8).map((stat, index) => (
-                    <div key={index} className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600 truncate">{stat.state}</span>
-                      <div className="flex items-center space-x-2">
-                        <div className="w-24 bg-gray-200 rounded-full h-2">
-                          <div
-                            className="bg-purple-600 h-2 rounded-full"
-                            style={{
-                              width: `${Math.max(10, (stat.patientCount / Math.max(...stateStats.map(s => s.patientCount))) * 100)}%`
-                            }}
-                          />
-                        </div>
-                        <span className="text-sm font-medium text-gray-800 min-w-[1.5rem] text-right">
-                          {stat.patientCount}
-                        </span>
+                <h4 className="text-sm font-medium text-gray-700 mb-3">Patients by State</h4>
+                {stateStats.length > 0 ? (() => {
+                  const totalPatients = stateStats.reduce((total, stat) => total + stat.patientCount, 0);
+                  let currentPercent = 0;
+                  const chartSegments = stateStats.map((stat, index) => {
+                    const startPercent = currentPercent;
+                    currentPercent += (stat.patientCount / totalPatients) * 100;
+                    return {
+                      ...stat,
+                      color: `hsl(${Math.round((index * 360) / stateStats.length)}, 70%, 50%)`,
+                      startPercent,
+                      endPercent: currentPercent,
+                    };
+                  });
+                  const pieGradient = chartSegments
+                    .map((segment) => `${segment.color} ${segment.startPercent}% ${segment.endPercent}%`)
+                    .join(', ');
+
+                  return (
+                    <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start">
+                      <div
+                        className="h-48 w-48 flex-shrink-0 rounded-full border border-white shadow-inner"
+                        style={{ background: `conic-gradient(${pieGradient})` }}
+                        role="img"
+                        aria-label={`Pie chart of ${totalPatients} patients across ${stateStats.length} states`}
+                      />
+                      <div className="max-h-56 w-full space-y-2 overflow-y-auto">
+                        {chartSegments.map((segment) => (
+                          <div key={segment.state} className="flex items-center justify-between gap-3 text-sm">
+                            <span className="flex min-w-0 items-center gap-2 text-gray-700">
+                              <span className="h-3 w-3 flex-shrink-0 rounded-sm" style={{ backgroundColor: segment.color }} />
+                              <span className="truncate" title={segment.state}>{segment.state}</span>
+                            </span>
+                            <span className="flex-shrink-0 font-medium text-gray-800">
+                              {segment.patientCount} ({((segment.patientCount / totalPatients) * 100).toFixed(1)}%)
+                            </span>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                  ))}
-                </div>
+                  );
+                })() : (
+                  <p className="py-8 text-center text-sm text-gray-500">No patient data available.</p>
+                )}
               </div>
               {/* Table */}
               <div>
@@ -464,6 +635,445 @@ export const ReportsManager: React.FC = () => {
               </div> */}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Filtered Patient Analytics Report */}
+      {activeReport === 'patient-analytics' && (
+        <div className="space-y-6">
+          <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm" aria-label="Patient report filters">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800">Patient Report Filters</h3>
+                <p className="mt-1 text-sm text-gray-500">Filter the chart and patient results below.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setPatientSearch('');
+                  setPatientStateFilter('all');
+                  setPatientGenderFilter('all');
+                  setPatientSeverityFilter('all');
+                }}
+                className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              >
+                Clear filters
+              </button>
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <input
+                type="search"
+                aria-label="Search patients"
+                placeholder="Search name, ID, diagnosis..."
+                value={patientSearch}
+                onChange={(event) => setPatientSearch(event.target.value)}
+                className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100"
+              />
+              <select
+                aria-label="Filter by state"
+                value={patientStateFilter}
+                onChange={(event) => setPatientStateFilter(event.target.value)}
+                className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100"
+              >
+                <option value="all">All states</option>
+                {Array.from(new Set(reportData.patients.map((p) => p.residenceState || p.state || 'Unknown'))).sort().map((state) => (
+                  <option key={state} value={state}>{state}</option>
+                ))}
+              </select>
+              <select
+                aria-label="Filter by gender"
+                value={patientGenderFilter}
+                onChange={(event) => setPatientGenderFilter(event.target.value)}
+                className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100"
+              >
+                <option value="all">All genders</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+              </select>
+              <select
+                aria-label="Filter by severity"
+                value={patientSeverityFilter}
+                onChange={(event) => setPatientSeverityFilter(event.target.value)}
+                className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100"
+              >
+                <option value="all">All severities</option>
+                <option value="severe">Severe</option>
+                <option value="moderate">Moderate</option>
+                <option value="mild">Mild</option>
+                <option value="unknown">Unknown</option>
+              </select>
+            </div>
+          </section>
+
+          <section className="grid grid-cols-1 gap-6 lg:grid-cols-5">
+            <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm lg:col-span-2">
+              <h3 className="text-lg font-semibold text-gray-800">Patients in this report</h3>
+              <p className="mt-3 text-4xl font-bold text-red-700">{reportPatients.length}</p>
+              <p className="mt-1 text-sm text-gray-500">matching the selected filters</p>
+            </div>
+            <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm lg:col-span-3">
+              <h3 className="mb-5 text-lg font-semibold text-gray-800">Patients by diagnosis</h3>
+              {diagnosisChartData.length > 0 ? (
+                <div className="space-y-4" role="img" aria-label="Horizontal bar chart showing patients grouped by diagnosis">
+                  {diagnosisChartData.map(({ diagnosis, count }) => (
+                    <div key={diagnosis} className="grid grid-cols-[minmax(6rem,9rem)_1fr_2.5rem] items-center gap-3">
+                      <span className="truncate text-sm text-gray-600" title={diagnosis}>{diagnosis}</span>
+                      <div className="h-3 overflow-hidden rounded-full bg-gray-100">
+                        <div
+                          className="h-full rounded-full bg-red-600 transition-all"
+                          style={{ width: `${Math.max(5, (count / Math.max(...diagnosisChartData.map((item) => item.count))) * 100)}%` }}
+                        />
+                      </div>
+                      <span className="text-right text-sm font-semibold text-gray-800">{count}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="py-8 text-center text-sm text-gray-500">No patients match these filters.</p>
+              )}
+            </div>
+          </section>
+
+          <section className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 p-5">
+              <h3 className="text-lg font-semibold text-gray-800">Patient Results</h3>
+              <button
+                onClick={() => exportToCSV(reportPatients, 'filtered_patient_report')}
+                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
+              >
+                <Download className="h-4 w-4" /> Export filtered results
+              </button>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-5 py-3 text-left text-xs font-medium uppercase text-gray-500">Name</th>
+                    <th className="px-5 py-3 text-left text-xs font-medium uppercase text-gray-500">National ID</th>
+                    <th className="px-5 py-3 text-left text-xs font-medium uppercase text-gray-500">State</th>
+                    <th className="px-5 py-3 text-left text-xs font-medium uppercase text-gray-500">Gender</th>
+                    <th className="px-5 py-3 text-left text-xs font-medium uppercase text-gray-500">Severity</th>
+                    <th className="px-5 py-3 text-left text-xs font-medium uppercase text-gray-500">Diagnosis</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {paginatedReportPatients.map((patient) => (
+                    <tr key={patient.id} className="hover:bg-gray-50">
+                      <td className="px-5 py-3 text-sm text-gray-900">{patient.fullName}</td>
+                      <td className="px-5 py-3 text-sm text-gray-600">{patient.nationalIdNumber || '—'}</td>
+                      <td className="px-5 py-3 text-sm text-gray-600">{patient.residenceState || patient.state || 'Unknown'}</td>
+                      <td className="px-5 py-3 text-sm capitalize text-gray-600">{patient.gender || '—'}</td>
+                      <td className="px-5 py-3 text-sm">
+                        {(() => {
+                          const severity = (patient.severity || 'unknown').toLowerCase();
+                          const severityStyle: Record<string, string> = {
+                            severe: 'bg-red-100 text-red-800',
+                            moderate: 'bg-yellow-100 text-yellow-800',
+                            mild: 'bg-green-100 text-green-800',
+                            unknown: 'bg-gray-100 text-gray-700',
+                          };
+                          const label = severity === 'unknown'
+                            ? 'Unknown'
+                            : severity.charAt(0).toUpperCase() + severity.slice(1);
+                          return (
+                            <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium capitalize ${severityStyle[severity] || severityStyle.unknown}`}>
+                              {label}
+                            </span>
+                          );
+                        })()}
+                      </td>
+                      <td className="px-5 py-3 text-sm text-gray-600">{patient.diagnosis || 'Not specified'}</td>
+                    </tr>
+                  ))}
+                  {reportPatients.length === 0 && (
+                    <tr><td colSpan={6} className="px-5 py-8 text-center text-sm text-gray-500">No results found.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <Pagination
+              page={patientResultsPage}
+              pageSize={reportPageSize}
+              totalItems={reportPatients.length}
+              onPageChange={setPatientResultsPage}
+              onPageSizeChange={(size) => { setReportPageSize(size); setPatientResultsPage(1); }}
+            />
+          </section>
+        </div>
+      )}
+
+      {/* Patient Vital Status Report */}
+      {activeReport === 'vital-status' && (
+        <div className="space-y-6">
+          <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+            <div className="mb-5">
+              <h3 className="text-lg font-semibold text-gray-800">Patient Vital Status</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                Current status breakdown from all {reportData.patients.length} patient records. Missing or unrecognized status is counted as Unknown.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              {vitalStatusRows.map((item) => (
+                <div key={item.label} className={`rounded-xl border p-5 ${item.card}`}>
+                  <p className={`text-sm font-medium ${item.text}`}>{item.label}</p>
+                  <p className={`mt-2 text-3xl font-bold ${item.text}`}>{item.count.toLocaleString()}</p>
+                  <p className="mt-1 text-sm text-gray-500">
+                    {reportData.patients.length > 0
+                      ? `${((item.count / reportData.patients.length) * 100).toFixed(1)}% of patients`
+                      : '0.0% of patients'}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+            <h3 className="mb-5 text-lg font-semibold text-gray-800">Vital Status Distribution</h3>
+            {reportData.patients.length > 0 ? (
+              <div className="space-y-5" role="img" aria-label="Patient counts by vital status">
+                {vitalStatusRows.map((item) => (
+                  <div key={item.label} className="grid grid-cols-[5rem_1fr_5rem] items-center gap-3">
+                    <span className="text-sm font-medium text-gray-700">{item.label}</span>
+                    <div className="h-4 overflow-hidden rounded-full bg-gray-100">
+                      <div
+                        className={`h-full rounded-full transition-all ${item.style}`}
+                        style={{ width: `${(item.count / reportData.patients.length) * 100}%` }}
+                      />
+                    </div>
+                    <span className="text-right text-sm text-gray-600">
+                      {item.count} ({((item.count / reportData.patients.length) * 100).toFixed(1)}%)
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="py-8 text-center text-sm text-gray-500">No patient records are available for this report.</p>
+            )}
+          </section>
+
+          <section className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 p-5">
+              <h3 className="text-lg font-semibold text-gray-800">Patient Status Details</h3>
+              <button
+                type="button"
+                onClick={() => exportToCSV(reportData.patients.map((patient) => ({
+                  fullName: patient.fullName,
+                  nationalIdNumber: patient.nationalIdNumber,
+                  vitalStatus: patient.vitalStatus || 'Unknown',
+                  state: patient.residenceState || patient.state || 'Unknown',
+                  diagnosis: patient.diagnosis || '',
+                })), 'patient_vital_status_report')}
+                disabled={reportData.patients.length === 0}
+                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Download className="h-4 w-4" /> Export status report
+              </button>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-5 py-3 text-left text-xs font-medium uppercase text-gray-500">Name</th>
+                    <th className="px-5 py-3 text-left text-xs font-medium uppercase text-gray-500">National ID</th>
+                    <th className="px-5 py-3 text-left text-xs font-medium uppercase text-gray-500">Vital Status</th>
+                    <th className="px-5 py-3 text-left text-xs font-medium uppercase text-gray-500">State</th>
+                    <th className="px-5 py-3 text-left text-xs font-medium uppercase text-gray-500">Diagnosis</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {paginatedVitalStatus.map((patient) => {
+                    const status = patient.vitalStatus?.trim().toLowerCase();
+                    const label = status === 'alive' ? 'Alive' : status === 'died' ? 'Died' : 'Unknown';
+                    const badge = label === 'Alive' ? 'bg-green-100 text-green-800' : label === 'Died' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-700';
+                    return (
+                      <tr key={patient.id} className="hover:bg-gray-50">
+                        <td className="px-5 py-3 text-sm text-gray-900">{patient.fullName || '—'}</td>
+                        <td className="px-5 py-3 text-sm text-gray-600">{patient.nationalIdNumber || '—'}</td>
+                        <td className="px-5 py-3 text-sm"><span className={`rounded-full px-2.5 py-1 text-xs font-medium ${badge}`}>{label}</span></td>
+                        <td className="px-5 py-3 text-sm text-gray-600">{patient.residenceState || patient.state || 'Unknown'}</td>
+                        <td className="px-5 py-3 text-sm text-gray-600">{patient.diagnosis || '—'}</td>
+                      </tr>
+                    );
+                  })}
+                  {reportData.patients.length === 0 && (
+                    <tr><td colSpan={5} className="px-5 py-8 text-center text-sm text-gray-500">No patient records found.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <Pagination
+              page={vitalStatusPage}
+              pageSize={reportPageSize}
+              totalItems={reportData.patients.length}
+              onPageChange={setVitalStatusPage}
+              onPageSizeChange={(size) => { setReportPageSize(size); setVitalStatusPage(1); }}
+            />
+          </section>
+        </div>
+      )}
+
+      {/* Drug Consumption by State Report */}
+      {activeReport === 'drug-consumption' && (
+        <div className="space-y-6">
+          <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800">Drug Consumption by State</h3>
+                <p className="mt-1 text-sm text-gray-500">Quantities are based on drug distribution records.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setDrugSearch('');
+                  setDrugStateFilter('all');
+                  setDrugCategoryFilter('all');
+                  setDrugFromDate('');
+                  setDrugToDate('');
+                }}
+                className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              >
+                Clear filters
+              </button>
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+              <input
+                type="search"
+                aria-label="Search drug name"
+                placeholder="Search drug..."
+                value={drugSearch}
+                onChange={(event) => setDrugSearch(event.target.value)}
+                className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100"
+              />
+              <select
+                aria-label="Filter by distribution state"
+                value={drugStateFilter}
+                onChange={(event) => setDrugStateFilter(event.target.value)}
+                className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100"
+              >
+                <option value="all">All states</option>
+                {distributionStates.map((state) => <option key={state} value={state}>{state}</option>)}
+              </select>
+              <select
+                aria-label="Filter by drug category"
+                value={drugCategoryFilter}
+                onChange={(event) => setDrugCategoryFilter(event.target.value)}
+                className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100"
+              >
+                <option value="all">All drug categories</option>
+                {distributionCategories.map((category) => <option key={category} value={category}>{category}</option>)}
+              </select>
+              <label className="text-xs text-gray-500">
+                From date
+                <input
+                  type="date"
+                  value={drugFromDate}
+                  max={drugToDate || undefined}
+                  onChange={(event) => setDrugFromDate(event.target.value)}
+                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700"
+                />
+              </label>
+              <label className="text-xs text-gray-500">
+                To date
+                <input
+                  type="date"
+                  value={drugToDate}
+                  min={drugFromDate || undefined}
+                  onChange={(event) => setDrugToDate(event.target.value)}
+                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700"
+                />
+              </label>
+            </div>
+          </section>
+
+          <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="rounded-xl border border-red-100 bg-red-50 p-5">
+              <p className="text-sm font-medium text-red-700">Distributed quantity</p>
+              <p className="mt-2 text-3xl font-bold text-red-800">{totalDistributedQuantity.toLocaleString()}</p>
+            </div>
+            <div className="rounded-xl border border-blue-100 bg-blue-50 p-5">
+              <p className="text-sm font-medium text-blue-700">Distribution records</p>
+              <p className="mt-2 text-3xl font-bold text-blue-800">{filteredDrugDistributions.length.toLocaleString()}</p>
+            </div>
+            <div className="rounded-xl border border-purple-100 bg-purple-50 p-5">
+              <p className="text-sm font-medium text-purple-700">States included</p>
+              <p className="mt-2 text-3xl font-bold text-purple-800">{stateDrugTotals.length.toLocaleString()}</p>
+            </div>
+          </section>
+
+          <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+            <h3 className="mb-5 text-lg font-semibold text-gray-800">Distributed Quantity by State</h3>
+            {stateDrugTotals.length > 0 ? (
+              <div className="space-y-4" role="img" aria-label="Bar chart of total distributed drug quantity by state">
+                {stateDrugTotals.map(({ state, quantity }) => (
+                  <div key={state} className="grid grid-cols-[minmax(6rem,10rem)_1fr_5rem] items-center gap-3">
+                    <span className="truncate text-sm text-gray-700" title={state}>{state}</span>
+                    <div className="h-3 overflow-hidden rounded-full bg-gray-100">
+                      <div
+                        className="h-full rounded-full bg-red-600 transition-all"
+                        style={{ width: `${(quantity / Math.max(...stateDrugTotals.map((item) => item.quantity), 1)) * 100}%` }}
+                      />
+                    </div>
+                    <span className="text-right text-sm font-semibold text-gray-800">{quantity.toLocaleString()}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="py-8 text-center text-sm text-gray-500">
+                {reportData.distributions.length === 0
+                  ? 'No drug distribution records are available.'
+                  : 'No distributions match the selected filters.'}
+              </p>
+            )}
+          </section>
+
+          <section className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 p-5">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800">Drug Quantity Details</h3>
+                <p className="mt-1 text-sm text-gray-500">Grouped by state and drug.</p>
+              </div>
+              <button
+                type="button"
+                disabled={drugConsumptionByState.length === 0}
+                onClick={() => exportToCSV(drugConsumptionByState, 'drug_consumption_by_state')}
+                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Download className="h-4 w-4" /> Export report
+              </button>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-5 py-3 text-left text-xs font-medium uppercase text-gray-500">State</th>
+                    <th className="px-5 py-3 text-left text-xs font-medium uppercase text-gray-500">Drug</th>
+                    <th className="px-5 py-3 text-right text-xs font-medium uppercase text-gray-500">Quantity distributed</th>
+                    <th className="px-5 py-3 text-right text-xs font-medium uppercase text-gray-500">Records</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {paginatedDrugConsumption.map((row) => (
+                    <tr key={`${row.state}-${row.drug}`} className="hover:bg-gray-50">
+                      <td className="px-5 py-3 text-sm text-gray-800">{row.state}</td>
+                      <td className="px-5 py-3 text-sm text-gray-800">{row.drug}</td>
+                      <td className="px-5 py-3 text-right text-sm font-medium text-gray-900">{row.quantity.toLocaleString()}</td>
+                      <td className="px-5 py-3 text-right text-sm text-gray-600">{row.records}</td>
+                    </tr>
+                  ))}
+                  {drugConsumptionByState.length === 0 && (
+                    <tr><td colSpan={4} className="px-5 py-8 text-center text-sm text-gray-500">No drug consumption data to display.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <Pagination
+              page={drugConsumptionPage}
+              pageSize={reportPageSize}
+              totalItems={drugConsumptionByState.length}
+              onPageChange={setDrugConsumptionPage}
+              onPageSizeChange={(size) => { setReportPageSize(size); setDrugConsumptionPage(1); }}
+            />
+          </section>
         </div>
       )}
 
@@ -574,7 +1184,7 @@ export const ReportsManager: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {reportData.patients.map((patient) => (
+                  {paginatedPatientSummary.map((patient) => (
                       <tr key={patient.id}>
                         <td className="px-6 py-4 text-sm text-gray-900">{patient.fullName}</td>
                         <td className="px-6 py-4 text-sm text-gray-900">{patient.age}</td>
@@ -585,6 +1195,13 @@ export const ReportsManager: React.FC = () => {
                 </tbody>
               </table>
             </div>
+            <Pagination
+              page={patientSummaryPage}
+              pageSize={reportPageSize}
+              totalItems={reportData.patients.length}
+              onPageChange={setPatientSummaryPage}
+              onPageSizeChange={(size) => { setReportPageSize(size); setPatientSummaryPage(1); }}
+            />
           </div>
         </div>
       )}
@@ -726,7 +1343,7 @@ export const ReportsManager: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {reportData.factors.map((factor) => {
+                  {paginatedInventory.map((factor) => {
                     const isExpired = new Date(factor.expiryDate) < new Date();
                     const isExpiringSoon = expiringFactors.some(ef => ef.id === factor.id);
                     return (
@@ -757,6 +1374,13 @@ export const ReportsManager: React.FC = () => {
                 </tbody>
               </table>
             </div>
+            <Pagination
+              page={inventoryPage}
+              pageSize={reportPageSize}
+              totalItems={reportData.factors.length}
+              onPageChange={setInventoryPage}
+              onPageSizeChange={(size) => { setReportPageSize(size); setInventoryPage(1); }}
+            />
           </div>
         </div>
       )}

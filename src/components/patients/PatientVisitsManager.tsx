@@ -217,6 +217,9 @@ export const PatientVisitsManager: React.FC = () => {
           <div>
             <div className="flex items-center gap-2">
               <span className="text-sm font-semibold text-gray-900">{formatDate(visit.visitDate)}</span>
+              {visit.weight != null && (
+                <span className="text-xs text-gray-500">Weight: {visit.weight} kg</span>
+              )}
               {getServiceTypeBadge(visit.serviceType)}
               {visit.visitType && (
                 <span className="inline-block px-2 py-0.5 text-xs rounded bg-gray-100 text-gray-700">

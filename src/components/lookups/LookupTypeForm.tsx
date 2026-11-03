@@ -1,24 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import { LookupType } from '../../services/lookups';
+import { LookupItem, LookupType, LookupsService } from '../../services/lookups';
+
+const LOCATION_TYPE_NAMES = ['State', 'City', 'Local Area'];
+const CUSTOM_TYPE = '__custom__';
 
 interface LookupTypeFormProps {
   type?: LookupType | null;
-  existingTypeNames: string[];
-  availableTypes: LookupType[];
-  onSave: (typeName: string, parentTypeName: string | null) => Promise<void>;
+  defaultParentId?: string;
+  onSave: (typeName: string, initialItemName: string | undefined, parentItemId: string | null) => Promise<void>;
   onCancel: () => void;
 }
 
 export const LookupTypeForm: React.FC<LookupTypeFormProps> = ({
   type,
-  existingTypeNames,
-  availableTypes,
+  defaultParentId,
   onSave,
   onCancel,
 }) => {
-  const [typeName, setTypeName] = useState(type?.name ?? '');
-  const [parentTypeName, setParentTypeName] = useState(type?.parentType ?? '');
+  const isKnownLocationType = type ? LOCATION_TYPE_NAMES.includes(type.name) : false;
+  const [selectedTypeName, setSelectedTypeName] = useState(
+    type ? (isKnownLocationType ? type.name : CUSTOM_TYPE) : ''
+  );
+  const [customTypeName, setCustomTypeName] = useState(
+    type && !isKnownLocationType ? type.name : ''
+  );
+  const [initialItemName, setInitialItemName] = useState('');
+  const [parentItemId, setParentItemId] = useState(defaultParentId ?? '0');
+  const [parentItems, setParentItems] = useState<LookupItem[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,22 +43,40 @@ export const LookupTypeForm: React.FC<LookupTypeFormProps> = ({
     };
   }, [isSubmitting, onCancel]);
 
+  useEffect(() => {
+    LookupsService.getAll()
+      .then((items) => {
+        setParentItems(items.filter((item) => item.name.toLowerCase() !== item.type.toLowerCase()));
+      })
+      .catch((err: unknown) => {
+        setError(err instanceof Error ? err.message : 'Failed to load parent lookup items');
+      });
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const trimmed = typeName.trim();
+    const trimmed = (selectedTypeName === CUSTOM_TYPE ? customTypeName : selectedTypeName).trim();
     if (!trimmed) {
       setError('Type name is required');
       return;
     }
-    const lower = trimmed.toLowerCase();
-    if (!type && existingTypeNames.some((n) => n.toLowerCase() === lower)) {
-      setError('A type with this name already exists');
+    const trimmedInitialItemName = initialItemName.trim();
+    if (!type && !trimmedInitialItemName) {
+      setError('Name is required');
+      return;
+    }
+    if (trimmedInitialItemName && trimmedInitialItemName.toLowerCase() === trimmed.toLowerCase()) {
+      setError('The first item name must be different from the type name');
       return;
     }
     setError(null);
     setIsSubmitting(true);
     try {
-      await onSave(trimmed, parentTypeName || null);
+      await onSave(
+        trimmed,
+        type ? undefined : trimmedInitialItemName,
+        parentItemId === '0' ? null : parentItemId
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save lookup type');
     } finally {
@@ -92,41 +119,73 @@ export const LookupTypeForm: React.FC<LookupTypeFormProps> = ({
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               Type Name <span className="text-red-500">*</span>
             </label>
-            <input
-              type="text"
-              value={typeName}
-              onChange={(e) => setTypeName(e.target.value)}
+            <select
+              value={selectedTypeName}
+              onChange={(e) => setSelectedTypeName(e.target.value)}
               required
               autoFocus
               disabled={!!type}
               className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none disabled:bg-gray-50 disabled:cursor-not-allowed transition-colors"
-              placeholder="e.g. BloodGroups, SudanStates"
-            />
+            >
+              <option value="">Select a lookup type</option>
+              {LOCATION_TYPE_NAMES.map((name) => (
+                <option key={name} value={name}>{name}</option>
+              ))}
+              <option value={CUSTOM_TYPE}>Custom type</option>
+            </select>
+            {selectedTypeName === CUSTOM_TYPE && (
+              <input
+                type="text"
+                value={customTypeName}
+                onChange={(e) => setCustomTypeName(e.target.value)}
+                required
+                disabled={!!type}
+                className="mt-3 w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none disabled:bg-gray-50 disabled:cursor-not-allowed transition-colors"
+                placeholder="Enter custom lookup type name"
+              />
+            )}
             <p className="mt-1.5 text-xs text-gray-400">
-              Cannot be renamed later.
+              Choose State, City, or Local Area for location lookups. Custom types are also supported; names cannot be changed later.
             </p>
           </div>
 
+          {!type && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={initialItemName}
+                onChange={(e) => setInitialItemName(e.target.value)}
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors"
+                required
+                placeholder="Enter the first lookup item name"
+              />
+              <p className="mt-1.5 text-xs text-gray-400">
+                This creates the first item for this lookup type.
+              </p>
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Parent Type <span className="text-gray-400 font-normal">(optional)</span>
+              Parent Item <span className="text-gray-400 font-normal">(optional)</span>
             </label>
             <select
-              value={parentTypeName}
-              onChange={(e) => setParentTypeName(e.target.value)}
+              value={parentItemId}
+              onChange={(e) => setParentItemId(e.target.value)}
               className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors"
             >
-              <option value="">None (top-level type)</option>
-              {availableTypes
-                .filter((t) => t.name !== type?.name)
-                .map((t) => (
-                  <option key={t.name} value={t.name}>
-                    {t.label}
+              <option value="0">None (top-level item)</option>
+              {parentItems.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name}
                   </option>
-                ))}
+              ))}
             </select>
             <p className="mt-1.5 text-xs text-gray-400">
-              Items of this type will be linked to items of the parent type, e.g. Cities under States.
+              The new item will be linked to the selected parent item by name.
             </p>
           </div>
 

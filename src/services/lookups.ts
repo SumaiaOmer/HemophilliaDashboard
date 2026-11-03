@@ -27,21 +27,36 @@ export interface LocationHierarchy {
 }
 
 const LOCATION_LEVEL_KEYS = {
-  state: ['state'],
-  city: ['city', 'citytown'],
-  localArea: ['localarea'],
+  state: ['state', 'states', 'sudanstate', 'sudanstates'],
+  city: ['city', 'cities', 'town', 'towns', 'citytown', 'statecity', 'statecities'],
+  localArea: ['localarea', 'localareas', 'citylocality', 'citylocalities'],
 };
 
 const normalizeTypeKey = (value: string) => value.toLowerCase().replace(/[^a-z]/g, '');
 
-const normalizeItem = (item: any): LookupItem => ({
-  id: String(item.id ?? item.Id ?? ''),
-  name: item.name ?? item.Name ?? '',
-  type: item.type ?? item.Type ?? '',
-  parentId: item.parentId ?? item.ParentId ?? null,
-});
+const readProperty = (item: Record<string, unknown>, propertyName: string) => {
+  const key = Object.keys(item).find(
+    (candidate) => candidate.toLowerCase() === propertyName.toLowerCase()
+  );
+  return key ? item[key] : undefined;
+};
+
+const normalizeItem = (item: Record<string, unknown>): LookupItem => {
+  const id = readProperty(item, 'id');
+  const name = readProperty(item, 'name');
+  const type = readProperty(item, 'type');
+  const parentId = readProperty(item, 'parentId');
+
+  return {
+    id: String(id ?? ''),
+    name: String(name ?? ''),
+    type: String(type ?? ''),
+    parentId: parentId == null ? null : String(parentId),
+  };
+};
 
 const buildApiBody = (item: LookupItemRequest) => {
+  // The LookupItemDto uses PascalCase; ASP.NET model binding is also case-insensitive.
   const body: any = { Name: item.name, Type: item.type };
   if (item.parentId && item.parentId !== '0' && item.parentId !== '') {
     body.ParentId = parseInt(String(item.parentId), 10);
@@ -54,7 +69,7 @@ const buildApiBody = (item: LookupItemRequest) => {
 export class LookupsService {
   static async getByType(type: string): Promise<LookupItem[]> {
     try {
-      const data = await apiClient.get<any>(`/Lookups/${type}`);
+      const data = await apiClient.get<any>(`/Lookups/${encodeURIComponent(type)}`);
       const list = Array.isArray(data) ? data : [];
       return list.map(normalizeItem);
     } catch (error) {
@@ -64,14 +79,11 @@ export class LookupsService {
   }
 
   static async getAll(): Promise<LookupItem[]> {
-    try {
-      const data = await apiClient.get<any>('/Lookups/all');
-      const list = Array.isArray(data) ? data : [];
-      return list.map(normalizeItem);
-    } catch (error) {
-      console.error('Error fetching all lookups:', error);
-      return [];
+    const data = await apiClient.get<any>('/Lookups/all');
+    if (!Array.isArray(data)) {
+      throw new Error('Lookup API returned an unexpected response for GET /Lookups');
     }
+    return data.map(normalizeItem);
   }
 
   /**
@@ -83,26 +95,46 @@ export class LookupsService {
   static async getAllTypes(): Promise<LookupType[]> {
     const items = await this.getAll();
     const typeMap = new Map<string, LookupType>();
+    const rootItems = new Map<string, LookupItem>();
 
     for (const item of items) {
-      const isRoot = item.name.toLowerCase() === item.type.toLowerCase();
+      const typeName = item.type.trim();
+      if (!typeName) continue;
+      const typeKey = typeName.toLowerCase();
+      const isRoot = item.name.trim().toLowerCase() === typeKey;
 
-      if (!typeMap.has(item.type)) {
-        typeMap.set(item.type, {
-          name: item.type,
-          label: item.type,
-          rootItemId: isRoot ? item.id : null,
+      if (!typeMap.has(typeKey)) {
+        typeMap.set(typeKey, {
+          name: typeName,
+          label: typeName,
+          rootItemId: null,
           parentType: null,
         });
       }
 
       if (isRoot) {
-        const entry = typeMap.get(item.type)!;
-        entry.rootItemId = item.id;
-        if (item.parentId && item.parentId !== '0') {
-          const parent = items.find((i) => i.id === item.parentId);
-          entry.parentType = parent?.type ?? null;
+        rootItems.set(typeKey, item);
+      }
+
+      if (item.parentId && item.parentId !== '0') {
+        const parentItem = items.find((candidate) => candidate.id === item.parentId);
+        const parentTypeKey = parentItem?.type.trim().toLowerCase();
+        const type = typeMap.get(typeKey);
+        if (type && parentTypeKey && parentTypeKey !== typeKey) {
+          type.parentType = typeMap.get(parentTypeKey)?.name ?? parentItem?.type.trim() ?? null;
         }
+      }
+    }
+
+    for (const [typeKey, rootItem] of rootItems) {
+      const type = typeMap.get(typeKey);
+      if (!type) continue;
+      type.rootItemId = rootItem.id;
+
+      if (rootItem.parentId && rootItem.parentId !== '0') {
+        const parent = items.find((item) => item.id === rootItem.parentId);
+        const parentTypeKey = parent?.type.trim().toLowerCase();
+        type.parentType = parentTypeKey ? typeMap.get(parentTypeKey)?.name ?? parent?.type.trim() ?? null : null;
       }
     }
 
@@ -156,10 +188,10 @@ export class LookupsService {
   }
 
   static async update(id: string, item: LookupItemRequest): Promise<void> {
-    await apiClient.put(`/Lookups/update-body/${id}`, buildApiBody(item));
+    await apiClient.put(`/Lookups/update-body/${encodeURIComponent(id)}`, buildApiBody(item));
   }
 
   static async remove(id: string): Promise<void> {
-    await apiClient.delete(`/Lookups/delete/${id}`);
+    await apiClient.delete(`/Lookups/delete/${encodeURIComponent(id)}`);
   }
 }

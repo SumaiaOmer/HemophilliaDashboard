@@ -77,22 +77,25 @@ export const LookupsManager: React.FC = () => {
 
   // ---- Type CRUD (via API: root items where Name === Type) ----
 
-  const handleSaveType = async (typeName: string, parentTypeName: string | null) => {
-    const parentRootId =
-      (parentTypeName && allTypes.find((t) => t.name === parentTypeName)?.rootItemId) || '0';
+  const handleSaveType = async (
+    typeName: string,
+    initialItemName: string | undefined,
+    parentItemId: string | null
+  ) => {
+    const parentId = parentItemId || '0';
     if (editingType) {
       if (editingType.rootItemId) {
         await LookupsService.update(editingType.rootItemId, {
           name: editingType.name,
           type: editingType.name,
-          parentId: parentRootId,
+          parentId,
         });
       }
     } else {
       await LookupsService.create({
-        name: typeName,
+        name: initialItemName?.trim() || '',
         type: typeName,
-        parentId: parentRootId,
+        parentId,
       });
     }
     await loadAll();
@@ -611,8 +614,11 @@ export const LookupsManager: React.FC = () => {
       {showTypeForm && (
         <LookupTypeForm
           type={editingType}
-          existingTypeNames={allTypes.map((t) => t.name)}
-          availableTypes={allTypes}
+          defaultParentId={
+            editingType?.rootItemId
+              ? allItems.find((item) => item.id === editingType.rootItemId)?.parentId ?? '0'
+              : '0'
+          }
           onSave={handleSaveType}
           onCancel={() => {
             setShowTypeForm(false);

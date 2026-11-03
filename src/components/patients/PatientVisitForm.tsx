@@ -171,6 +171,7 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
       setFormData({
         patientId: visit.patientId,
         visitDate,
+        weight: visit.weight != null ? String(visit.weight) : undefined,
         diagnosis: visit.diagnosis || '',
         diagnosisType: visit.diagnosisType || '',
         centerState: visit.centerState || '',
@@ -239,6 +240,7 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
       const submitData: PatientVisitRequest = {
         patientId: formData.patientId,
         visitDate: formData.visitDate,
+        weight: formData.weight,
         diagnosis: formData.diagnosis || undefined,
         diagnosisType: formData.diagnosisType || undefined,
         visitType: formData.visitType,
@@ -287,7 +289,10 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
         serviceType: value as 'new_visit' | 'followup' | 'hospital_admission'
       }));
     } else if (type === 'number') {
-      setFormData(prev => ({ ...prev, [name]: value === '' ? 0 : parseInt(value) }));
+      setFormData(prev => ({
+        ...prev,
+        [name]: value === '' ? undefined : name === 'weight' ? value : parseInt(value, 10),
+      }));
     } else {
       setFormData(prev => ({ ...prev, [name]: value || undefined }));
     }
@@ -545,6 +550,24 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
                     <option key={s.id} value={s.name}>{s.name}</option>
                   ))}
                 </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Weight (kg)
+                </label>
+                <input
+                  type="number"
+                  name="weight"
+                  value={formData.weight ?? ''}
+                  onChange={handleChange}
+                  min="0"
+                  step="0.1"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
+                  placeholder="Enter weight in kilograms"
+                />
               </div>
             </div>
 

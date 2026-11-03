@@ -221,6 +221,7 @@ export interface PatientVisit {
   id: number;
   patientId: number;
   visitDate: string;
+  weight?: number | string;
   centerName?: string;
   visitType?: string;
   diagnosisType?: string;
@@ -275,6 +276,7 @@ export interface PatientVisitRequest {
   patientId: number;
   visitType?: string;
   visitDate: string;
+  weight?: string;
   diagnosis?: string;
   diagnosisType?: string;
   complaint?: string;
