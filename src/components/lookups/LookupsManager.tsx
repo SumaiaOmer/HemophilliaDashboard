@@ -76,21 +76,22 @@ export const LookupsManager: React.FC = () => {
 
   // ---- Type CRUD (via API: root items where Name === Type) ----
 
-  const handleSaveType = async (typeName: string, parentTypeId: string | null) => {
+  const handleSaveType = async (typeName: string, parentTypeName: string | null) => {
+    const parentRootId =
+      (parentTypeName && allTypes.find((t) => t.name === parentTypeName)?.rootItemId) || '0';
     if (editingType) {
       if (editingType.rootItemId) {
         await LookupsService.update(editingType.rootItemId, {
           name: editingType.name,
           type: editingType.name,
-          parentId: '0',
+          parentId: parentRootId,
         });
       }
     } else {
-      // Create a root item: Name = Type = typeName, ParentId = 0 (top-level)
       await LookupsService.create({
         name: typeName,
         type: typeName,
-        parentId: '0',
+        parentId: parentRootId,
       });
     }
     await loadAll();
@@ -595,6 +596,7 @@ export const LookupsManager: React.FC = () => {
         <LookupTypeForm
           type={editingType}
           existingTypeNames={allTypes.map((t) => t.name)}
+          availableTypes={allTypes}
           onSave={handleSaveType}
           onCancel={() => {
             setShowTypeForm(false);

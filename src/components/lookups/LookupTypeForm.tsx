@@ -5,17 +5,20 @@ import { LookupType } from '../../services/lookups';
 interface LookupTypeFormProps {
   type?: LookupType | null;
   existingTypeNames: string[];
-  onSave: (typeName: string, parentTypeId: string | null) => Promise<void>;
+  availableTypes: LookupType[];
+  onSave: (typeName: string, parentTypeName: string | null) => Promise<void>;
   onCancel: () => void;
 }
 
 export const LookupTypeForm: React.FC<LookupTypeFormProps> = ({
   type,
   existingTypeNames,
+  availableTypes,
   onSave,
   onCancel,
 }) => {
   const [typeName, setTypeName] = useState(type?.name ?? '');
+  const [parentTypeName, setParentTypeName] = useState(type?.parentType ?? '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -46,7 +49,7 @@ export const LookupTypeForm: React.FC<LookupTypeFormProps> = ({
     setError(null);
     setIsSubmitting(true);
     try {
-      await onSave(trimmed, null);
+      await onSave(trimmed, parentTypeName || null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save lookup type');
     } finally {
@@ -100,7 +103,30 @@ export const LookupTypeForm: React.FC<LookupTypeFormProps> = ({
               placeholder="e.g. BloodGroups, SudanStates"
             />
             <p className="mt-1.5 text-xs text-gray-400">
-              A root item with Name = Type will be created with parentId = 0. Cannot be renamed later.
+              Cannot be renamed later.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Parent Type <span className="text-gray-400 font-normal">(optional)</span>
+            </label>
+            <select
+              value={parentTypeName}
+              onChange={(e) => setParentTypeName(e.target.value)}
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors"
+            >
+              <option value="">None (top-level type)</option>
+              {availableTypes
+                .filter((t) => t.name !== type?.name)
+                .map((t) => (
+                  <option key={t.name} value={t.name}>
+                    {t.label}
+                  </option>
+                ))}
+            </select>
+            <p className="mt-1.5 text-xs text-gray-400">
+              Items of this type will be linked to items of the parent type, e.g. Cities under States.
             </p>
           </div>
 

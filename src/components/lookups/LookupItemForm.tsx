@@ -25,6 +25,9 @@ export const LookupItemForm: React.FC<LookupItemFormProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   const selectedType = availableTypes.find((t) => t.name === typeKey);
+  const parentTypeName = selectedType?.parentType ?? null;
+  const parentTypeLabel =
+    availableTypes.find((t) => t.name === parentTypeName)?.label ?? parentTypeName;
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -47,16 +50,16 @@ export const LookupItemForm: React.FC<LookupItemFormProps> = ({
     }
   }, [typeKey, item]);
 
-  // Always fetch items of the selected type to populate the parent dropdown
+  // Parent options come from the selected type's parent type
   useEffect(() => {
-    if (typeKey) {
-      LookupsService.getByType(typeKey)
+    if (parentTypeName) {
+      LookupsService.getByType(parentTypeName)
         .then((items) => setParentItems(items.filter((i) => i.name.toLowerCase() !== i.type.toLowerCase())))
         .catch(() => setParentItems([]));
     } else {
       setParentItems([]);
     }
-  }, [typeKey]);
+  }, [parentTypeName]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -138,12 +141,16 @@ export const LookupItemForm: React.FC<LookupItemFormProps> = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Parent Item <span className="text-gray-400 font-normal">(from "{selectedType?.label ?? typeKey}")</span>
+              Parent Item{' '}
+              {parentTypeLabel && (
+                <span className="text-gray-400 font-normal">(from "{parentTypeLabel}")</span>
+              )}
             </label>
             <select
               value={parentId}
               onChange={(e) => setParentId(e.target.value)}
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors"
+              disabled={!parentTypeName}
+              className="w-full disabled:bg-gray-50 disabled:cursor-not-allowed px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors"
             >
               <option value="0">None (top-level item)</option>
               {parentItems.map((pi) => (
@@ -153,7 +160,9 @@ export const LookupItemForm: React.FC<LookupItemFormProps> = ({
               ))}
             </select>
             <p className="mt-1.5 text-xs text-gray-400">
-              Selecting an item makes this a sub-item of it. The selected item's ID becomes the parent ID.
+              {parentTypeName
+                ? 'Pick the parent item this entry belongs to.'
+                : 'This type has no parent type, so items are top-level.'}
             </p>
           </div>
 
