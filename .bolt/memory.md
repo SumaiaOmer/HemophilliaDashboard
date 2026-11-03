@@ -2,46 +2,54 @@
 
 ## Product intent & audience
 
-- React/Vite application with lookup management for hierarchical location data.
-- Core use case: maintain State → City/Town → Local Area relationships and use them in patient-facing forms.
-- Lookup managers support creating, editing, listing, and deleting lookup types/items through the existing API.
+- React/Vite application for managing hierarchical location lookup data used in patient-facing forms.
+- Primary workflow: create State records, add City records under a State, then add Local Area records under a City.
+- Lookup managers support creating, editing, listing, and deleting lookup types and items through the existing API.
+- No State, City, or Local Area records have been created from the latest request; record creation should wait for the user’s concrete list and confirmation.
 
 ## Brand personality & voice
 
 - No project-specific brand language or tone has been established.
-- UI copy should remain clear and operational, using familiar location terminology such as “State,” “City/Town,” and “Local Area.”
+- Use clear, operational copy with familiar terms: “State,” “City,” and “Local Area.”
+- Make hierarchy and required parent selections explicit rather than relying on implicit ordering.
 
 ## Visual design & UX direction
 
-- Preserve the existing application’s lookup-management patterns rather than introducing a separate interaction model.
-- Parent selection should be explicit in forms:
-  - A lookup type can select its parent type.
-  - A lookup item selects a parent item from the level above.
-- Parent dropdowns should be filtered to valid hierarchy options, preventing unrelated or same-level selections.
-- Forms should retain existing parent relationships when editing instead of silently resetting them.
-- Keep hierarchy controls understandable for users managing location data; show the relationship in the manager/tree where available.
-- Reuse the project’s existing JSX, Tailwind, hooks, and icon conventions.
+- Preserve existing lookup-management interaction patterns and styling.
+- Present the hierarchy in a clear sequence:
+  1. Create or select the State type and add states.
+  2. Create or select the City type and add cities under a selected state.
+  3. Create or select the Local Area type and add local areas under a selected city.
+- Parent selectors must only show valid hierarchy options:
+  - City type/items connect to State.
+  - Local Area type/items connect to City.
+- Preserve existing parent relationships while editing.
+- Show parent context in lists, trees, or item forms where available.
+- Reuse the project’s JSX, Tailwind, React hooks, Lucide icons, and existing component conventions.
+- Avoid ambiguous type naming in the UI; use stable, simple names such as “State,” “City,” and “Local Area” unless existing persisted data requires different identifiers.
 
 ## Decisions, constraints & rationale
 
-- Lookup items expose `parentId`; the API supports:
+- Lookup items expose `parentId`; supported endpoints include:
   - `GET /api/Lookups`
   - `GET /api/Lookups/type/{type}`
   - `GET /api/Lookups/parent/{parentId}`
   - CRUD operations at `/api/Lookups/{id}`
-- Parent-child lookup support has been added across the lookup service and forms.
-- `LookupTypeForm` now preserves/configures a type’s parent type rather than always submitting `parentId: 0`.
-- `LookupItemForm` now derives the valid parent level from the selected lookup type and shows items from that parent level.
-- Intended hierarchy is State → City/Town → Local Area; the exact persisted type names should remain consistent with the existing application data.
-- The patient forms currently load `StateCities` and `CityLocalities` as separate lookup types and have not yet been migrated to consume the new parent relationships.
-- The API’s `/parent/{parentId}` endpoint exists but was previously unused by the lookup service; use it where it improves dependent loading or avoids broad client-side filtering.
-- Type checking found no errors in the lookup changes.
-- Production build remains blocked by a pre-existing missing login-screen image; this is unrelated to lookup hierarchy work.
+- Parent-child lookup support is implemented across the lookup service and forms.
+- `LookupTypeForm` supports configuring a type’s parent type instead of always submitting `parentId: 0`.
+- `LookupItemForm` derives the valid parent level from the selected lookup type and displays items from that level.
+- Intended hierarchy is State → City → Local Area. Existing application data may still contain internal names such as `StateCities` and `CityLocalities`; persisted naming must be verified before migration or record creation.
+- Use `/parent/{parentId}` for dependent loading where appropriate to avoid broad client-side filtering.
+- Patient forms currently load `StateCities` and `CityLocalities` independently and have not yet been migrated to consume the new parent relationships.
+- Existing lookup changes pass type checking.
+- Production build remains blocked by a pre-existing missing login-screen image, unrelated to lookup hierarchy work.
+- Do not create live records without the user providing the desired states, cities, and local areas and confirming the operation.
 
 ## Open questions & assumptions
 
-- Confirm the canonical lookup type names and whether existing data uses “City,” “City/Town,” “Local Area,” or internal names such as `StateCities` and `CityLocalities`.
-- Determine whether patient forms should dynamically load cities by selected state and local areas by selected city using `/parent/{parentId}`.
-- Confirm whether lookup types themselves are intended to be nested arbitrarily or restricted to the three location levels.
-- Validate behavior in the browser with existing data, including creating, editing, and changing a type’s parent after child items already exist.
-- Decide how the UI should handle orphaned children if a parent type/item is changed or deleted.
+- Confirm the exact state list and each city/local-area mapping before writing records.
+- Confirm whether canonical persisted type names should be `State`, `City`, and `Local Area`, or whether existing internal names must remain.
+- Determine whether patient forms should dynamically load cities by selected state and local areas by selected city through `/parent/{parentId}`.
+- Confirm whether lookup types are restricted to the three location levels or may be nested more generally.
+- Define handling for orphaned children when a parent type or item is edited or deleted.
+- Validate browser behavior with existing data, including creation, editing, parent changes, and dependent loading.
