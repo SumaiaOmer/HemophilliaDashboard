@@ -662,8 +662,27 @@ const handleSubmit = (e: React.FormEvent) => {
     }
   };
 
-  const availableCities = formData.state ? lookupCitiesByState[formData.state] || [] : [];
-  const availableLocalities = formData.cityOrTown ? lookupLocalAreasByCity[formData.cityOrTown] || [] : [];
+  const includeSelectedOption = (options: string[], selectedValue?: string) =>
+    selectedValue && !options.includes(selectedValue) ? [...options, selectedValue] : options;
+
+  const availableStates = includeSelectedOption(lookupStates, formData.state);
+  const availableHomeStates = includeSelectedOption(lookupStates, formData.homeState);
+  const availableCities = includeSelectedOption(
+    formData.state ? lookupCitiesByState[formData.state] || [] : [],
+    formData.cityOrTown
+  );
+  const availableLocalities = includeSelectedOption(
+    formData.cityOrTown ? lookupLocalAreasByCity[formData.cityOrTown] || [] : [],
+    formData.locality
+  );
+  const availableHomeCities = includeSelectedOption(
+    formData.homeState ? lookupCitiesByState[formData.homeState] || [] : [],
+    formData.homeCityOrTown
+  );
+  const availableHomeLocalities = includeSelectedOption(
+    formData.homeCityOrTown ? lookupLocalAreasByCity[formData.homeCityOrTown] || [] : [],
+    formData.homeLocality
+  );
 
   const handleChronicDiseaseChange = (disease: string, checked: boolean) => {
     setFormData(prev => {
@@ -787,7 +806,7 @@ const handleSubmit = (e: React.FormEvent) => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">State</label>
                   <select name="state" value={formData.state || ''} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                     <option value="">Select State</option>
-                    {lookupStates.map(s => (
+                    {availableStates.map(s => (
                       <option key={s} value={s}>{s}</option>
                     ))}
                   </select>
@@ -819,7 +838,7 @@ const handleSubmit = (e: React.FormEvent) => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Home State *</label>
                 <select name="homeState" value={formData.homeState || ''} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                   <option value="">Select State</option>
-                  {lookupStates.map(s => (
+                  {availableHomeStates.map(s => (
                     <option key={s} value={s}>{s}</option>
                   ))}
                 </select>
@@ -828,7 +847,7 @@ const handleSubmit = (e: React.FormEvent) => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">City or Town *</label>
                 <select name="homeCityOrTown" value={formData.homeCityOrTown || ''} onChange={handleChange} required disabled={!formData.homeState} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:bg-gray-100 disabled:cursor-not-allowed">
                   <option value="">{formData.homeState ? 'Select City or Town' : 'Select State First'}</option>
-                  {formData.homeState && lookupCitiesByState[formData.homeState]?.map(city => (
+                  {availableHomeCities.map(city => (
                     <option key={city} value={city}>{city}</option>
                   ))}
                   <option value="Other">Other</option>
@@ -838,7 +857,7 @@ const handleSubmit = (e: React.FormEvent) => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Local area *</label>
                 <select name="homeLocality" value={formData.homeLocality || ''} onChange={handleChange} required disabled={!formData.homeCityOrTown} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:bg-gray-100 disabled:cursor-not-allowed">
                   <option value="">{formData.homeCityOrTown ? 'Select Local Area' : 'Select City First'}</option>
-                  {formData.homeCityOrTown && lookupLocalAreasByCity[formData.homeCityOrTown]?.map(locality => (
+                  {availableHomeLocalities.map(locality => (
                     <option key={locality} value={locality}>{locality}</option>
                   ))}
                   <option value="Other">Other</option>
@@ -862,7 +881,7 @@ const handleSubmit = (e: React.FormEvent) => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">State *</label>
                   <select name="state" value={formData.state || ''} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                     <option value="">Select State</option>
-                    {lookupStates.map(s => (
+                    {availableStates.map(s => (
                       <option key={s} value={s}>{s}</option>
                     ))}
                   </select>

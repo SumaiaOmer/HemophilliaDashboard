@@ -146,6 +146,7 @@ export class PatientsService {
       hemophiliaCenterId: patient.HemophiliaCenterId || patient.hemophiliaCenterId || patient.hemophilia_center_id || '',
       diagnosis: patient.Diagnosis || patient.diagnosis || patient.DiagnosisType || '',
       diagnosisType: patient.DiagnosisType || patient.diagnosisType || patient.diagnosis_type || '',
+      diagnosisYear: patient.DiagnosisYear ?? patient.diagnosisYear ?? patient.diagnosis_year,
       incidenceDate: patient.IncidenceDate || patient.incidenceDate || patient.incidence_date || '',
       severity: patient.Severity || patient.severity || 'unknown',
       factorPercent: patient.FactorPercent || patient.factorPercent || patient.factor_percent,
