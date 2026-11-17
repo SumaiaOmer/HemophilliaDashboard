@@ -5,7 +5,7 @@ import {
   DeathNotificationCreateRequest,
   Patient,
 } from '../../types/api';
-import { toDateInputValue, toISOStringFromDateInput } from '../../lib/dateUtils';
+import { toDateInputValue } from '../../lib/dateUtils';
 import { DeathNotificationsService } from '../../services/deathNotifications';
 import { PatientsService } from '../../services/patients';
 
@@ -98,7 +98,7 @@ export const DeathNotificationForm: React.FC<DeathNotificationFormProps> = ({
         isDeathRelatedToBleedingDisorder: (notification as any).isDeathRelatedToBleedingDisorder ?? true,
         complicationType: (notification as any).complicationType || notification.causeOfDeath || '',
         receivedClottingFactors: (notification as any).receivedClottingFactors ?? false,
-        lastDoseDate: (notification as any).lastDoseDate || '',
+        lastDoseDate: toDateInputValue((notification as any).lastDoseDate),
         caseSummary: (notification as any).caseSummary || notification.notes || '',
         recommendations: (notification as any).recommendations || '',
         surveillanceOfficerName: (notification as any).surveillanceOfficerName || '',
@@ -214,7 +214,7 @@ export const DeathNotificationForm: React.FC<DeathNotificationFormProps> = ({
         reporterRelation: formData.reporterRelation || 'Family Member',
         reporterPhone: formData.reporterPhone || undefined,
         reportDate: formData.reportDate || formData.notificationDate || formData.dateOfDeath,
-        dateOfDeath: formData.dateOfDeath || undefined,
+        dateOfDeath: formData.dateOfDeath,
         placeOfDeath: formData.placeOfDeath || undefined,
         directCauseOfDeath: formData.directCauseOfDeath || formData.causeOfDeath || undefined,
         underlyingCauseOfDeath: formData.underlyingCauseOfDeath || formData.causeOfDeath || undefined,
@@ -244,7 +244,12 @@ export const DeathNotificationForm: React.FC<DeathNotificationFormProps> = ({
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
-    const { name, value } = e.target;
+    const { name, value, type } = e.target;
+    if (type === 'checkbox') {
+      const checked = (e.target as HTMLInputElement).checked;
+      setFormData((prev) => ({ ...prev, [name]: checked }));
+      return;
+    }
     setFormData((prev) => ({ ...prev, [name]: value || undefined }));
   };
 
@@ -491,30 +496,205 @@ export const DeathNotificationForm: React.FC<DeathNotificationFormProps> = ({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Notified By
+                Reporter Name
               </label>
               <input
                 type="text"
-                name="notifiedBy"
-                value={formData.notifiedBy || ''}
+                name="reporterName"
+                value={formData.reporterName || ''}
                 onChange={handleChange}
                 placeholder="Name of person who reported the death"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
               />
             </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Reporter Relationship</label>
+                <input
+                  type="text"
+                  name="reporterRelation"
+                  value={formData.reporterRelation || ''}
+                  onChange={handleChange}
+                  placeholder="e.g. family member, physician"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Reporter Phone</label>
+                <input
+                  type="tel"
+                  name="reporterPhone"
+                  value={formData.reporterPhone || ''}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Report Date</label>
+                <input
+                  type="date"
+                  name="reportDate"
+                  value={formData.reportDate || ''}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
+                />
+              </div>
+            </div>
+
+          </div>
+
+          <section className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-4">
+            <h4 className="text-lg font-semibold text-amber-900">Medical Details</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Direct Cause of Death</label>
+                <textarea
+                  name="directCauseOfDeath"
+                  value={formData.directCauseOfDeath || ''}
+                  onChange={handleChange}
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none resize-y"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Underlying Cause of Death</label>
+                <textarea
+                  name="underlyingCauseOfDeath"
+                  value={formData.underlyingCauseOfDeath || ''}
+                  onChange={handleChange}
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none resize-y"
+                />
+              </div>
+            </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Was the death related to a bleeding disorder?</label>
+              <select
+                name="isDeathRelatedToBleedingDisorder"
+                value={formData.isDeathRelatedToBleedingDisorder ? 'true' : 'false'}
+                onChange={(e) => setFormData((prev) => ({ ...prev, isDeathRelatedToBleedingDisorder: e.target.value === 'true' }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
+              >
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+              </select>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Complication Type</label>
+                <input
+                  type="text"
+                  name="complicationType"
+                  value={formData.complicationType || ''}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Last Clotting Factor Dose Date</label>
+                <input
+                  type="date"
+                  name="lastDoseDate"
+                  value={formData.lastDoseDate || ''}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
+                />
+              </div>
+            </div>
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+              <input
+                type="checkbox"
+                name="receivedClottingFactors"
+                checked={formData.receivedClottingFactors ?? false}
+                onChange={handleChange}
+                className="h-4 w-4"
+              />
+              Patient received clotting factors
+            </label>
+          </section>
+
+          <section className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-4">
+            <h4 className="text-lg font-semibold text-blue-900">Case Review</h4>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Case Summary</label>
+              <textarea
+                name="caseSummary"
+                value={formData.caseSummary || ''}
+                onChange={handleChange}
+                rows={4}
+                placeholder="Summarize the circumstances and relevant clinical history"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none resize-y"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Recommendations</label>
+              <textarea
+                name="recommendations"
+                value={formData.recommendations || ''}
+                onChange={handleChange}
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none resize-y"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Additional Notes</label>
               <textarea
                 name="notes"
                 value={formData.notes || ''}
                 onChange={handleChange}
                 rows={3}
                 placeholder="Additional notes about this notification"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none resize-none"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none resize-y"
               />
             </div>
-          </div>
+          </section>
+
+          <section className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-4">
+            <h4 className="text-lg font-semibold text-gray-800">Review and Sign-off</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Surveillance Officer Name</label>
+                <input
+                  type="text"
+                  name="surveillanceOfficerName"
+                  value={formData.surveillanceOfficerName || ''}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Surveillance Officer Signature</label>
+                <input
+                  type="text"
+                  name="surveillanceOfficerSignature"
+                  value={formData.surveillanceOfficerSignature || ''}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Program Director Name</label>
+                <input
+                  type="text"
+                  name="programDirectorName"
+                  value={formData.programDirectorName || ''}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Program Director Signature</label>
+                <input
+                  type="text"
+                  name="programDirectorSignature"
+                  value={formData.programDirectorSignature || ''}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
+                />
+              </div>
+            </div>
+          </section>
 
           <div className="flex space-x-3 pt-4">
             <button

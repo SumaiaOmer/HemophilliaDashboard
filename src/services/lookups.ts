@@ -28,11 +28,16 @@ export interface LocationHierarchy {
 
 const LOCATION_LEVEL_KEYS = {
   state: ['state', 'states', 'sudanstate', 'sudanstates'],
-  city: ['city', 'cities', 'town', 'towns', 'citytown', 'statecity', 'statecities'],
-  localArea: ['localarea', 'localareas', 'citylocality', 'citylocalities'],
+  city: ['city', 'cities', 'town', 'towns', 'citytown', 'cityortown', 'statecity', 'statecities', 'sudancity', 'sudancities'],
+  localArea: ['localarea', 'localareas', 'sudanlocalarea', 'sudanlocalareas', 'citylocality', 'citylocalities'],
 };
 
 const normalizeTypeKey = (value: string) => value.toLowerCase().replace(/[^a-z]/g, '');
+const LOCATION_CATEGORY_KEYS = new Set([
+  ...LOCATION_LEVEL_KEYS.state,
+  ...LOCATION_LEVEL_KEYS.city,
+  ...LOCATION_LEVEL_KEYS.localArea,
+]);
 
 const readProperty = (item: Record<string, unknown>, propertyName: string) => {
   const key = Object.keys(item).find(
@@ -43,14 +48,18 @@ const readProperty = (item: Record<string, unknown>, propertyName: string) => {
 
 const normalizeItem = (item: Record<string, unknown>): LookupItem => {
   const id = readProperty(item, 'id');
-  const name = readProperty(item, 'name');
-  const type = readProperty(item, 'type');
+  const rawName = String(readProperty(item, 'name') ?? '');
+  const rawType = String(readProperty(item, 'type') ?? '');
   const parentId = readProperty(item, 'parentId');
+  // Some API records store the location category in `name` and the option value in `type`
+  // (for example { name: 'State', type: 'Red Sea' }); normalize those to the usual shape.
+  const isLegacyLocationRecord = LOCATION_CATEGORY_KEYS.has(normalizeTypeKey(rawName)) &&
+    !LOCATION_CATEGORY_KEYS.has(normalizeTypeKey(rawType));
 
   return {
     id: String(id ?? ''),
-    name: String(name ?? ''),
-    type: String(type ?? ''),
+    name: isLegacyLocationRecord ? rawType : rawName,
+    type: isLegacyLocationRecord ? rawName : rawType,
     parentId: parentId == null ? null : String(parentId),
   };
 };
@@ -79,7 +88,7 @@ export class LookupsService {
   }
 
   static async getAll(): Promise<LookupItem[]> {
-    const data = await apiClient.get<any>('/Lookups/all');
+    const data = await apiClient.get<any>('/Lookups');
     if (!Array.isArray(data)) {
       throw new Error('Lookup API returned an unexpected response for GET /Lookups');
     }
@@ -142,18 +151,22 @@ export class LookupsService {
   }
 
   static async getLocationHierarchy(): Promise<LocationHierarchy> {
-    const items = await this.getAll();
-    const typeNames = Array.from(new Set(items.map((i) => i.type)));
-    const findType = (keys: string[]) => typeNames.find((n) => keys.includes(normalizeTypeKey(n)));
-    const stateType = findType(LOCATION_LEVEL_KEYS.state);
-    const cityType = findType(LOCATION_LEVEL_KEYS.city);
-    const localAreaType = findType(LOCATION_LEVEL_KEYS.localArea);
-    const childrenOf = (type: string | undefined) =>
-      items.filter((i) => i.type === type && i.name.toLowerCase() !== i.type.toLowerCase());
+    const [items, sudanStateItems] = await Promise.all([
+      this.getAll(),
+      this.getByType('SudanStates'),
+    ]);
+    const itemsOfTypes = (keys: string[], matchesType?: (typeKey: string) => boolean) => items.filter((item) => {
+      const typeKey = normalizeTypeKey(item.type);
+      return (keys.includes(typeKey) || matchesType?.(typeKey)) &&
+        item.name.toLowerCase() !== item.type.toLowerCase();
+    });
 
-    const states = childrenOf(stateType);
-    const cities = childrenOf(cityType);
-    const localAreas = childrenOf(localAreaType);
+    const states = [
+      ...itemsOfTypes(LOCATION_LEVEL_KEYS.state, (typeKey) => /states?$/.test(typeKey)),
+      ...sudanStateItems.filter((item) => item.name.toLowerCase() !== item.type.toLowerCase()),
+    ];
+    const cities = itemsOfTypes(LOCATION_LEVEL_KEYS.city);
+    const localAreas = itemsOfTypes(LOCATION_LEVEL_KEYS.localArea);
     const stateNameById = new Map(states.map((s) => [s.id, s.name]));
     const cityNameById = new Map(cities.map((c) => [c.id, c.name]));
 
@@ -176,7 +189,7 @@ export class LookupsService {
     Object.keys(localAreasByCity).forEach((k) => (localAreasByCity[k] = sortNames(localAreasByCity[k])));
 
     return {
-      states: sortNames(states.map((s) => s.name)),
+      states: sortNames(Array.from(new Set(states.map((s) => s.name)))),
       citiesByState,
       localAreasByCity,
     };

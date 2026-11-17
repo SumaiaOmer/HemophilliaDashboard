@@ -294,7 +294,7 @@ export const ReportsManager: React.FC = () => {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="reports-manager space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
@@ -302,6 +302,14 @@ export const ReportsManager: React.FC = () => {
           <p className="text-gray-600">Comprehensive system reports and data insights</p>
         </div>
         <div className="flex space-x-2">
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors duration-200"
+          >
+            <FileText className="h-5 w-5" />
+            <span>Export PDF</span>
+          </button>
           <button 
             onClick={() => exportToCSV(reportData.patients, 'patients_report')}
             className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors duration-200"
@@ -326,7 +334,7 @@ export const ReportsManager: React.FC = () => {
       )}
 
       {/* Report Navigation */}
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
+      <div className="report-screen-only bg-white rounded-lg border border-gray-200 shadow-sm p-4">
         <div className="flex flex-wrap gap-2">
           {[
             { id: 'overview', label: 'Overview', icon: BarChart3 },
@@ -641,7 +649,7 @@ export const ReportsManager: React.FC = () => {
       {/* Filtered Patient Analytics Report */}
       {activeReport === 'patient-analytics' && (
         <div className="space-y-6">
-          <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm" aria-label="Patient report filters">
+          <section className="report-screen-only rounded-xl border border-gray-200 bg-white p-5 shadow-sm" aria-label="Patient report filters">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h3 className="text-lg font-semibold text-gray-800">Patient Report Filters</h3>
@@ -915,7 +923,7 @@ export const ReportsManager: React.FC = () => {
       {/* Drug Consumption by State Report */}
       {activeReport === 'drug-consumption' && (
         <div className="space-y-6">
-          <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <section className="report-screen-only rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h3 className="text-lg font-semibold text-gray-800">Drug Consumption by State</h3>

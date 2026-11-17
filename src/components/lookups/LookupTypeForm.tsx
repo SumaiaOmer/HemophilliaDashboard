@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { LookupItem, LookupType, LookupsService } from '../../services/lookups';
 
-const LOCATION_TYPE_NAMES = ['State', 'City', 'Local Area'];
+const LOCATION_TYPE_NAMES = ['SudanStates', 'City', 'LocalArea'];
+const KNOWN_LOCATION_TYPE_NAMES = [...LOCATION_TYPE_NAMES, 'State', 'Local Area'];
 const CUSTOM_TYPE = '__custom__';
 
 interface LookupTypeFormProps {
@@ -18,7 +19,7 @@ export const LookupTypeForm: React.FC<LookupTypeFormProps> = ({
   onSave,
   onCancel,
 }) => {
-  const isKnownLocationType = type ? LOCATION_TYPE_NAMES.includes(type.name) : false;
+  const isKnownLocationType = type ? KNOWN_LOCATION_TYPE_NAMES.includes(type.name) : false;
   const [selectedTypeName, setSelectedTypeName] = useState(
     type ? (isKnownLocationType ? type.name : CUSTOM_TYPE) : ''
   );
@@ -145,7 +146,7 @@ export const LookupTypeForm: React.FC<LookupTypeFormProps> = ({
               />
             )}
             <p className="mt-1.5 text-xs text-gray-400">
-              Choose State, City, or Local Area for location lookups. Custom types are also supported; names cannot be changed later.
+              For Sudan locations, create SudanStates first, then City under a state, and LocalArea under a city. Names cannot be changed later.
             </p>
           </div>
 

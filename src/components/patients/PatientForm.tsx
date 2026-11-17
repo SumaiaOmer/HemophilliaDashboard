@@ -48,6 +48,9 @@ const PHONE_CODE_OPTIONS = [
   { country: 'Australia', code: '+61' }
 ];
 
+type ViralTestType = 'HBV' | 'HCV' | 'HIV';
+type ViralTestStatus = 'yes' | 'no' | 'not_done';
+
 const normalizePhoneValue = (value?: string): { code: string; number: string } => {
   if (!value) return { code: '+249', number: '' };
   const trimmed = value.trim();
@@ -155,6 +158,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
     state: '',
     maritalStatus: '',
     occupation: '',
+    status: '',
     contactNumber2: '',
     contactNumber2CountryCode: '+249',
     vitalStatus: 'Alive',
@@ -195,6 +199,11 @@ export const PatientForm: React.FC<PatientFormProps> = ({
     HCV: { hasTaken: false, testDate: '', result: undefined },
     HIV: { hasTaken: false, testDate: '', result: undefined },
     Other: { hasTaken: false, testDate: '' },
+  });
+  const [viralTestStatuses, setViralTestStatuses] = useState<Record<ViralTestType, ViralTestStatus>>({
+    HBV: 'no',
+    HCV: 'no',
+    HIV: 'no',
   });
 
   const [hasOtherTests, setHasOtherTests] = useState(false);
@@ -298,6 +307,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
           : (patient.residenceLocalArea || patient.locality || ''),
         maritalStatus: patient.maritalStatus?.toLowerCase() || '',
         occupation: patient.occupation || '',
+        status: patient.status || '',
         vitalStatus: patient.vitalStatus || 'Alive',
         hemophiliaCenterId: patient.hemophiliaCenterId || '',
         diagnosis: patient.diagnosis || '',
@@ -391,6 +401,11 @@ export const PatientForm: React.FC<PatientFormProps> = ({
       }
 
       setTestDates(testDatesMap);
+      setViralTestStatuses({
+        HBV: testDatesMap.HBV?.hasTaken ? 'yes' : 'no',
+        HCV: testDatesMap.HCV?.hasTaken ? 'yes' : 'no',
+        HIV: testDatesMap.HIV?.hasTaken ? 'yes' : 'no',
+      });
     } else {
       setHasChronicDiseases(false);
       setHasFactorLevel(false);
@@ -404,8 +419,21 @@ export const PatientForm: React.FC<PatientFormProps> = ({
         HIV: { hasTaken: false, testDate: '', result: undefined },
         Other: { hasTaken: false, testDate: '' },
       });
+      setViralTestStatuses({ HBV: 'no', HCV: 'no', HIV: 'no' });
     }
   }, [patient]);
+
+  const handleViralTestStatusChange = (testType: ViralTestType, status: ViralTestStatus) => {
+    setViralTestStatuses((prev) => ({ ...prev, [testType]: status }));
+    setTestDates((prev) => ({
+      ...prev,
+      [testType]: {
+        hasTaken: status === 'yes',
+        testDate: status === 'yes' ? prev[testType]?.testDate || '' : '',
+        result: status === 'yes' ? prev[testType]?.result : undefined,
+      },
+    }));
+  };
 
 const handleSubmit = (e: React.FormEvent) => {
   e.preventDefault();
@@ -502,6 +530,7 @@ const handleSubmit = (e: React.FormEvent) => {
       ? (maritalStatusMap[formData.maritalStatus as string] || capitalizeFirstLetter(formData.maritalStatus as string))
       : '',
     occupation: formData.occupation,
+    status: formData.status || undefined,
     residenceType: formData.residenceType,
     homeState: formData.homeState,
     homeCityOrTown: formData.homeCityOrTown,
@@ -764,6 +793,18 @@ const handleSubmit = (e: React.FormEvent) => {
               </select>
             </div>
 
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+              <input
+                type="text"
+                name="status"
+                value={formData.status || ''}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                placeholder="Enter status"
+              />
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
@@ -797,7 +838,11 @@ const handleSubmit = (e: React.FormEvent) => {
                       { id: '17', name: 'Factor X deficiency' }, { id: '18', name: 'Factor XI deficiency' },
                       { id: '19', name: 'Factor XII deficiency' }, { id: '20', name: 'Factor XIII deficiency' },
                       { id: '21', name: 'Vitamin K dependent factor deficiency' }, { id: '22', name: 'Other bleeding disorder' }
-                    ]).map(d => (
+                    ]).concat(
+                      lookupDiagnoses.some(d => d.name.trim().toLowerCase() === 'undiagnosed')
+                        ? []
+                        : [{ id: 'undiagnosed', name: 'Undiagnosed' }]
+                    ).map(d => (
                       <option key={d.id} value={d.name}>{d.name}</option>
                     ))}
                   </select>
@@ -821,8 +866,8 @@ const handleSubmit = (e: React.FormEvent) => {
             {isPatientAlive && (
               <>
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">National ID Number *</label>
-                  <input type="text" name="nationalIdNumber" value={formData.nationalIdNumber} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="National ID" />
+                  <label className="block text-sm font-medium text-gray-700 mb-2">National ID Number (Optional)</label>
+                  <input type="text" name="nationalIdNumber" value={formData.nationalIdNumber} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="National ID" />
                 </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -1040,7 +1085,11 @@ const handleSubmit = (e: React.FormEvent) => {
                         { id: '17', name: 'Factor X deficiency' }, { id: '18', name: 'Factor XI deficiency' },
                         { id: '19', name: 'Factor XII deficiency' }, { id: '20', name: 'Factor XIII deficiency' },
                         { id: '21', name: 'Vitamin K dependent factor deficiency' }, { id: '22', name: 'Other bleeding disorder' }
-                      ]).map(d => (
+                      ]).concat(
+                        lookupDiagnoses.some(d => d.name.trim().toLowerCase() === 'undiagnosed')
+                          ? []
+                          : [{ id: 'undiagnosed', name: 'Undiagnosed' }]
+                      ).map(d => (
                         <option key={d.id} value={d.name}>{d.name}</option>
                       ))}
                     </select>
@@ -1089,6 +1138,7 @@ const handleSubmit = (e: React.FormEvent) => {
                     <option value="AB-">AB-</option>
                     <option value="O+">O+</option>
                     <option value="O-">O-</option>
+                    <option value="Unknown">Unknown / Not Known</option>
                   </select>
                 </div>
 
@@ -1344,12 +1394,10 @@ const handleSubmit = (e: React.FormEvent) => {
                   <div className="border-b border-teal-200 pb-4">
                     <div className="flex items-center justify-between mb-2">
                       <label className="text-sm font-medium text-gray-700">HBV Test</label>
-                      <select value={testDates.HBV?.hasTaken ? 'true' : 'false'} onChange={(e) => {
-                        const hasTaken = e.target.value === 'true';
-                        setTestDates(prev => ({ ...prev, HBV: { hasTaken, testDate: hasTaken ? prev.HBV?.testDate || '' : '', result: hasTaken ? prev.HBV?.result : undefined } }));
-                      }} className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                        <option value="false">No</option>
-                        <option value="true">Yes</option>
+                      <select value={viralTestStatuses.HBV} onChange={(e) => handleViralTestStatusChange('HBV', e.target.value as ViralTestStatus)} className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        <option value="yes">Yes</option>
+                        <option value="no">No</option>
+                        <option value="not_done">Not Done</option>
                       </select>
                     </div>
                     {testDates.HBV?.hasTaken && (
@@ -1368,12 +1416,10 @@ const handleSubmit = (e: React.FormEvent) => {
                   <div className="border-b border-teal-200 pb-4">
                     <div className="flex items-center justify-between mb-2">
                       <label className="text-sm font-medium text-gray-700">HCV Test</label>
-                      <select value={testDates.HCV?.hasTaken ? 'true' : 'false'} onChange={(e) => {
-                        const hasTaken = e.target.value === 'true';
-                        setTestDates(prev => ({ ...prev, HCV: { hasTaken, testDate: hasTaken ? prev.HCV?.testDate || '' : '', result: hasTaken ? prev.HCV?.result : undefined } }));
-                      }} className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                        <option value="false">No</option>
-                        <option value="true">Yes</option>
+                      <select value={viralTestStatuses.HCV} onChange={(e) => handleViralTestStatusChange('HCV', e.target.value as ViralTestStatus)} className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        <option value="yes">Yes</option>
+                        <option value="no">No</option>
+                        <option value="not_done">Not Done</option>
                       </select>
                     </div>
                     {testDates.HCV?.hasTaken && (
@@ -1392,12 +1438,10 @@ const handleSubmit = (e: React.FormEvent) => {
                   <div className="border-b border-teal-200 pb-4">
                     <div className="flex items-center justify-between mb-2">
                       <label className="text-sm font-medium text-gray-700">HIV Test</label>
-                      <select value={testDates.HIV?.hasTaken ? 'true' : 'false'} onChange={(e) => {
-                        const hasTaken = e.target.value === 'true';
-                        setTestDates(prev => ({ ...prev, HIV: { hasTaken, testDate: hasTaken ? prev.HIV?.testDate || '' : '', result: hasTaken ? prev.HIV?.result : undefined } }));
-                      }} className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                        <option value="false">No</option>
-                        <option value="true">Yes</option>
+                      <select value={viralTestStatuses.HIV} onChange={(e) => handleViralTestStatusChange('HIV', e.target.value as ViralTestStatus)} className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        <option value="yes">Yes</option>
+                        <option value="no">No</option>
+                        <option value="not_done">Not Done</option>
                       </select>
                     </div>
                     {testDates.HIV?.hasTaken && (

@@ -71,6 +71,7 @@ export interface Patient {
   contactNumber2?: string;
   contactRelation?: string;
   vitalStatus?: 'Alive' | 'Died' | 'Unknown';
+  status?: string;
   hemophiliaCenterId?: string;
   diagnosis?: string;
   diagnosisType?: string;
@@ -152,6 +153,7 @@ export interface PatientRequest {
   hasInhibitors?: boolean;
   familyHistory?: string;
   vitalStatus?: 'Alive' | 'Died' | 'Unknown';
+  status?: string;
   homeState?: string;
   homeCityOrTown?: string;
   homeLocality?: string;
