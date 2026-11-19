@@ -5,6 +5,7 @@ import { toDateInputValue } from '../../lib/dateUtils';
 import { LookupsService, LookupItem } from '../../services/lookups';
 import { MedicineDistributionService } from '../../services/medicineDistribution';
 import { MedicineDistribution } from '../../types/api';
+import { getLookupOptions, LookupOption, toLookupOptions, useLookupOptions } from '../../hooks/useLookupOptions';
 
 interface PatientVisitFormProps {
   visit?: PatientVisit | null;
@@ -66,6 +67,21 @@ const FALLBACK_SUDAN_STATES = [
   { id: '16', name: 'South Darfur' }, { id: '17', name: 'East Darfur' }, { id: '18', name: 'West Darfur' }
 ];
 
+const VISIT_LOOKUP_TYPES = ['VitalStatusOptions', 'VisitTypeOptions', 'ServiceTypeOptions', 'OtherOptions', 'SudanStates'];
+const VISIT_LOOKUP_FALLBACKS: Record<string, LookupOption[]> = {
+  VitalStatusOptions: toLookupOptions(['Alive', 'Died', 'Unknown']),
+  VisitTypeOptions: toLookupOptions([
+    'telephone_consultation|Telephone Consultation',
+    'center_visit|Center Visit',
+  ]),
+  ServiceTypeOptions: toLookupOptions([
+    'new_visit|New Visit',
+    'followup|Follow-up',
+    'hospital_admission|Hospital Admission',
+  ]),
+  OtherOptions: toLookupOptions(['Other']),
+};
+
 export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
   visit,
   patients,
@@ -73,6 +89,7 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
   onSave,
   onCancel,
 }) => {
+  const lookupOptions = useLookupOptions(VISIT_LOOKUP_TYPES);
   const [formData, setFormData] = useState<PatientVisitRequest>({
     patientId: 0,
     visitDate: toDateInputValue(new Date().toISOString()),
@@ -103,41 +120,47 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
 
   // Lookup data from API
   const [lookupComplaints, setLookupComplaints] = useState<LookupItem[]>([]);
-  const [lookupSudanStates, setLookupSudanStates] = useState<LookupItem[]>([]);
   const [lookupStateCenters, setLookupStateCenters] = useState<Record<string, string[]>>(FALLBACK_STATE_CENTERS);
   const [distributedFactorIds, setDistributedFactorIds] = useState<Set<number>>(new Set());
 
-  const complaintOptions = lookupComplaints.length > 0
-    ? lookupComplaints.map(c => c.name)
+  const dynamicComplaintOptions = lookupComplaints
+    .filter(c => c.name.trim().toLowerCase() !== c.type.trim().toLowerCase())
+    .map(c => c.name);
+  const complaintOptions = dynamicComplaintOptions.length > 0
+    ? dynamicComplaintOptions
     : FALLBACK_COMPLAINT_OPTIONS;
 
-  const sudanStates = lookupSudanStates.length > 0 ? lookupSudanStates : FALLBACK_SUDAN_STATES;
+  const sudanStates = getLookupOptions(
+    lookupOptions,
+    'SudanStates',
+    toLookupOptions(FALLBACK_SUDAN_STATES.map(state => state.name))
+  );
 
   useEffect(() => {
     const loadLookups = async () => {
-      const [complaints, sudanStates, centers] = await Promise.all([
+      const [complaints, centers] = await Promise.all([
         LookupsService.getByType('ComplaintOptions').catch(() => []),
-        LookupsService.getByType('SudanStates').catch(() => []),
         LookupsService.getByType('StateCenters').catch(() => []),
       ]);
       setLookupComplaints(complaints);
-      setLookupSudanStates(sudanStates);
 
       // Build state->centers map from lookup if available
       if (centers.length > 0) {
         const centersMap: Record<string, string[]> = {};
-        centers.forEach(item => {
-          const parts = item.name.split('|');
-          if (parts.length >= 2) {
-            const state = parts[0].trim();
-            const center = parts[1].trim();
-            if (!centersMap[state]) centersMap[state] = [];
-            centersMap[state].push(center);
-          } else {
-            if (!centersMap[item.type]) centersMap[item.type] = [];
-            centersMap[item.type].push(item.name);
-          }
-        });
+        centers
+          .filter(item => item.name.trim().toLowerCase() !== item.type.trim().toLowerCase())
+          .forEach(item => {
+            const parts = item.name.split('|');
+            if (parts.length >= 2) {
+              const state = parts[0].trim();
+              const center = parts[1].trim();
+              if (!centersMap[state]) centersMap[state] = [];
+              centersMap[state].push(center);
+            } else {
+              if (!centersMap[item.type]) centersMap[item.type] = [];
+              centersMap[item.type].push(item.name);
+            }
+          });
         if (Object.keys(centersMap).length > 0) {
           setLookupStateCenters(centersMap);
         }
@@ -342,6 +365,7 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
   };
 
   const availableCenters = formData.centerState ? lookupStateCenters[formData.centerState] || [] : [];
+  const otherOptions = getLookupOptions(lookupOptions, 'OtherOptions', VISIT_LOOKUP_FALLBACKS.OtherOptions);
 
   const toggleComplaint = (option: string) => {
     setSelectedComplaints(prev => {
@@ -491,9 +515,9 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
                     onChange={handleChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
                   >
-                    <option value="Alive">Alive</option>
-                    <option value="Died">Died</option>
-                    <option value="Unknown">Unknown</option>
+                    {getLookupOptions(lookupOptions, 'VitalStatusOptions', VISIT_LOOKUP_FALLBACKS.VitalStatusOptions).map(option => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
                   </select>
                 </div>
               )}
@@ -510,8 +534,9 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
                 >
                   <option value="">Select Visit Type</option>
-                  <option value="telephone_consultation">Telephone Consultation</option>
-                  <option value="center_visit">Center Visit</option>
+                  {getLookupOptions(lookupOptions, 'VisitTypeOptions', VISIT_LOOKUP_FALLBACKS.VisitTypeOptions).map(option => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -528,9 +553,9 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
                 >
-                  <option value="new_visit">New Visit</option>
-                  <option value="followup">Follow-up</option>
-                  <option value="hospital_admission">Hospital Admission</option>
+                  {getLookupOptions(lookupOptions, 'ServiceTypeOptions', VISIT_LOOKUP_FALLBACKS.ServiceTypeOptions).map(option => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
                 </select>
               </div>
 
@@ -546,8 +571,8 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
                 >
                   <option value="">Select State</option>
-                  {sudanStates.map(s => (
-                    <option key={s.id} value={s.name}>{s.name}</option>
+                  {sudanStates.map(state => (
+                    <option key={state.value} value={state.value}>{state.label}</option>
                   ))}
                 </select>
               </div>
@@ -585,10 +610,10 @@ export const PatientVisitForm: React.FC<PatientVisitFormProps> = ({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
                 >
                   <option value="">{formData.centerState ? 'Select Center' : 'Select State First'}</option>
-                  {availableCenters.map(center => (
+                  {availableCenters.filter(center => center !== 'Other').map(center => (
                     <option key={center} value={center}>{center}</option>
                   ))}
-                  <option value="Other">Other</option>
+                  {otherOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
                 </select>
               </div>
 

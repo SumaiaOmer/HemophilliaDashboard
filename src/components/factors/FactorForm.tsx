@@ -2,13 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Factor, FactorRequest } from '../../types/api';
 import { toDateInputValue, toISOStringFromDateInput } from '../../lib/dateUtils';
-import { LookupsService, LookupItem } from '../../services/lookups';
+import { getLookupOptions, LookupOption, toLookupOptions, useLookupOptions } from '../../hooks/useLookupOptions';
 
 interface FactorFormProps {
   factor?: Factor | null;
   onSave: (factor: FactorRequest) => Promise<void>;
   onCancel: () => void;
 }
+
+const FACTOR_LOOKUP_TYPES = ['DrugTypeOptions'];
 
 export const FactorForm: React.FC<FactorFormProps> = ({
   factor,
@@ -28,23 +30,17 @@ export const FactorForm: React.FC<FactorFormProps> = ({
 
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [lookupCategories, setLookupCategories] = useState<LookupItem[]>([]);
-
+  const lookupOptions = useLookupOptions(FACTOR_LOOKUP_TYPES);
   const FALLBACK_CATEGORIES = [
     'Factor VIII', 'Combined Factor VIII +VWF', 'Factor IX', 'Factor X',
     'Factor XIII', 'Fibrinogen', 'FEIBA', 'Tranexamic acid', 'Factor VIIa'
   ];
 
-  const categories = lookupCategories.length > 0
-    ? lookupCategories.map(c => c.name)
-    : FALLBACK_CATEGORIES;
-
-  useEffect(() => {
-    LookupsService.getByType('DrugTypeOptions')
-      .then(result => { if (result.length > 0) setLookupCategories(result); })
-      .catch(() => {});
-  }, []);
-
+  const categories = getLookupOptions(
+    lookupOptions,
+    'DrugTypeOptions',
+    toLookupOptions(FALLBACK_CATEGORIES)
+  );
 
   useEffect(() => {
     if (factor) {
@@ -234,9 +230,9 @@ export const FactorForm: React.FC<FactorFormProps> = ({
             className="w-full px-3 py-2 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
           >
             <option value="">Select Drug Type</option>
-            {categories.map(category => (
-              <option key={category} value={category}>
-                {category}
+            {categories.map((category: LookupOption) => (
+              <option key={category.value} value={category.value}>
+                {category.label}
               </option>
             ))}
           </select>

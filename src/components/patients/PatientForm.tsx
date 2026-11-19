@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
 import { Patient, PatientRequest, PatientTestDate, TestType, OtherMedicalTest, InhibitorEntry, InhibitorTestRequest } from '../../types/api';
 import { toDateInputValue } from '../../lib/dateUtils';
-import { LookupsService, LookupItem } from '../../services/lookups';
+import { LookupsService } from '../../services/lookups';
+import { getLookupOptions, LookupOption, toLookupOptions, useLookupOptions } from '../../hooks/useLookupOptions';
 
 interface PatientFormProps {
   patient?: Patient | null;
@@ -12,18 +13,21 @@ interface PatientFormProps {
 
 const CHRONIC_DISEASES = ['DM', 'HTN', 'Asthma', 'Cardiac disease', 'Other'];
 
-const OCCUPATIONS = [
-  'Student', 'Teacher', 'Doctor', 'Nurse', 'Engineer', 'Farmer', 'Business Owner',
-  'Government Employee', 'Private Sector Employee', 'Military', 'Police', 'Driver',
-  'Mechanic', 'Carpenter', 'Electrician', 'Retired', 'Unemployed', 'Housewife',
-  'Child', 'Other'
-];
-
 const COUNTRIES = [
   'Egypt', 'Saudi Arabia', 'United Arab Emirates', 'Qatar', 'Kuwait', 'Bahrain', 'Oman',
   'Jordan', 'Lebanon', 'Turkey', 'Ethiopia', 'Eritrea', 'Kenya', 'Uganda', 'Chad',
   'Libya', 'South Sudan', 'United Kingdom', 'United States', 'Canada', 'Germany',
   'France', 'Italy', 'Spain', 'Australia', 'Other'
+];
+
+const DIAGNOSES = [
+  'Hemophilia A', 'Hemophilia B', 'Hemophilia A carrier', 'Hemophilia B carrier',
+  'Acquired hemophilia', 'Von Willebrand Disease', 'Afibrinogenemia', 'Hypofibrinogenemia',
+  'Dysfibrinogenemia', 'Platelete dysfunction', 'Bernard Soulier syndrome',
+  'Glanzmann thrombasthenia', 'Prothrombin deficiency', 'Factor V deficiency',
+  'Combined factor V and VIII deficiency', 'Factor VII deficiency', 'Factor X deficiency',
+  'Factor XI deficiency', 'Factor XII deficiency', 'Factor XIII deficiency',
+  'Vitamin K dependent factor deficiency', 'Other bleeding disorder', 'Undiagnosed',
 ];
 
 const PHONE_CODE_OPTIONS = [
@@ -47,6 +51,32 @@ const PHONE_CODE_OPTIONS = [
   { country: 'Spain', code: '+34' },
   { country: 'Australia', code: '+61' }
 ];
+
+const PATIENT_LOOKUP_TYPES = [
+  'VitalStatusOptions', 'GenderOptions', 'DiagnosisOptions', 'ResidenceTypeOptions',
+  'Countries', 'MaritalStatusOptions', 'Occupations', 'PhoneCountryCodes',
+  'BloodGroupOptions', 'YesNoOptions', 'ViralTestStatusOptions', 'ChronicDiseaseOptions',
+  'TestResultOptions', 'FamilyHistoryOptions', 'OtherOptions',
+];
+
+const PATIENT_LOOKUP_FALLBACKS: Record<string, LookupOption[]> = {
+  VitalStatusOptions: toLookupOptions(['Alive', 'Died', 'Unknown']),
+  GenderOptions: toLookupOptions(['male|Male', 'female|Female']),
+  DiagnosisOptions: toLookupOptions(DIAGNOSES),
+  ResidenceTypeOptions: toLookupOptions(['InsideSudan|Inside Sudan', 'OutsideSudan|Outside Sudan']),
+  Countries: toLookupOptions(COUNTRIES),
+  MaritalStatusOptions: toLookupOptions(['single|Single', 'married|Married', 'divorced|Divorced', 'widow|Widow', 'widower|Widower', 'child|Child']),
+  PhoneCountryCodes: PHONE_CODE_OPTIONS.map(option => ({
+    value: option.code,
+    label: `${option.country} (${option.code})`,
+  })),
+  BloodGroupOptions: toLookupOptions(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', 'Unknown|Unknown / Not Known']),
+  YesNoOptions: toLookupOptions(['false|No', 'true|Yes']),
+  ViralTestStatusOptions: toLookupOptions(['no|No', 'yes|Yes', 'not_done|Not Done']),
+  TestResultOptions: toLookupOptions(['positive|Positive', 'negative|Negative']),
+  FamilyHistoryOptions: toLookupOptions(['first_degree|First Degree', 'second_degree|Second Degree', 'third_degree|Third Degree']),
+  OtherOptions: toLookupOptions(['Other']),
+};
 
 type ViralTestType = 'HBV' | 'HCV' | 'HIV';
 type ViralTestStatus = 'yes' | 'no' | 'not_done';
@@ -84,28 +114,23 @@ export const PatientForm: React.FC<PatientFormProps> = ({
   onSave,
   onCancel,
 }) => {
-  // Lookup data from API
-  const [lookupDiagnoses, setLookupDiagnoses] = useState<LookupItem[]>([]);
-  const [lookupOccupations, setLookupOccupations] = useState<LookupItem[]>([]);
+  const lookupOptions = useLookupOptions(PATIENT_LOOKUP_TYPES);
   const [lookupStates, setLookupStates] = useState<string[]>([]);
-  const [lookupMaritalStatuses, setLookupMaritalStatuses] = useState<LookupItem[]>([]);
-  const [lookupChronicDiseases, setLookupChronicDiseases] = useState<LookupItem[]>([]);
   const [lookupCitiesByState, setLookupCitiesByState] = useState<Record<string, string[]>>({});
   const [lookupLocalAreasByCity, setLookupLocalAreasByCity] = useState<Record<string, string[]>>({});
+  const diagnoses = getLookupOptions(lookupOptions, 'DiagnosisOptions', toLookupOptions(DIAGNOSES));
+  const occupations = lookupOptions.Occupations ?? [];
+  const genderOptions = getLookupOptions(lookupOptions, 'GenderOptions', PATIENT_LOOKUP_FALLBACKS.GenderOptions)
+    .map(option => ({ ...option, value: option.value.toLowerCase() }));
+  const maritalStatuses = getLookupOptions(lookupOptions, 'MaritalStatusOptions', PATIENT_LOOKUP_FALLBACKS.MaritalStatusOptions)
+    .map(option => ({ ...option, value: option.value.toLowerCase() }));
+  const chronicDiseases = getLookupOptions(lookupOptions, 'ChronicDiseaseOptions', toLookupOptions(CHRONIC_DISEASES));
+  const phoneCodeOptions = getLookupOptions(lookupOptions, 'PhoneCountryCodes', PATIENT_LOOKUP_FALLBACKS.PhoneCountryCodes);
+  const otherOptions = getLookupOptions(lookupOptions, 'OtherOptions', PATIENT_LOOKUP_FALLBACKS.OtherOptions);
 
   useEffect(() => {
     const loadLookups = async () => {
-      const [diagnoses, occupations, maritalStatuses, chronicDiseases, hierarchy] = await Promise.all([
-        LookupsService.getByType('DiagnosisOptions').catch(() => []),
-        LookupsService.getByType('Occupations').catch(() => []),
-        LookupsService.getByType('MaritalStatusOptions').catch(() => []),
-        LookupsService.getByType('ChronicDiseaseOptions').catch(() => []),
-        LookupsService.getLocationHierarchy(),
-      ]);
-      setLookupDiagnoses(diagnoses);
-      setLookupOccupations(occupations);
-      setLookupMaritalStatuses(maritalStatuses);
-      setLookupChronicDiseases(chronicDiseases);
+      const hierarchy = await LookupsService.getLocationHierarchy();
       setLookupStates(hierarchy.states);
       setLookupCitiesByState(hierarchy.citiesByState);
       setLookupLocalAreasByCity(hierarchy.localAreasByCity);
@@ -787,9 +812,9 @@ const handleSubmit = (e: React.FormEvent) => {
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">Vital Status *</label>
               <select name="vitalStatus" value={formData.vitalStatus || 'Alive'} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                <option value="Alive">Alive</option>
-                <option value="Died">Died</option>
-                <option value="Unknown">Unknown</option>
+                {getLookupOptions(lookupOptions, 'VitalStatusOptions', PATIENT_LOOKUP_FALLBACKS.VitalStatusOptions).map(option => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
               </select>
             </div>
 
@@ -814,8 +839,9 @@ const handleSubmit = (e: React.FormEvent) => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Gender *</label>
                 <select name="gender" value={formData.gender || ''} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                   <option value="">Select Gender</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
+                  {genderOptions.map(option => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -826,24 +852,8 @@ const handleSubmit = (e: React.FormEvent) => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Diagnosis</label>
                   <select name="diagnosis" value={formData.diagnosis || ''} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                     <option value="">Select Diagnosis</option>
-                    {(lookupDiagnoses.length > 0 ? lookupDiagnoses : [
-                      { id: '1', name: 'Hemophilia A' }, { id: '2', name: 'Hemophilia B' },
-                      { id: '3', name: 'Hemophilia A carrier' }, { id: '4', name: 'Hemophilia B carrier' },
-                      { id: '5', name: 'Acquired hemophilia' }, { id: '6', name: 'Von Willebrand Disease' },
-                      { id: '7', name: 'Afibrinogenemia' }, { id: '8', name: 'Hypofibrinogenemia' },
-                      { id: '9', name: 'Dysfibrinogenemia' }, { id: '10', name: 'Platelete dysfunction' },
-                      { id: '11', name: 'Bernard Soulier syndrome' }, { id: '12', name: 'Glanzmann thrombasthenia' },
-                      { id: '13', name: 'Prothrombin deficiency' }, { id: '14', name: 'Factor V deficiency' },
-                      { id: '15', name: 'Combined factor V and VIII deficiency' }, { id: '16', name: 'Factor VII deficiency' },
-                      { id: '17', name: 'Factor X deficiency' }, { id: '18', name: 'Factor XI deficiency' },
-                      { id: '19', name: 'Factor XII deficiency' }, { id: '20', name: 'Factor XIII deficiency' },
-                      { id: '21', name: 'Vitamin K dependent factor deficiency' }, { id: '22', name: 'Other bleeding disorder' }
-                    ]).concat(
-                      lookupDiagnoses.some(d => d.name.trim().toLowerCase() === 'undiagnosed')
-                        ? []
-                        : [{ id: 'undiagnosed', name: 'Undiagnosed' }]
-                    ).map(d => (
-                      <option key={d.id} value={d.name}>{d.name}</option>
+                    {diagnoses.map(option => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
                     ))}
                   </select>
                 </div>
@@ -895,7 +905,7 @@ const handleSubmit = (e: React.FormEvent) => {
                   {availableHomeCities.map(city => (
                     <option key={city} value={city}>{city}</option>
                   ))}
-                  <option value="Other">Other</option>
+                  {otherOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
                 </select>
               </div>
               <div>
@@ -905,7 +915,7 @@ const handleSubmit = (e: React.FormEvent) => {
                   {availableHomeLocalities.map(locality => (
                     <option key={locality} value={locality}>{locality}</option>
                   ))}
-                  <option value="Other">Other</option>
+                  {otherOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
                 </select>
               </div>
             </div>
@@ -915,8 +925,9 @@ const handleSubmit = (e: React.FormEvent) => {
               <label className="block text-sm font-medium text-gray-700 mb-2">Current Residence *</label>
               <select name="residenceType" value={formData.residenceType || ''} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 <option value="">Select Residence</option>
-                <option value="InsideSudan">Inside Sudan</option>
-                <option value="OutsideSudan">Outside Sudan</option>
+                {getLookupOptions(lookupOptions, 'ResidenceTypeOptions', PATIENT_LOOKUP_FALLBACKS.ResidenceTypeOptions).map(option => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
               </select>
             </div>
 
@@ -938,7 +949,7 @@ const handleSubmit = (e: React.FormEvent) => {
                     {availableCities.map(city => (
                       <option key={city} value={city}>{city}</option>
                     ))}
-                    <option value="Other">Other</option>
+                    {otherOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
                   </select>
                 </div>
                 <div>
@@ -948,7 +959,7 @@ const handleSubmit = (e: React.FormEvent) => {
                     {availableLocalities.map(locality => (
                       <option key={locality} value={locality}>{locality}</option>
                     ))}
-                    <option value="Other">Other</option>
+                    {otherOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
                   </select>
                 </div>
               </div>
@@ -960,8 +971,8 @@ const handleSubmit = (e: React.FormEvent) => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Country *</label>
                   <select name="country" value={formData.country || ''} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                     <option value="">Select Country</option>
-                    {COUNTRIES.map(country => (
-                      <option key={country} value={country}>{country}</option>
+                    {getLookupOptions(lookupOptions, 'Countries', PATIENT_LOOKUP_FALLBACKS.Countries).map(option => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
                     ))}
                   </select>
                 </div>
@@ -978,20 +989,19 @@ const handleSubmit = (e: React.FormEvent) => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Marital Status *</label>
                 <select name="maritalStatus" value={formData.maritalStatus || ''} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                   <option value="">Select Status</option>
-                  {(lookupMaritalStatuses.length > 0 ? lookupMaritalStatuses : [
-                    { id: '1', name: 'Single' }, { id: '2', name: 'Married' }, { id: '3', name: 'Divorced' },
-                    { id: '4', name: 'Widow' }, { id: '5', name: 'Widower' }, { id: '6', name: 'Child' }
-                  ]).map(s => (
-                    <option key={s.id} value={s.name.toLowerCase()}>{s.name}</option>
+                  {maritalStatuses.map(option => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
                   ))}
                 </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Occupation *</label>
                 <select name="occupation" value={formData.occupation || ''} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                  <option value="">Select Occupation</option>
-                  {(lookupOccupations.length > 0 ? lookupOccupations : OCCUPATIONS.map((name, i) => ({ id: String(i + 1), name, type: 'Occupations' }))).map(o => (
-                    <option key={o.id} value={o.name}>{o.name}</option>
+                  <option value="">
+                    {occupations.length > 0 ? 'Select Occupation' : 'No occupations configured in Lookups'}
+                  </option>
+                  {occupations.map(option => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
                   ))}
                 </select>
               </div>
@@ -1003,8 +1013,8 @@ const handleSubmit = (e: React.FormEvent) => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Contact Number 1 *</label>
                 <div className="flex gap-2">
                   <select name="contactNumber1CountryCode" value={formData.contactNumber1CountryCode || '+249'} onChange={handleChange} className="w-36 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" required>
-                    {PHONE_CODE_OPTIONS.map(option => (
-                      <option key={option.code} value={option.code}>{option.country} ({option.code})</option>
+                    {phoneCodeOptions.map(option => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
                     ))}
                   </select>
                   <input type="tel" name="contactNumber1" value={formData.contactNumber1} onChange={handleChange} required className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Phone number 1" />
@@ -1014,8 +1024,8 @@ const handleSubmit = (e: React.FormEvent) => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Contact Number 2</label>
                 <div className="flex gap-2">
                   <select name="contactNumber2CountryCode" value={formData.contactNumber2CountryCode || '+249'} onChange={handleChange} className="w-36 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                    {PHONE_CODE_OPTIONS.map(option => (
-                      <option key={option.code} value={option.code}>{option.country} ({option.code})</option>
+                    {phoneCodeOptions.map(option => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
                     ))}
                   </select>
                   <input type="tel" name="contactNumber2" value={formData.contactNumber2} onChange={handleChange} className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Phone number 2" />
@@ -1073,24 +1083,8 @@ const handleSubmit = (e: React.FormEvent) => {
                     <label className="block text-sm font-medium text-gray-700 mb-2">Diagnosis</label>
                     <select name="diagnosis" value={formData.diagnosis} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                       <option value="">Select Diagnosis</option>
-                      {(lookupDiagnoses.length > 0 ? lookupDiagnoses : [
-                        { id: '1', name: 'Hemophilia A' }, { id: '2', name: 'Hemophilia B' },
-                        { id: '3', name: 'Hemophilia A carrier' }, { id: '4', name: 'Hemophilia B carrier' },
-                        { id: '5', name: 'Acquired hemophilia' }, { id: '6', name: 'Von Willebrand Disease' },
-                        { id: '7', name: 'Afibrinogenemia' }, { id: '8', name: 'Hypofibrinogenemia' },
-                        { id: '9', name: 'Dysfibrinogenemia' }, { id: '10', name: 'Platelete dysfunction' },
-                        { id: '11', name: 'Bernard Soulier syndrome' }, { id: '12', name: 'Glanzmann thrombasthenia' },
-                        { id: '13', name: 'Prothrombin deficiency' }, { id: '14', name: 'Factor V deficiency' },
-                        { id: '15', name: 'Combined factor V and VIII deficiency' }, { id: '16', name: 'Factor VII deficiency' },
-                        { id: '17', name: 'Factor X deficiency' }, { id: '18', name: 'Factor XI deficiency' },
-                        { id: '19', name: 'Factor XII deficiency' }, { id: '20', name: 'Factor XIII deficiency' },
-                        { id: '21', name: 'Vitamin K dependent factor deficiency' }, { id: '22', name: 'Other bleeding disorder' }
-                      ]).concat(
-                        lookupDiagnoses.some(d => d.name.trim().toLowerCase() === 'undiagnosed')
-                          ? []
-                          : [{ id: 'undiagnosed', name: 'Undiagnosed' }]
-                      ).map(d => (
-                        <option key={d.id} value={d.name}>{d.name}</option>
+                      {diagnoses.map(option => (
+                        <option key={option.value} value={option.value}>{option.label}</option>
                       ))}
                     </select>
                   </div>
@@ -1130,15 +1124,9 @@ const handleSubmit = (e: React.FormEvent) => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Blood Group *</label>
                   <select name="bloodGroup" value={formData.bloodGroup || ''} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                     <option value="">Select Blood Group</option>
-                    <option value="A+">A+</option>
-                    <option value="A-">A-</option>
-                    <option value="B+">B+</option>
-                    <option value="B-">B-</option>
-                    <option value="AB+">AB+</option>
-                    <option value="AB-">AB-</option>
-                    <option value="O+">O+</option>
-                    <option value="O-">O-</option>
-                    <option value="Unknown">Unknown / Not Known</option>
+                    {getLookupOptions(lookupOptions, 'BloodGroupOptions', PATIENT_LOOKUP_FALLBACKS.BloodGroupOptions).map(option => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
                   </select>
                 </div>
 
@@ -1153,8 +1141,9 @@ const handleSubmit = (e: React.FormEvent) => {
                       setFactorTestDate('');
                     }
                   }} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                    <option value="false">No</option>
-                    <option value="true">Yes</option>
+                    {getLookupOptions(lookupOptions, 'YesNoOptions', PATIENT_LOOKUP_FALLBACKS.YesNoOptions).map(option => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
                   </select>
                 </div>
 
@@ -1239,9 +1228,9 @@ const handleSubmit = (e: React.FormEvent) => {
                     }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                   >
-                    <option value="no">No</option>
-                    <option value="yes">Yes</option>
-                    <option value="not_done">Not Done</option>
+                    {getLookupOptions(lookupOptions, 'ViralTestStatusOptions', PATIENT_LOOKUP_FALLBACKS.ViralTestStatusOptions).map(option => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
                   </select>
                 </div>
 
@@ -1332,8 +1321,9 @@ const handleSubmit = (e: React.FormEvent) => {
                         setFormData(prev => ({ ...prev, HasChronicDiseases: true, chronicDiseases: Array.isArray(prev.chronicDiseases) ? prev.chronicDiseases : [] }));
                       }
                     }} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                      <option value="false">No</option>
-                      <option value="true">Yes</option>
+                      {getLookupOptions(lookupOptions, 'YesNoOptions', PATIENT_LOOKUP_FALLBACKS.YesNoOptions).map(option => (
+                        <option key={option.value} value={option.value}>{option.label}</option>
+                      ))}
                     </select>
                   </div>
 
@@ -1341,13 +1331,13 @@ const handleSubmit = (e: React.FormEvent) => {
                     <>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Select Chronic Diseases</label>
                       <div className="space-y-2">
-                        {(lookupChronicDiseases.length > 0 ? lookupChronicDiseases : CHRONIC_DISEASES.map((name, i) => ({ id: String(i + 1), name, type: 'ChronicDiseaseOptions' }))).map(disease => {
+                        {chronicDiseases.map(disease => {
                           const chronicDiseasesArray = Array.isArray(formData.chronicDiseases) ? formData.chronicDiseases : [];
-                          const isChecked = chronicDiseasesArray.includes(disease.name);
+                          const isChecked = chronicDiseasesArray.includes(disease.value);
                           return (
-                            <label key={disease.id} className="flex items-center cursor-pointer">
-                              <input type="checkbox" checked={isChecked} onChange={(e) => handleChronicDiseaseChange(disease.name, e.target.checked)} className="mr-2 h-4 w-4 cursor-pointer" />
-                              {disease.name}
+                            <label key={disease.value} className="flex items-center cursor-pointer">
+                              <input type="checkbox" checked={isChecked} onChange={(e) => handleChronicDiseaseChange(disease.value, e.target.checked)} className="mr-2 h-4 w-4 cursor-pointer" />
+                              {disease.label}
                             </label>
                           );
                         })}
@@ -1367,8 +1357,9 @@ const handleSubmit = (e: React.FormEvent) => {
                     setHasFamilyHistory(value);
                     if (!value) setFormData(prev => ({ ...prev, familyHistory: '' }));
                   }} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                    <option value="false">No</option>
-                    <option value="true">Yes</option>
+                    {getLookupOptions(lookupOptions, 'YesNoOptions', PATIENT_LOOKUP_FALLBACKS.YesNoOptions).map(option => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
                   </select>
                 </div>
 
@@ -1377,9 +1368,9 @@ const handleSubmit = (e: React.FormEvent) => {
                     <label className="block text-sm font-medium text-gray-700 mb-2">Family History</label>
                     <select name="familyHistory" value={formData.familyHistory || ''} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                       <option value="">Select Family History</option>
-                      <option value="first_degree">First Degree</option>
-                      <option value="second_degree">Second Degree</option>
-                      <option value="third_degree">Third Degree</option>
+                      {getLookupOptions(lookupOptions, 'FamilyHistoryOptions', PATIENT_LOOKUP_FALLBACKS.FamilyHistoryOptions).map(option => (
+                        <option key={option.value} value={option.value}>{option.label}</option>
+                      ))}
                     </select>
                   </div>
                 )}
@@ -1395,9 +1386,9 @@ const handleSubmit = (e: React.FormEvent) => {
                     <div className="flex items-center justify-between mb-2">
                       <label className="text-sm font-medium text-gray-700">HBV Test</label>
                       <select value={viralTestStatuses.HBV} onChange={(e) => handleViralTestStatusChange('HBV', e.target.value as ViralTestStatus)} className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                        <option value="yes">Yes</option>
-                        <option value="no">No</option>
-                        <option value="not_done">Not Done</option>
+                        {getLookupOptions(lookupOptions, 'ViralTestStatusOptions', PATIENT_LOOKUP_FALLBACKS.ViralTestStatusOptions).map(option => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
                       </select>
                     </div>
                     {testDates.HBV?.hasTaken && (
@@ -1405,8 +1396,9 @@ const handleSubmit = (e: React.FormEvent) => {
                         <input type="date" value={testDates.HBV.testDate} onChange={(e) => setTestDates(prev => ({ ...prev, HBV: { ...prev.HBV!, testDate: e.target.value } }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Test Date" />
                         <select value={testDates.HBV.result || ''} onChange={(e) => setTestDates(prev => ({ ...prev, HBV: { ...prev.HBV!, result: e.target.value as 'positive' | 'negative' | undefined } }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                           <option value="">Select Result</option>
-                          <option value="positive">Positive</option>
-                          <option value="negative">Negative</option>
+                          {getLookupOptions(lookupOptions, 'TestResultOptions', PATIENT_LOOKUP_FALLBACKS.TestResultOptions).map(option => (
+                            <option key={option.value} value={option.value}>{option.label}</option>
+                          ))}
                         </select>
                       </div>
                     )}
@@ -1417,9 +1409,9 @@ const handleSubmit = (e: React.FormEvent) => {
                     <div className="flex items-center justify-between mb-2">
                       <label className="text-sm font-medium text-gray-700">HCV Test</label>
                       <select value={viralTestStatuses.HCV} onChange={(e) => handleViralTestStatusChange('HCV', e.target.value as ViralTestStatus)} className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                        <option value="yes">Yes</option>
-                        <option value="no">No</option>
-                        <option value="not_done">Not Done</option>
+                        {getLookupOptions(lookupOptions, 'ViralTestStatusOptions', PATIENT_LOOKUP_FALLBACKS.ViralTestStatusOptions).map(option => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
                       </select>
                     </div>
                     {testDates.HCV?.hasTaken && (
@@ -1427,8 +1419,9 @@ const handleSubmit = (e: React.FormEvent) => {
                         <input type="date" value={testDates.HCV.testDate} onChange={(e) => setTestDates(prev => ({ ...prev, HCV: { ...prev.HCV!, testDate: e.target.value } }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Test Date" />
                         <select value={testDates.HCV.result || ''} onChange={(e) => setTestDates(prev => ({ ...prev, HCV: { ...prev.HCV!, result: e.target.value as 'positive' | 'negative' | undefined } }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                           <option value="">Select Result</option>
-                          <option value="positive">Positive</option>
-                          <option value="negative">Negative</option>
+                          {getLookupOptions(lookupOptions, 'TestResultOptions', PATIENT_LOOKUP_FALLBACKS.TestResultOptions).map(option => (
+                            <option key={option.value} value={option.value}>{option.label}</option>
+                          ))}
                         </select>
                       </div>
                     )}
@@ -1439,9 +1432,9 @@ const handleSubmit = (e: React.FormEvent) => {
                     <div className="flex items-center justify-between mb-2">
                       <label className="text-sm font-medium text-gray-700">HIV Test</label>
                       <select value={viralTestStatuses.HIV} onChange={(e) => handleViralTestStatusChange('HIV', e.target.value as ViralTestStatus)} className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                        <option value="yes">Yes</option>
-                        <option value="no">No</option>
-                        <option value="not_done">Not Done</option>
+                        {getLookupOptions(lookupOptions, 'ViralTestStatusOptions', PATIENT_LOOKUP_FALLBACKS.ViralTestStatusOptions).map(option => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
                       </select>
                     </div>
                     {testDates.HIV?.hasTaken && (
@@ -1449,8 +1442,9 @@ const handleSubmit = (e: React.FormEvent) => {
                         <input type="date" value={testDates.HIV.testDate} onChange={(e) => setTestDates(prev => ({ ...prev, HIV: { ...prev.HIV!, testDate: e.target.value } }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Test Date" />
                         <select value={testDates.HIV.result || ''} onChange={(e) => setTestDates(prev => ({ ...prev, HIV: { ...prev.HIV!, result: e.target.value as 'positive' | 'negative' | undefined } }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                           <option value="">Select Result</option>
-                          <option value="positive">Positive</option>
-                          <option value="negative">Negative</option>
+                          {getLookupOptions(lookupOptions, 'TestResultOptions', PATIENT_LOOKUP_FALLBACKS.TestResultOptions).map(option => (
+                            <option key={option.value} value={option.value}>{option.label}</option>
+                          ))}
                         </select>
                       </div>
                     )}

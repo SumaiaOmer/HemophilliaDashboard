@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { X, AlertTriangle } from 'lucide-react';
 import { MedicineDistribution, MedicineDistributionRequest, Factor } from '../../types/api';
 import { toDateInputValue } from '../../lib/dateUtils';
-import { LookupsService, LookupItem } from '../../services/lookups';
+import { LookupsService } from '../../services/lookups';
+import { LookupOption, toLookupOptions } from '../../hooks/useLookupOptions';
 
 interface DistributionFormProps {
   distribution?: MedicineDistribution | null;
@@ -30,7 +31,7 @@ export const DistributionForm: React.FC<DistributionFormProps> = ({
   });
 
   const [selectedFactor, setSelectedFactor] = useState<Factor | null>(null);
-  const [lookupStates, setLookupStates] = useState<LookupItem[]>([]);
+  const [lookupStates, setLookupStates] = useState<string[]>([]);
 
   const FALLBACK_STATES = [
     { id: '1', name: 'Khartoum' }, { id: '2', name: 'Gezira' }, { id: '3', name: 'White Nile' },
@@ -41,12 +42,27 @@ export const DistributionForm: React.FC<DistributionFormProps> = ({
     { id: '16', name: 'South Darfur' }, { id: '17', name: 'West Darfur' }, { id: '18', name: 'East Darfur' }
   ];
 
-  const states = lookupStates.length > 0 ? lookupStates : FALLBACK_STATES;
+  const fallbackStates = toLookupOptions(FALLBACK_STATES.map(state => state.name));
+  const stateOptions = lookupStates.length > 0
+    ? toLookupOptions(lookupStates)
+    : fallbackStates;
+  const states = formData.state && !stateOptions.some(option => option.value === formData.state)
+    ? [...stateOptions, { value: formData.state, label: formData.state }]
+    : stateOptions;
 
   useEffect(() => {
-    LookupsService.getByType('SudanStates')
-      .then(result => { if (result.length > 0) setLookupStates(result); })
-      .catch(() => {});
+    let active = true;
+    LookupsService.getLocationHierarchy()
+      .then(hierarchy => {
+        if (active) setLookupStates(hierarchy.states);
+      })
+      .catch(error => {
+        console.error('Error loading state lookups for distribution form:', error);
+      });
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -206,9 +222,9 @@ export const DistributionForm: React.FC<DistributionFormProps> = ({
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
             >
               <option value="">Select Sudan state</option>
-              {states.map(state => (
-                <option key={state.id} value={state.name}>
-                  {state.name}
+              {states.map((state: LookupOption) => (
+                <option key={state.value} value={state.value}>
+                  {state.label}
                 </option>
               ))}
             </select>

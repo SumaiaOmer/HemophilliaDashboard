@@ -148,6 +148,9 @@ export const LookupItemForm: React.FC<LookupItemFormProps> = ({
               className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors"
               placeholder="Enter lookup item name"
             />
+            <p className="mt-1.5 text-xs text-gray-400">
+              For dropdowns with separate stored values and labels, enter them as value|Label (for example, center_visit|Center Visit).
+            </p>
           </div>
 
           <div>

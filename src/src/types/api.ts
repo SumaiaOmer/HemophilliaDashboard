@@ -1,0 +1,557 @@
+export interface Company {
+  id: number;
+  name: string;
+  country: string;
+  quantity: number;
+}
+
+export interface CompanyRequest {
+  name: string;
+  country: string;
+  quantity: number;
+}
+
+export interface Factor {
+  id: number;
+  name: string;
+  lotNo: string;
+  quantity: number;
+  expiryDate: string;
+  mg: number;
+  drugType: string;
+  supplierName: string;
+  companyName: string;
+}
+
+export interface FactorRequest {
+  name: string;
+  lotNo: string;
+  quantity: number;
+  expiryDate: string;
+  mg: number;
+  drugType: string;
+  supplierName: string;
+  companyName: string;
+}
+
+export interface InhibitorTestRequest {
+  level: number;
+  testDate: string;
+}
+
+export interface OtherMedicalTestRequest {
+  testName: string;
+  testResult: string;
+  testDate: string;
+}
+
+export interface Patient {
+  id: number;
+  fullName: string;
+  nationalIdNumber: string;
+  dateOfBirth: string;
+  gender?: string;
+  homeState?: string;
+  homeCityOrTown?: string;
+  homeLocality?: string;
+  residenceType?: 'InsideSudan' | 'OutsideSudan';
+  residenceState?: string;
+  residenceCityOrTown?: string;
+  residenceLocalArea?: string;
+  residenceRegion?: string;
+  residenceCountry?: string;
+  country?: string;
+  cityOrTown?: string;
+  locality?: string;
+  state?: string;
+  maritalStatus?: string;
+  occupation?: string;
+  contactNumber?: string;
+  contactNumber1?: string;
+  contactNumber2?: string;
+  contactRelation?: string;
+  vitalStatus?: 'Alive' | 'Died' | 'Unknown';
+  status?: string;
+  hemophiliaCenterId?: string;
+  diagnosis?: string;
+  diagnosisType?: string;
+  diagnosisYear?: number;
+  incidenceDate?: string;
+  severity?: 'mild' | 'moderate' | 'severe' | 'unknown';
+  factorPercent?: number;
+  factorPercentDate?: string;
+  familyHistory?: 'first_degree' | 'second_degree' | 'third_degree' | 'none';
+  isDiagnosed?: boolean;
+  HasInhibitors?: boolean;
+  hasInhibitors?: boolean;
+  inhibitorLevel?: number;
+  inhibitorScreeningDate?: string;
+  inhibitors?: InhibitorEntry[];
+  inhibitorHistory?: InhibitorHistory[];
+  inhibitorTests?: InhibitorTestRequest[];
+  latestInhibitorLevel?: number;
+  latestInhibitorTestDate?: string;
+  HasChronicDiseases?: boolean;
+  hasChronicDiseases?: boolean;
+  chronicDiseases?: string | string[];
+  chronicDiseaseOther?: string;
+  bloodGroup?: string;
+  hasHBVVaccination?: boolean;
+  hbvVaccinationDate?: string;
+  hbvTestTaken?: boolean;
+  hbvTestDate?: string;
+  hbvTestResult?: string;
+  hcvTestTaken?: boolean;
+  hcvTestDate?: string;
+  hcvTestResult?: string;
+  hivTestTaken?: boolean;
+  hivTestDate?: string;
+  hivTestResult?: string;
+  hasHealthInsurance?: boolean;
+  insuranceProvider?: string;
+  isCircumcised?: boolean;
+  longTermMedication?: boolean;
+  testDates?: PatientTestDate[];
+  otherMedicalTests?: OtherMedicalTest[];
+  name?: string;
+  age?: string;
+  category?: string;
+  factorLevelTestDate?: string;
+  viralScreeningDate?: string;
+  otherTestDate?: string;
+  inhibitor?: boolean;
+}
+
+export type TestType = 'FactorLevel' | 'InhibitorScreening' | 'HBV' | 'HCV' | 'HIV' | 'Other';
+
+export interface PatientTestDate {
+  testType: TestType;
+  hasTaken: boolean;
+  testDate?: string;
+  result?: 'positive' | 'negative';
+}
+
+export interface PatientRequest {
+  fullName: string;
+  nationalIdNumber: string;
+  dateOfBirth: string;
+  gender: string;
+  age?: string;
+  contactNumber1: string;
+  bloodGroup?: string;
+  maritalStatus?: string;
+  occupation?: string;
+  contactNumber2?: string;
+  contactRelation?: string;
+  hemophiliaCenterId?: string;
+  diagnosis?: string;
+  diagnosisType?: string;
+  diagnosisYear?: number;
+  severity?: string;
+  factorPercent?: number;
+  factorPercentDate?: string;
+  hasInhibitors?: boolean;
+  familyHistory?: string;
+  vitalStatus?: 'Alive' | 'Died' | 'Unknown';
+  status?: string;
+  homeState?: string;
+  homeCityOrTown?: string;
+  homeLocality?: string;
+  residenceType?: 'InsideSudan' | 'OutsideSudan';
+  residenceState?: string;
+  residenceCityOrTown?: string;
+  residenceLocalArea?: string;
+  residenceRegion?: string;
+  residenceCountry?: string;
+  state?: string;
+  cityOrTown?: string;
+  locality?: string;
+  country?: string;
+  incidenceDate?: string;
+  isDiagnosed?: boolean;
+  HasInhibitors?: boolean;
+  inhibitorLevel?: number;
+  inhibitorScreeningDate?: string;
+  inhibitors?: InhibitorEntry[];
+  inhibitorHistory?: InhibitorHistory[];
+  inhibitorTests?: InhibitorTestRequest[];
+  HasChronicDiseases?: boolean;
+  hasChronicDiseases?: boolean;
+  chronicDiseases?: string | string[];
+  chronicDiseaseOther?: string;
+  hasHBVVaccination?: boolean;
+  hbvVaccinationDate?: string;
+  hbvTestTaken?: boolean;
+  hbvTestDate?: string;
+  hbvTestResult?: string;
+  hcvTestTaken?: boolean;
+  hcvTestDate?: string;
+  hcvTestResult?: string;
+  hivTestTaken?: boolean;
+  hivTestDate?: string;
+  hivTestResult?: string;
+  hasHealthInsurance?: boolean;
+  insuranceProvider?: string;
+  isCircumcised?: boolean;
+  longTermMedication?: boolean;
+  testDates?: PatientTestDate[];
+  otherMedicalTests?: OtherMedicalTestRequest[];
+}
+
+export interface InhibitorEntry {
+  inhibitorLevel?: number;
+  inhibitorScreeningDate?: string;
+}
+
+export interface InhibitorHistory {
+  id?: number;
+  testDate: string;
+  level: number;
+}
+
+export interface VisitDrug {
+  drugId?: number;
+  factorId?: number;
+  drugType: string;
+  concentration: number;
+  quantity: number;
+  lotNumber?: string;
+}
+
+export interface PatientVisit {
+  diagnosis: string;
+  id: number;
+  patientId: number;
+  visitDate: string;
+  weight?: number | string;
+  centerName?: string;
+  visitType?: string;
+  diagnosisType?: string;
+  complaint?: string;
+  notes?: string;
+  enteredBy?: string;
+  createdAt?: string;
+  vitalStatus?: 'Alive' | 'Died' | 'Unknown';
+  managementPlan?: string;
+  drugs?: VisitDrug[];
+  centerState?: string;
+  complaintOther?: string;
+  complaintDetails?: string;
+  serviceType?: 'new_visit' | 'followup' | 'hospital_admission';
+  factorLevelTestDates?: string[];
+  inhibitorScreeningDates?: string[];
+  viralScreeningDates?: string[];
+  otherTestDates?: string[];
+  otherMedicalTests?: OtherMedicalTest[];
+  inhibitors?: InhibitorEntry[];
+}
+
+export interface OtherMedicalTest {
+  testName: string;
+  testResult: string;
+  testDate: string;
+}
+
+export interface VisitTest {
+  testName: string;
+  result: string;
+  testDate: string;
+}
+
+export interface VisitTestRequest {
+  testName: string;
+  result: string;
+  testDate: string;
+}
+
+export interface VisitDrugRequest {
+  drugId: number;
+  quantity: number;
+}
+
+export interface PatientVisitRequest {
+  serviceType: string;
+  centerState: any;
+  state?: string;
+  complaintOther: string | number | readonly string[] | undefined;
+  complaintDetails: string | number | readonly string[] | undefined;
+  patientId: number;
+  visitType?: string;
+  visitDate: string;
+  weight?: string;
+  diagnosis?: string;
+  diagnosisType?: string;
+  complaint?: string;
+  managementPlan?: string;
+  notes?: string;
+  centerName?: string;
+  enteredBy?: string;
+  hasInhibitors?: boolean;
+  inhibitorLevel?: number;
+  vitalStatus?: 'Alive' | 'Died' | 'Unknown';
+  drugs?: VisitDrugRequest[];
+  tests?: VisitTestRequest[];
+}
+
+export interface Treatment {
+  id: number;
+  patientId: number;
+  treatmentCenter: string;
+  treatmentType: string;
+  indicationOfTreatment: string;
+  lot: string;
+  noteDate: string;
+  quantityLot: number;
+}
+
+export interface TreatmentRequest {
+  patientId: number;
+  treatmentCenter: string;
+  treatmentType: string;
+  indicationOfTreatment: string;
+  lot: string;
+  noteDate: string;
+  quantityLot: number;
+}
+
+export interface ApiResponse<T> {
+  data: T;
+  success: boolean;
+  message?: string;
+}
+
+
+// This is the actual API User model from Swagger
+export interface ApiUser {
+  id: number;
+  username: string;
+  passwordHash?: string;
+  state: string;
+  userRoles?: Array<{
+    roleId: number;
+    userId: number;
+    role: {
+      id: number;
+      name: string;
+    };
+  }>;
+}
+
+// This is what your Layout component expects
+export interface LayoutUser {
+  id?: number;
+  name: string;
+  email: string;
+  role: string;
+}
+
+// For backward compatibility, you can keep a combined type
+export interface User extends LayoutUser {
+  username?: string;
+  state?: string;
+  userRoles?: ApiUser['userRoles'];
+}
+
+// UserRole model from Swagger
+export interface UserRole {
+  userId: number;
+  roleId: number;
+  role: Role;
+}
+
+// Role model from Swagger
+export interface Role {
+  id: number;
+  name: string;
+}
+
+// Screen model from Swagger
+export interface Screen {
+  id: number;
+  code: string;
+  name: string;
+  displayName?: string;
+  icon?: string;
+  route?: string;
+  parentId?: number;
+  order: number;
+  children?: Screen[];
+  roleScreens?: RoleScreen[];
+}
+
+// RoleScreen model from Swagger
+export interface RoleScreen {
+  roleId: number;
+  screenId: number;
+  role: Role;
+  screen: Screen;
+}
+
+export interface LoginRequest {
+  username: string;
+  password: string;
+}
+// Login Response (from actual API response)
+export interface LoginResponse {
+  token: string;
+  user: {
+    username: string;
+  };
+}
+
+export interface RegisterRequest {
+ username: string;
+  password: string;
+  role: string;
+  state: string;
+}
+
+
+ 
+
+export interface MedicineDistribution {
+  id: number;
+  factorId: number;
+  state: string;
+  quantity: number;
+  quantityDistributed: number;
+  distributionDate?: string;
+  dateOfDistribution?: string;
+  expiryDate: string;
+  mg: number;
+  companyName: string;
+  category: string;
+  status: string;
+  deliveryDate: string;
+}
+
+export interface MedicineDistributionRequest {
+  factorId: number;
+  state: string;
+  quantity: number;
+  quantityDistributed: number;
+  distributionDate: string;
+  expiryDate: string;
+  mg: number;
+  companyName: string;
+  category: string;
+}
+
+export interface FactorDistribution {
+  id: number;
+  factorId: number;
+  factorName: string;
+  state: string;
+  quantityDistributed: number;
+  distributionDate: string;
+  
+}
+
+export interface FactorDistributionRequest {
+  factorId: number;
+  state: string;
+  quantityDistributed: number;
+  distributionDate: string;
+}
+
+export interface DeathNotification {
+  id: number;
+  patientId: number;
+  referenceNumber?: string;
+  reporterName?: string;
+  reporterRelation?: string;
+  reporterPhone?: string;
+  reportDate?: string;
+  dateOfDeath: string;
+  placeOfDeath?: string;
+  causeOfDeath?: string;
+  directCauseOfDeath?: string;
+  underlyingCauseOfDeath?: string;
+  isDeathRelatedToBleedingDisorder?: boolean;
+  complicationType?: string;
+  receivedClottingFactors?: boolean;
+  lastDoseDate?: string;
+  caseSummary?: string;
+  recommendations?: string;
+  surveillanceOfficerName?: string;
+  surveillanceOfficerSignature?: string;
+  programDirectorName?: string;
+  programDirectorSignature?: string;
+  notifiedBy?: string;
+  notificationDate?: string;
+  notes?: string;
+  patientName?: string;
+  patientFullName?: string;
+  patientNationalId?: string;
+  patientNationalIdNumber?: string;
+  patientDateOfBirth?: string;
+  patientGender?: string;
+  patientAge?: string;
+  ageAtDeath?: number;
+  patientDiagnosis?: string;
+  patientSeverity?: string;
+  patientState?: string;
+  patientVitalStatus?: string;
+  createdAt?: string;
+}
+
+export interface DeathNotificationCreateRequest {
+  patientId: number;
+  reporterName?: string;
+  reporterRelation?: string;
+  reporterPhone?: string;
+  reportDate?: string;
+  dateOfDeath: string;
+  placeOfDeath?: string;
+  directCauseOfDeath?: string;
+  underlyingCauseOfDeath?: string;
+  isDeathRelatedToBleedingDisorder?: boolean;
+  complicationType?: string;
+  receivedClottingFactors?: boolean;
+  lastDoseDate?: string;
+  caseSummary?: string;
+  recommendations?: string;
+  surveillanceOfficerName?: string;
+  surveillanceOfficerSignature?: string;
+  programDirectorName?: string;
+  programDirectorSignature?: string;
+  causeOfDeath?: string;
+  notifiedBy?: string;
+  notificationDate?: string;
+  notes?: string;
+}
+
+export interface DeathNotificationUpdateRequest {
+  patientId: number;
+  reporterName?: string;
+  reporterRelation?: string;
+  reporterPhone?: string;
+  reportDate?: string;
+  dateOfDeath: string;
+  placeOfDeath?: string;
+  directCauseOfDeath?: string;
+  underlyingCauseOfDeath?: string;
+  isDeathRelatedToBleedingDisorder?: boolean;
+  complicationType?: string;
+  receivedClottingFactors?: boolean;
+  lastDoseDate?: string;
+  caseSummary?: string;
+  recommendations?: string;
+  surveillanceOfficerName?: string;
+  surveillanceOfficerSignature?: string;
+  programDirectorName?: string;
+  programDirectorSignature?: string;
+  causeOfDeath?: string;
+  notifiedBy?: string;
+  notificationDate?: string;
+  notes?: string;
+}
+
+export interface DeathNotificationStatistics {
+  totalDeaths: number;
+  deathsByCause?: Record<string, number>;
+  deathsByState?: Record<string, number>;
+  deathsByMonth?: Array<{ month: string; count: number }>;
+  averageAgeAtDeath?: number;
+  deathsByGender?: Record<string, number>;
+}

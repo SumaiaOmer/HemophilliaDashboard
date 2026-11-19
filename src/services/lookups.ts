@@ -4,6 +4,8 @@ export interface LookupItem {
   id: string;
   name: string;
   type: string;
+  description?: string | null;
+  isActive?: boolean;
   parentId?: string | null;
 }
 
@@ -50,6 +52,8 @@ const normalizeItem = (item: Record<string, unknown>): LookupItem => {
   const id = readProperty(item, 'id');
   const rawName = String(readProperty(item, 'name') ?? '');
   const rawType = String(readProperty(item, 'type') ?? '');
+  const description = readProperty(item, 'description');
+  const isActive = readProperty(item, 'isActive');
   const parentId = readProperty(item, 'parentId');
   // Some API records store the location category in `name` and the option value in `type`
   // (for example { name: 'State', type: 'Red Sea' }); normalize those to the usual shape.
@@ -60,6 +64,8 @@ const normalizeItem = (item: Record<string, unknown>): LookupItem => {
     id: String(id ?? ''),
     name: isLegacyLocationRecord ? rawType : rawName,
     type: isLegacyLocationRecord ? rawName : rawType,
+    description: typeof description === 'string' ? description : null,
+    isActive: typeof isActive === 'boolean' ? isActive : undefined,
     parentId: parentId == null ? null : String(parentId),
   };
 };

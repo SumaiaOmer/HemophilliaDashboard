@@ -1,0 +1,359 @@
+import { apiClient } from '../lib/api';
+import { AuthService } from './auth';
+import { Patient, PatientRequest } from '../types/api';
+
+export class PatientsService {
+  private static testTypeToEnum(testType: string): number {
+    const mapping: Record<string, number> = {
+      'FactorLevel': 1,
+      'InhibitorScreening': 2,
+      'HBV': 3,
+      'HCV': 3,
+      'HIV': 3,
+      'HBsAgScreening': 4,
+      'Other': 5
+    };
+    return mapping[testType] ?? 5;
+  }
+
+  private static normalizePatient(patient: any): Patient {
+    let chronicDiseases: string[] = [];
+    const chronicDiseasesField = patient.ChronicDiseases || patient.chronicDiseases || patient.chronic_diseases;
+    if (chronicDiseasesField) {
+      if (Array.isArray(chronicDiseasesField)) {
+        chronicDiseases = chronicDiseasesField;
+      } else if (typeof chronicDiseasesField === 'string') {
+        try {
+          const parsed = JSON.parse(chronicDiseasesField);
+          chronicDiseases = Array.isArray(parsed) ? parsed : [];
+        } catch {
+          chronicDiseases = chronicDiseasesField.split(',').map(d => d.trim()).filter(d => d.length > 0);
+        }
+      }
+    }
+
+    const inhibitor = patient.HasInhibitors === true || patient.HasInhibitors === 'true' ||
+                     patient.hasInhibitors === true || patient.hasInhibitors === 'true' ||
+                     patient.inhibitor === true || patient.inhibitor === 'true' ||
+                     patient.has_inhibitors === true || patient.has_inhibitors === 'true';
+
+    // Parse inhibitors array if present on the patient record
+    let inhibitors: any[] = [];
+    const inhibitorsField = patient.Inhibitors || patient.inhibitors;
+    if (inhibitorsField && Array.isArray(inhibitorsField)) {
+      inhibitors = inhibitorsField.map((inh: any) => ({
+        inhibitorLevel: inh.InhibitorLevel || inh.inhibitorLevel || inh.inhibitor_level,
+        inhibitorScreeningDate: inh.InhibitorScreeningDate || inh.inhibitorScreeningDate || inh.inhibitor_screening_date,
+      }));
+    }
+
+    const hasChronicDiseasesExplicit = patient.HasChronicDiseases === true || patient.HasChronicDiseases === 'true' ||
+                               patient.hasChronicDiseases === true || patient.hasChronicDiseases === 'true' ||
+                               patient.has_chronic_diseases === true || patient.has_chronic_diseases === 'true';
+
+    const hasChronicDiseases = hasChronicDiseasesExplicit || chronicDiseases.length > 0;
+
+    const residenceLocation = patient.ResidenceLocation || patient.residenceType || patient.residence_location;
+    const hasCountry = !!(patient.Country || patient.country || patient.residenceCountry || patient.residence_country);
+    const residenceType = residenceLocation || (hasCountry ? 'OutsideSudan' : 'InsideSudan');
+
+    const state = patient.State || patient.residenceState || patient.residence_state || patient.state || '';
+    const cityOrTown = patient.CityOrTown || patient.residenceCityOrTown || patient.residence_city_or_town || patient.cityOrTown || patient.city_or_town || '';
+    const locality = patient.Locality || patient.residenceLocalArea || patient.residence_local_area || patient.locality || '';
+    const country = patient.Country || patient.residenceCountry || patient.residence_country || patient.country || '';
+    const homeState = patient.HomeState || patient.homeState || patient.home_state || '';
+    const homeCityOrTown = patient.HomeCityOrTown || patient.homeCityOrTown || patient.home_city_or_town || '';
+    const homeLocality = patient.HomeLocality || patient.homeLocality || patient.home_locality || '';
+
+    // Process testDates from API response
+    let testDates: any[] = [];
+    const testDatesField = patient.testDates || patient.test_dates || patient.TestDates;
+    if (testDatesField && Array.isArray(testDatesField)) {
+      testDates = testDatesField.map((td: any) => {
+        // Map enum to test type string
+        const testTypeMap: Record<number, string> = {
+          1: 'FactorLevel',
+          2: 'InhibitorScreening',
+          3: 'ViralScreening',
+          4: 'HBsAgScreening',
+          5: 'Other'
+        };
+
+        let testType = typeof td.testType === 'number'
+          ? testTypeMap[td.testType] || 'Other'
+          : (td.testType || td.TestType || 'Other');
+
+        // Handle legacy ViralScreening - default to HBV if no specific type
+        if (testType === 'ViralScreening') {
+          testType = 'HBV';
+        }
+
+        return {
+          testType,
+          hasTaken: td.hasTaken === true || td.HasTaken === true,
+          testDate: td.testDate || td.TestDate || undefined,
+          result: td.result || td.Result || undefined
+        };
+      });
+    }
+
+    // Also accept top-level HBV/HCV/HIV fields and merge them into testDates
+    const pushViral = (keyBase: string, type: string) => {
+      const taken = patient[`${keyBase}TestTaken`] ?? patient[`${keyBase.toUpperCase()}TestTaken`] ?? patient[`${keyBase}_test_taken`];
+      const date = patient[`${keyBase}TestDate`] ?? patient[`${keyBase.toUpperCase()}TestDate`] ?? patient[`${keyBase}_test_date`];
+      const result = patient[`${keyBase}TestResult`] ?? patient[`${keyBase.toUpperCase()}TestResult`] ?? patient[`${keyBase}_test_result`];
+      if (taken !== undefined || date !== undefined || result !== undefined) {
+        testDates.push({
+          testType: type,
+          hasTaken: taken === true || taken === 'true' || Boolean(taken),
+          testDate: date || undefined,
+          result: result || undefined
+        });
+      }
+    };
+
+    pushViral('hbv', 'HBV');
+    pushViral('hcv', 'HCV');
+    pushViral('hiv', 'HIV');
+
+    return {
+      id: patient.id || patient.Id,
+      fullName: patient.FullName || patient.fullName || patient.full_name || '',
+      nationalIdNumber: patient.NationalIdNumber || patient.NationalIDNumber || patient.nationalIdNumber || patient.nationalId || patient.national_id_number || patient.national_id || '',
+      dateOfBirth: patient.DateOfBirth || patient.dateOfBirth || patient.date_of_birth || '',
+      gender: patient.Gender || patient.gender || '',
+      age: patient.Age || patient.age || '',
+      homeState: patient.HomeState || patient.homeState || patient.home_state || '',
+      homeCityOrTown: patient.HomeCityOrTown || patient.homeCityOrTown || patient.home_city_or_town || '',
+      homeLocality: patient.HomeLocality || patient.homeLocality || patient.home_locality || '',
+      residenceType,
+      residenceState: patient.ResidenceState || patient.residenceState || patient.residence_state || '',
+      residenceCityOrTown: patient.ResidenceCityOrTown || patient.residenceCityOrTown || patient.residence_city_or_town || '',
+      residenceLocalArea: patient.ResidenceLocalArea || patient.residenceLocalArea || patient.residence_local_area || '',
+      residenceRegion: patient.ResidenceRegion || patient.residenceRegion || patient.residence_region || '',
+      residenceCountry: patient.ResidenceCountry || patient.residenceCountry || patient.residence_country || '',
+      state,
+      cityOrTown,
+      locality,
+      country,
+      maritalStatus: patient.MaritalStatus || patient.maritalStatus || patient.marital_status || '',
+      occupation: patient.Occupation || patient.occupation || '',
+      contactNumber: patient.ContactNumber1 || patient.ContactNumber || patient.contactNumber || patient.contact_number || '',
+      contactNumber1: patient.ContactNumber1 || patient.contactNumber1 || patient.contact_number1 || patient.ContactNumber || patient.contactNumber || patient.contact_number || '',
+      contactNumber2: patient.ContactNumber2 || patient.contactNumber2 || patient.contact_number2 || '',
+      contactRelation: patient.ContactRelation || patient.contactRelation || patient.contact_relation || '',
+      vitalStatus: patient.VitalStatus || patient.vitalStatus || patient.vital_status || 'Alive',
+      status: patient.Status ?? patient.status,
+      hemophiliaCenterId: patient.HemophiliaCenterId || patient.hemophiliaCenterId || patient.hemophilia_center_id || '',
+      diagnosis: patient.Diagnosis || patient.diagnosis || patient.DiagnosisType || '',
+      diagnosisType: patient.DiagnosisType || patient.diagnosisType || patient.diagnosis_type || '',
+      diagnosisYear: patient.DiagnosisYear ?? patient.diagnosisYear ?? patient.diagnosis_year,
+      incidenceDate: patient.DateOfIncidence || patient.dateOfIncidence ||
+        patient.IncidenceDate || patient.incidenceDate || patient.incidence_date || '',
+      severity: patient.Severity || patient.severity || 'unknown',
+      factorPercent: patient.FactorPercent || patient.factorPercent || patient.factor_percent,
+      factorPercentDate: patient.FactorPercentDate || patient.factorPercentDate || patient.factor_percent_date,
+      familyHistory: patient.FamilyHistory || patient.familyHistory || patient.family_history || 'none',
+      HasInhibitors: inhibitor,
+      inhibitorLevel: patient.InhibitorLevel || patient.inhibitorLevel || patient.inhibitor_level,
+      inhibitorScreeningDate: patient.InhibitorScreeningDate || patient.inhibitorScreeningDate || patient.inhibitor_screening_date,
+      inhibitors: inhibitors.length > 0 ? inhibitors : undefined,
+      latestInhibitorLevel: patient.LatestInhibitorLevel || patient.latestInhibitorLevel || patient.latest_inhibitor_level,
+      latestInhibitorTestDate: patient.LatestInhibitorTestDate || patient.latestInhibitorTestDate || patient.latest_inhibitor_test_date,
+      HasChronicDiseases: hasChronicDiseases,
+      chronicDiseases: chronicDiseases,
+      chronicDiseaseOther: patient.ChronicDiseaseOther || patient.chronicDiseaseOther || patient.chronic_disease_other || '',
+      bloodGroup: patient.BloodGroup || patient.bloodGroup || patient.blood_group || '',
+      hasHBVVaccination: patient.HasHBVVaccination === true || patient.hasHBVVaccination === true || patient.HasHBVVaccination === 'true' || patient.hasHBVVaccination === 'true',
+      hbvVaccinationDate: patient.HBVVaccinationDate || patient.hbvVaccinationDate || patient.hbv_vaccination_date || '',
+      hasHealthInsurance: patient.HasHealthInsurance === true || patient.hasHealthInsurance === true || patient.HasHealthInsurance === 'true' || patient.hasHealthInsurance === 'true',
+      insuranceProvider: patient.InsuranceProvider || patient.insuranceProvider || patient.insurance_provider || '',
+      isCircumcised: patient.IsCircumcised === true || patient.isCircumcised === true || patient.IsCircumcised === 'true' || patient.isCircumcised === 'true',
+      longTermMedication: patient.LongTermMedication === true || patient.longTermMedication === true || patient.longTermMedication === 'true' || patient.LongTermMedication === 'true',
+      testDates: testDates.length > 0 ? testDates : undefined,
+      inhibitorHistory: patient.InhibitorHistory || patient.inhibitorHistory || (patient.inhibitorHistory && Array.isArray(patient.inhibitorHistory) ? patient.inhibitorHistory : undefined),
+      otherMedicalTests: patient.OtherMedicalTests || patient.otherMedicalTests || (patient.otherMedicalTests && Array.isArray(patient.otherMedicalTests) ? patient.otherMedicalTests : undefined)
+      ,
+      // Expose top-level viral fields for direct binding in forms
+      hbvTestTaken: patient.hbvTestTaken ?? patient.HBVTestTaken ?? patient.hbv_test_taken,
+      hbvTestDate: patient.hbvTestDate ?? patient.HBVTestDate ?? patient.hbv_test_date,
+      hbvTestResult: patient.hbvTestResult ?? patient.HBVTestResult ?? patient.hbv_test_result,
+      hcvTestTaken: patient.hcvTestTaken ?? patient.HCVTestTaken ?? patient.hcv_test_taken,
+      hcvTestDate: patient.hcvTestDate ?? patient.HCVTestDate ?? patient.hcv_test_date,
+      hcvTestResult: patient.hcvTestResult ?? patient.HCVTestResult ?? patient.hcv_test_result,
+      hivTestTaken: patient.hivTestTaken ?? patient.HIVTestTaken ?? patient.hiv_test_taken,
+      hivTestDate: patient.hivTestDate ?? patient.HIVTestDate ?? patient.hiv_test_date,
+      hivTestResult: patient.hivTestResult ?? patient.HIVTestResult ?? patient.hiv_test_result
+    };
+  }
+
+  static async getAll(): Promise<Patient[]> {
+    const user = AuthService.getCurrentUser();
+    const isAdmin = user?.role?.toLowerCase() === 'admin';
+
+    if (!isAdmin) {
+      const data = await apiClient.get<Patient[]>('/Patients/by-state');
+      return (Array.isArray(data) ? data : []).map(p => this.normalizePatient(p));
+    }
+
+    const data = await apiClient.get<Patient[]>('/Patients');
+    return (Array.isArray(data) ? data : []).map(p => this.normalizePatient(p));
+  }
+
+  static async getAllUnfiltered(): Promise<Patient[]> {
+    const data = await apiClient.get<Patient[]>('/Patients');
+    return (Array.isArray(data) ? data : []).map(p => this.normalizePatient(p));
+  }
+
+  static async getById(id: number): Promise<Patient> {
+    const data = await apiClient.get<Patient>(`/Patients/${id}`);
+    return this.normalizePatient(data);
+  }
+
+  private static transformPatientForAPI(patient: PatientRequest): any {
+    const hasChronicDiseasesValue = Boolean(
+      patient.HasChronicDiseases ?? patient.hasChronicDiseases ?? (Array.isArray(patient.chronicDiseases) ? patient.chronicDiseases.length > 0 : !!patient.chronicDiseases)
+    );
+
+    const chronicDiseasesValue = Array.isArray(patient.chronicDiseases)
+      ? patient.chronicDiseases
+      : typeof patient.chronicDiseases === 'string' && patient.chronicDiseases.trim().length > 0
+        ? patient.chronicDiseases
+        : null;
+
+    const transformed: any = {
+      FullName: patient.fullName,
+      NationalIdNumber: patient.nationalIdNumber || null,
+      DateOfBirth: patient.dateOfBirth,
+      Gender: patient.gender,
+      IncidenceDate: patient.incidenceDate || null,
+      Status: patient.status || null,
+      Age: patient.age || null,
+      BloodGroup: patient.bloodGroup || null,
+      MaritalStatus: patient.maritalStatus || null,
+      Occupation: patient.occupation || null,
+      ContactNumber1: patient.contactNumber1,
+      ContactNumber2: patient.contactNumber2 || null,
+      ContactRelation: patient.contactRelation || null,
+      HemophiliaCenterId: patient.hemophiliaCenterId || null,
+      Diagnosis: patient.diagnosis || null,
+      DiagnosisType: patient.diagnosisType || null,
+      DiagnosisYear: patient.diagnosisYear || null,
+      Severity: patient.severity || null,
+      FactorPercent: patient.factorPercent || null,
+      FactorPercentDate: patient.factorPercentDate || null,
+      IsDiagnosed: patient.isDiagnosed ?? Boolean(patient.diagnosis || patient.diagnosisType || patient.diagnosisYear),
+      isDiagnosed: patient.isDiagnosed ?? Boolean(patient.diagnosis || patient.diagnosisType || patient.diagnosisYear),
+      HasInhibitors: patient.hasInhibitors ?? patient.HasInhibitors ?? false,
+      hasInhibitors: patient.hasInhibitors ?? patient.HasInhibitors ?? false,
+      FamilyHistory: patient.familyHistory || null,
+      VitalStatus: patient.vitalStatus || 'Alive',
+      HomeState: patient.homeState || null,
+      HomeCityOrTown: patient.homeCityOrTown || null,
+      HomeLocality: patient.homeLocality || null,
+      ResidenceType: patient.residenceType || 'InsideSudan',
+      ResidenceState: patient.residenceState || null,
+      ResidenceCityOrTown: patient.residenceCityOrTown || null,
+      ResidenceLocalArea: patient.residenceLocalArea || null,
+      ResidenceRegion: patient.residenceRegion || null,
+      ResidenceCountry: patient.residenceCountry || patient.country || null,
+      HasChronicDiseases: hasChronicDiseasesValue,
+      hasChronicDiseases: hasChronicDiseasesValue,
+      ChronicDiseases: chronicDiseasesValue,
+      chronicDiseases: chronicDiseasesValue,
+      ChronicDiseaseOther: patient.chronicDiseaseOther || null,
+      HasHBVVaccination: patient.hasHBVVaccination || false,
+      hasHBVVaccination: patient.hasHBVVaccination || false,
+      HBVVaccinationDate: patient.hbvVaccinationDate || null,
+      hbvVaccinationDate: patient.hbvVaccinationDate || null,
+      HBVTestTaken: patient.hbvTestTaken ?? false,
+      hbvTestTaken: patient.hbvTestTaken ?? false,
+      HBVTestDate: patient.hbvTestDate || null,
+      hbvTestDate: patient.hbvTestDate || null,
+      HBVTestResult: patient.hbvTestResult || null,
+      hbvTestResult: patient.hbvTestResult || null,
+      HCVTestTaken: patient.hcvTestTaken ?? false,
+      hcvTestTaken: patient.hcvTestTaken ?? false,
+      HCVTestDate: patient.hcvTestDate || null,
+      hcvTestDate: patient.hcvTestDate || null,
+      HCVTestResult: patient.hcvTestResult || null,
+      hcvTestResult: patient.hcvTestResult || null,
+      HIVTestTaken: patient.hivTestTaken ?? false,
+      hivTestTaken: patient.hivTestTaken ?? false,
+      HIVTestDate: patient.hivTestDate || null,
+      hivTestDate: patient.hivTestDate || null,
+      HIVTestResult: patient.hivTestResult || null,
+      hivTestResult: patient.hivTestResult || null,
+      HasHealthInsurance: patient.hasHealthInsurance || false,
+      hasHealthInsurance: patient.hasHealthInsurance || false,
+      InsuranceProvider: patient.insuranceProvider || null,
+      insuranceProvider: patient.insuranceProvider || null,
+      IsCircumcised: patient.isCircumcised || false,
+      isCircumcised: patient.isCircumcised || false,
+      TestDates: patient.testDates?.map(td => ({
+        TestType: td.testType,
+        HasTaken: td.hasTaken,
+        TestDate: td.testDate,
+        Result: td.result,
+      })),
+      testDates: patient.testDates?.map(td => ({
+        testType: td.testType,
+        hasTaken: td.hasTaken,
+        testDate: td.testDate,
+        result: td.result,
+      })),
+    };
+
+    if (patient.inhibitorHistory && patient.inhibitorHistory.length > 0) {
+      transformed.InhibitorHistory = patient.inhibitorHistory.map(h => ({
+        Id: h.id || 0,
+        TestDate: h.testDate,
+        Level: h.level
+      }));
+    }
+
+    if (patient.inhibitorTests && patient.inhibitorTests.length > 0) {
+      transformed.InhibitorTests = patient.inhibitorTests.map(t => ({
+        Level: t.level,
+        TestDate: t.testDate,
+      }));
+      transformed.inhibitorTests = patient.inhibitorTests.map(t => ({
+        level: t.level,
+        testDate: t.testDate,
+      }));
+    }
+
+    if (patient.otherMedicalTests && patient.otherMedicalTests.length > 0) {
+      transformed.OtherMedicalTests = patient.otherMedicalTests.map(t => ({
+        TestName: t.testName,
+        TestResult: t.testResult,
+        TestDate: t.testDate
+      }));
+      transformed.otherMedicalTests = patient.otherMedicalTests.map(t => ({
+        testName: t.testName,
+        testResult: t.testResult,
+        testDate: t.testDate
+      }));
+    }
+
+    return transformed;
+  }
+
+  static async create(patient: PatientRequest): Promise<Patient> {
+    console.log('Creating patient with data:', patient);
+    const transformed = this.transformPatientForAPI(patient);
+    console.log('Transformed data for API:', JSON.stringify(transformed, null, 2));
+
+    const data = await apiClient.post<Patient>('/Patients', transformed);
+    return this.normalizePatient(data);
+  }
+
+  static async update(id: number, patient: PatientRequest): Promise<void> {
+    const transformed = this.transformPatientForAPI(patient);
+    await apiClient.put(`/Patients/${id}`, transformed);
+  }
+
+  static async delete(id: number): Promise<void> {
+    await apiClient.delete(`/patients/${id}`);
+  }
+}

@@ -43,6 +43,17 @@ interface CompanyStatistics {
   categories: string[];
 }
 
+const formatReportField = (value: unknown): string => {
+  if (value == null || value === '') return '—';
+  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+  if (Array.isArray(value)) {
+    return value.length > 0
+      ? value.map(item => typeof item === 'object' && item !== null ? JSON.stringify(item) : String(item)).join(', ')
+      : '—';
+  }
+  return typeof value === 'object' ? JSON.stringify(value) : String(value);
+};
+
 export const ReportsManager: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -53,6 +64,7 @@ export const ReportsManager: React.FC = () => {
   });
   const [activeReport, setActiveReport] = useState<string>('overview');
   const [patientSearch, setPatientSearch] = useState('');
+  const [singlePatientId, setSinglePatientId] = useState('');
   const [patientStateFilter, setPatientStateFilter] = useState('all');
   const [patientGenderFilter, setPatientGenderFilter] = useState('all');
   const [patientSeverityFilter, setPatientSeverityFilter] = useState('all');
@@ -225,6 +237,7 @@ export const ReportsManager: React.FC = () => {
       (patientGenderFilter === 'all' || patient.gender?.toLowerCase() === patientGenderFilter) &&
       (patientSeverityFilter === 'all' || (patient.severity || 'unknown').toLowerCase() === patientSeverityFilter);
   });
+  const singlePatientReport = reportData.patients.find(patient => String(patient.id) === singlePatientId) ?? null;
   const diagnosisChartData = Array.from(reportPatients.reduce((counts, patient) => {
     const diagnosis = patient.diagnosis || 'Not specified';
     counts.set(diagnosis, (counts.get(diagnosis) || 0) + 1);
@@ -340,6 +353,7 @@ export const ReportsManager: React.FC = () => {
             { id: 'overview', label: 'Overview', icon: BarChart3 },
             { id: 'patients', label: 'Patient Summary', icon: Users },
             { id: 'patient-analytics', label: 'Patient Analytics', icon: Activity },
+            { id: 'single-patient', label: 'Single Patient Report', icon: FileText },
             { id: 'vital-status', label: 'Alive / Died / Unknown', icon: Users },
             { id: 'drug-consumption', label: 'Drug Consumption by State', icon: Pill },
             { id: 'inventory', label: 'Inventory Report', icon: Package },
@@ -1211,6 +1225,134 @@ export const ReportsManager: React.FC = () => {
               onPageSizeChange={(size) => { setReportPageSize(size); setPatientSummaryPage(1); }}
             />
           </div>
+        </div>
+      )}
+
+      {activeReport === 'single-patient' && (
+        <div className="space-y-6">
+          <section className="report-screen-only rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+            <label htmlFor="single-patient-select" className="mb-2 block text-sm font-medium text-gray-700">
+              Select a patient
+            </label>
+            <select
+              id="single-patient-select"
+              value={singlePatientId}
+              onChange={(event) => setSinglePatientId(event.target.value)}
+              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm sm:max-w-xl"
+            >
+              <option value="">Choose a patient</option>
+              {reportData.patients.map(patient => (
+                <option key={patient.id} value={patient.id}>
+                  {patient.fullName}{patient.nationalIdNumber ? ` — ${patient.nationalIdNumber}` : ''}
+                </option>
+              ))}
+            </select>
+          </section>
+
+          {singlePatientReport ? (
+            <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              <div className="report-screen-only mb-5 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-800">Single Patient Report</h3>
+                  <p className="mt-1 text-sm text-gray-500">Patient record and clinical details</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => exportToCSV([singlePatientReport], `patient_report_${singlePatientReport.id}`)}
+                    className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm text-white hover:bg-green-700"
+                  >
+                    <Download className="h-4 w-4" /> Export CSV
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => window.print()}
+                    className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
+                  >
+                    <FileText className="h-4 w-4" /> Print / Save as PDF
+                  </button>
+                </div>
+              </div>
+              <h2 className="mb-1 text-2xl font-bold text-gray-900">{singlePatientReport.fullName}</h2>
+              <p className="mb-6 text-sm text-gray-500">
+                Patient ID: {singlePatientReport.id}
+                {singlePatientReport.nationalIdNumber ? ` · National ID: ${singlePatientReport.nationalIdNumber}` : ''}
+              </p>
+
+              {[
+                {
+                  title: 'Patient Information',
+                  fields: [
+                    { label: 'Date of Birth', value: formatDate(singlePatientReport.dateOfBirth) },
+                    { label: 'Age', value: singlePatientReport.age },
+                    { label: 'Gender', value: singlePatientReport.gender },
+                    { label: 'Marital Status', value: singlePatientReport.maritalStatus },
+                    { label: 'Occupation', value: singlePatientReport.occupation },
+                    { label: 'Vital Status', value: singlePatientReport.vitalStatus },
+                    { label: 'Contact Number 1', value: singlePatientReport.contactNumber1 || singlePatientReport.contactNumber },
+                    { label: 'Contact Number 2', value: singlePatientReport.contactNumber2 },
+                  ],
+                },
+                {
+                  title: 'Residence',
+                  fields: [
+                    { label: 'Residence Type', value: singlePatientReport.residenceType },
+                    { label: 'State / Region', value: singlePatientReport.residenceState || singlePatientReport.residenceRegion || singlePatientReport.state },
+                    { label: 'City / Town', value: singlePatientReport.residenceCityOrTown || singlePatientReport.cityOrTown },
+                    { label: 'Local Area', value: singlePatientReport.residenceLocalArea || singlePatientReport.locality },
+                    { label: 'Country', value: singlePatientReport.residenceCountry || singlePatientReport.country },
+                  ],
+                },
+                {
+                  title: 'Clinical Information',
+                  fields: [
+                    { label: 'Diagnosis', value: singlePatientReport.diagnosis },
+                    { label: 'Diagnosis Type', value: singlePatientReport.diagnosisType },
+                    { label: 'Diagnosis Year', value: singlePatientReport.diagnosisYear },
+                    { label: 'Severity', value: singlePatientReport.severity },
+                    { label: 'Factor Level (%)', value: singlePatientReport.factorPercent },
+                    { label: 'Factor Level Test Date', value: formatDate(singlePatientReport.factorPercentDate || singlePatientReport.factorLevelTestDate) },
+                    { label: 'Blood Group', value: singlePatientReport.bloodGroup },
+                    { label: 'Family History', value: singlePatientReport.familyHistory },
+                    { label: 'Chronic Diseases', value: singlePatientReport.chronicDiseases },
+                    { label: 'Other Chronic Disease', value: singlePatientReport.chronicDiseaseOther },
+                    { label: 'Inhibitors', value: singlePatientReport.HasInhibitors ?? singlePatientReport.hasInhibitors },
+                    { label: 'Latest Inhibitor Level', value: singlePatientReport.latestInhibitorLevel ?? singlePatientReport.inhibitorLevel },
+                    { label: 'Latest Inhibitor Test Date', value: formatDate(singlePatientReport.latestInhibitorTestDate || singlePatientReport.inhibitorScreeningDate) },
+                    { label: 'HBV Vaccination', value: singlePatientReport.hasHBVVaccination },
+                    { label: 'HBV Vaccination Date', value: formatDate(singlePatientReport.hbvVaccinationDate) },
+                    { label: 'Health Insurance', value: singlePatientReport.hasHealthInsurance },
+                    { label: 'Insurance Provider', value: singlePatientReport.insuranceProvider },
+                  ],
+                },
+                {
+                  title: 'Screening Results',
+                  fields: [
+                    { label: 'HBV', value: [singlePatientReport.hbvTestTaken ? 'Tested' : 'Not tested', singlePatientReport.hbvTestResult, singlePatientReport.hbvTestDate ? formatDate(singlePatientReport.hbvTestDate) : ''].filter(Boolean).join(' · ') },
+                    { label: 'HCV', value: [singlePatientReport.hcvTestTaken ? 'Tested' : 'Not tested', singlePatientReport.hcvTestResult, singlePatientReport.hcvTestDate ? formatDate(singlePatientReport.hcvTestDate) : ''].filter(Boolean).join(' · ') },
+                    { label: 'HIV', value: [singlePatientReport.hivTestTaken ? 'Tested' : 'Not tested', singlePatientReport.hivTestResult, singlePatientReport.hivTestDate ? formatDate(singlePatientReport.hivTestDate) : ''].filter(Boolean).join(' · ') },
+                    { label: 'Other Medical Tests', value: singlePatientReport.otherMedicalTests },
+                  ],
+                },
+              ].map(section => (
+                <div key={section.title} className="mb-6 last:mb-0">
+                  <h3 className="mb-3 border-b border-gray-200 pb-2 text-lg font-semibold text-gray-800">{section.title}</h3>
+                  <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {section.fields.map(field => (
+                      <div key={field.label} className="rounded-lg bg-gray-50 p-3">
+                        <dt className="text-xs font-medium uppercase tracking-wide text-gray-500">{field.label}</dt>
+                        <dd className="mt-1 break-words text-sm text-gray-900">{formatReportField(field.value)}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </div>
+              ))}
+            </section>
+          ) : (
+            <p className="rounded-lg border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
+              Select a patient to view and export their individual report.
+            </p>
+          )}
         </div>
       )}
 

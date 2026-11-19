@@ -276,12 +276,7 @@ export const DeathNotificationForm: React.FC<DeathNotificationFormProps> = ({
     }
   };
 
-  const isAlivePatient = (patient: Patient) => patient.vitalStatus?.toLowerCase() === 'alive';
-  const selectablePatients = notification
-    ? availablePatients.filter((patient) => patient.id === formData.patientId || isAlivePatient(patient))
-    : availablePatients.filter(isAlivePatient);
-
-  const filteredPatients = selectablePatients.filter((patient) => {
+  const filteredPatients = availablePatients.filter((patient) => {
     const searchLower = patientSearch.toLowerCase();
     return (
       patient.fullName?.toLowerCase().includes(searchLower) ||
