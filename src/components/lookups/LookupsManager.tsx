@@ -29,6 +29,15 @@ interface ViewMode {
   typeKey?: string;
 }
 
+const getOptionParts = (name: string) => {
+  const separator = name.indexOf('|');
+  if (separator < 0) return { value: name, label: null };
+  return {
+    value: name.slice(0, separator).trim(),
+    label: name.slice(separator + 1).trim(),
+  };
+};
+
 export const LookupsManager: React.FC = () => {
   const [allTypes, setAllTypes] = useState<LookupType[]>([]);
   const [allItems, setAllItems] = useState<LookupItem[]>([]);
@@ -182,6 +191,10 @@ export const LookupsManager: React.FC = () => {
     });
     return counts;
   }, [allItems]);
+  const totalItemCount = useMemo(
+    () => allItems.filter((item) => item.name.toLowerCase() !== item.type.toLowerCase()).length,
+    [allItems]
+  );
 
   // Filtered items for the items view (exclude root items)
   const filteredItems = useMemo(() => {
@@ -234,7 +247,7 @@ export const LookupsManager: React.FC = () => {
       types.forEach((t) => {
         const children = typeTree.childrenMap.get(t.name) ?? [];
         if (children.length > 0) {
-          expanded[t.name] = true;
+          expanded[t.name] = false;
           collectAll(children);
         }
       });
@@ -353,20 +366,25 @@ export const LookupsManager: React.FC = () => {
     return (
       <div className="space-y-6 max-w-6xl mx-auto">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-          <div>
+          <div className="flex items-center gap-3">
+            <div className="hidden sm:flex h-12 w-12 items-center justify-center rounded-xl bg-red-50 text-red-600">
+              <List className="h-6 w-6" />
+            </div>
+            <div>
             <button
               onClick={() => setView({ kind: 'types' })}
-              className="text-sm text-red-600 hover:text-red-700 mb-1 flex items-center gap-1"
+              className="text-sm font-medium text-red-600 hover:text-red-700 mb-1 flex items-center gap-1"
             >
               <ChevronRight className="h-4 w-4 rotate-180" />
-              Back to Types
+              Lookup types
             </button>
             <h2 className="text-2xl font-bold text-gray-800">
-              {currentType?.label ?? view.typeKey} — Items
+              {currentType?.label ?? view.typeKey}
             </h2>
             <p className="text-gray-500 mt-1 text-sm">
-              {filteredItems.length} item{filteredItems.length !== 1 ? 's' : ''} in this type
+              {filteredItems.length} option{filteredItems.length !== 1 ? 's' : ''} in this lookup
             </p>
+            </div>
           </div>
           <button
             onClick={() => {
@@ -377,7 +395,7 @@ export const LookupsManager: React.FC = () => {
             className="inline-flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white px-4 py-2.5 rounded-lg shadow-sm transition-colors duration-200"
           >
             <Plus className="h-5 w-5" />
-            <span>Add Item</span>
+            <span>Add option</span>
           </button>
         </div>
 
@@ -395,7 +413,7 @@ export const LookupsManager: React.FC = () => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
             <input
               type="text"
-              placeholder="Search items…"
+            placeholder="Search options..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-9 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors"
@@ -416,7 +434,12 @@ export const LookupsManager: React.FC = () => {
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-gray-100">
               <Inbox className="h-7 w-7 text-gray-400" />
             </div>
-            <p className="text-gray-500 font-medium">No items found</p>
+            <p className="text-gray-700 font-semibold">
+              {searchTerm.trim() ? 'No matching options' : 'No options yet'}
+            </p>
+            <p className="mt-1 text-sm text-gray-500">
+              {searchTerm.trim() ? 'Try another search or add a new option.' : 'Add the first option to this lookup.'}
+            </p>
             <button
               onClick={() => {
                 setEditingItem(null);
@@ -426,7 +449,7 @@ export const LookupsManager: React.FC = () => {
               className="mt-4 inline-flex items-center gap-2 text-sm text-red-600 hover:text-red-700 font-medium"
             >
               <Plus className="h-4 w-4" />
-              Add your first item
+              Add option
             </button>
           </div>
         ) : (
@@ -436,7 +459,7 @@ export const LookupsManager: React.FC = () => {
                 <thead className="bg-gray-50/80">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Name
+                      Option
                     </th>
                     <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
                       Actions
@@ -447,7 +470,21 @@ export const LookupsManager: React.FC = () => {
                   {paginatedItems.map((item) => (
                     <tr key={item.id} className="group hover:bg-red-50/40 transition-colors duration-150">
                       <td className="px-6 py-3.5 text-sm text-gray-900">
-                        <span className="block truncate max-w-xs">{item.name}</span>
+                        {(() => {
+                          const option = getOptionParts(item.name);
+                          return (
+                            <>
+                              <span className="block truncate max-w-xs font-medium">
+                                {option.label || option.value}
+                              </span>
+                              {option.label && (
+                                <span className="mt-0.5 block truncate max-w-xs text-xs text-gray-500">
+                                  Value: <code>{option.value}</code>
+                                </span>
+                              )}
+                            </>
+                          );
+                        })()}
                       </td>
                       <td className="px-6 py-3.5 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex justify-end items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
@@ -520,11 +557,16 @@ export const LookupsManager: React.FC = () => {
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+      <div className="flex items-center gap-3">
+        <div className="hidden sm:flex h-12 w-12 items-center justify-center rounded-xl bg-red-50 text-red-600">
+          <Database className="h-6 w-6" />
+        </div>
         <div>
           <h2 className="text-2xl font-bold text-gray-800">Lookup Management</h2>
           <p className="text-gray-500 mt-1 text-sm">
-            Create lookup types first, then add items under each type
+            Add a lookup type and its first option, then open it to add more options.
           </p>
+        </div>
         </div>
         <button
           onClick={() => {
@@ -547,12 +589,33 @@ export const LookupsManager: React.FC = () => {
         </div>
       )}
 
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-50 text-red-600">
+            <Layers className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="text-xl font-semibold text-gray-800">{allTypes.length}</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Lookup types</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+            <List className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="text-xl font-semibold text-gray-800">{totalItemCount}</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Options</p>
+          </div>
+        </div>
+      </div>
+
       <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
           <input
             type="text"
-            placeholder="Search types…"
+            placeholder="Search lookup types..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-9 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors"
@@ -568,35 +631,31 @@ export const LookupsManager: React.FC = () => {
         </div>
       </div>
 
-      {/* Summary bar */}
-      <div className="flex items-center gap-4 text-sm text-gray-500">
-        <span className="flex items-center gap-1.5">
-          <Layers className="h-4 w-4" />
-          {allTypes.length} type{allTypes.length !== 1 ? 's' : ''}
-        </span>
-        <span className="flex items-center gap-1.5">
-          <List className="h-4 w-4" />
-          {allItems.filter((i) => i.name.toLowerCase() !== i.type.toLowerCase()).length} item{allItems.filter((i) => i.name.toLowerCase() !== i.type.toLowerCase()).length !== 1 ? 's' : ''}
-        </span>
-      </div>
-
       {filteredTypeTree.roots.length === 0 ? (
         <div className="text-center py-16 bg-white rounded-xl border border-gray-200">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-gray-100">
             <Inbox className="h-7 w-7 text-gray-400" />
           </div>
-          <p className="text-gray-500 font-medium">No lookup types found</p>
-          <p className="text-sm text-gray-400 mt-1">Create a type to start adding items</p>
-          <button
-            onClick={() => {
-              setEditingType(null);
-              setShowTypeForm(true);
-            }}
-            className="mt-4 inline-flex items-center gap-2 text-sm text-red-600 hover:text-red-700 font-medium"
-          >
-            <Plus className="h-4 w-4" />
-            Add your first lookup type
-          </button>
+          <p className="text-gray-700 font-semibold">
+            {searchTerm.trim() ? 'No matching lookup types' : 'No lookup types yet'}
+          </p>
+          {searchTerm.trim() ? (
+            <p className="mt-1 text-sm text-gray-500">Try another search.</p>
+          ) : (
+            <>
+              <p className="text-sm text-gray-500 mt-1">Create a type to start adding options.</p>
+              <button
+                onClick={() => {
+                  setEditingType(null);
+                  setShowTypeForm(true);
+                }}
+                className="mt-4 inline-flex items-center gap-2 text-sm text-red-600 hover:text-red-700 font-medium"
+              >
+                <Plus className="h-4 w-4" />
+                Add your first lookup type
+              </button>
+            </>
+          )}
         </div>
       ) : (
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">

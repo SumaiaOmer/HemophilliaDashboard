@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { LookupItem, LookupType, LookupsService } from '../../services/lookups';
 
 const LOCATION_TYPE_NAMES = ['SudanStates', 'City', 'LocalArea'];
@@ -29,8 +29,18 @@ export const LookupTypeForm: React.FC<LookupTypeFormProps> = ({
   const [initialItemName, setInitialItemName] = useState('');
   const [parentItemId, setParentItemId] = useState(defaultParentId ?? '0');
   const [parentItems, setParentItems] = useState<LookupItem[]>([]);
+  const [parentSearch, setParentSearch] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const matchingParentItems = parentItems.filter((item) =>
+    `${item.name} ${item.type}`.toLowerCase().includes(parentSearch.trim().toLowerCase())
+  );
+  const selectedParentItem = parentItems.find((item) => item.id === parentItemId);
+  const visibleParentItems =
+    selectedParentItem && !matchingParentItems.some((item) => item.id === selectedParentItem.id)
+      ? [selectedParentItem, ...matchingParentItems]
+      : matchingParentItems;
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -67,7 +77,7 @@ export const LookupTypeForm: React.FC<LookupTypeFormProps> = ({
       return;
     }
     if (trimmedInitialItemName && trimmedInitialItemName.toLowerCase() === trimmed.toLowerCase()) {
-      setError('The first item name must be different from the type name');
+      setError('Choose a first option name different from the lookup type.');
       return;
     }
     setError(null);
@@ -117,10 +127,11 @@ export const LookupTypeForm: React.FC<LookupTypeFormProps> = ({
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Type Name <span className="text-red-500">*</span>
+            <label htmlFor="lookup-type-name" className="block text-sm font-medium text-gray-700 mb-1.5">
+              Lookup type <span className="text-red-500">*</span>
             </label>
             <select
+              id="lookup-type-name"
               value={selectedTypeName}
               onChange={(e) => setSelectedTypeName(e.target.value)}
               required
@@ -135,60 +146,107 @@ export const LookupTypeForm: React.FC<LookupTypeFormProps> = ({
               <option value={CUSTOM_TYPE}>Custom type</option>
             </select>
             {selectedTypeName === CUSTOM_TYPE && (
-              <input
-                type="text"
-                value={customTypeName}
-                onChange={(e) => setCustomTypeName(e.target.value)}
-                required
-                disabled={!!type}
-                className="mt-3 w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none disabled:bg-gray-50 disabled:cursor-not-allowed transition-colors"
-                placeholder="Enter custom lookup type name"
-              />
+              <>
+                <label htmlFor="custom-lookup-type-name" className="mt-3 block text-sm font-medium text-gray-700 mb-1.5">
+                  Custom type name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="custom-lookup-type-name"
+                  type="text"
+                  value={customTypeName}
+                  onChange={(e) => setCustomTypeName(e.target.value)}
+                  required
+                  disabled={!!type}
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none disabled:bg-gray-50 disabled:cursor-not-allowed transition-colors"
+                  placeholder="For example, Occupations"
+                />
+              </>
             )}
-            <p className="mt-1.5 text-xs text-gray-400">
-              For Sudan locations, create SudanStates first, then City under a state, and LocalArea under a city. Names cannot be changed later.
+            <p className="mt-1.5 text-xs leading-5 text-gray-500">
+              Choose a suggested type or create a custom one. For Sudan locations, start with
+              SudanStates, then add City and LocalArea. The type name cannot be changed later.
             </p>
           </div>
 
           {!type && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Name <span className="text-red-500">*</span>
+              <label htmlFor="first-lookup-option" className="block text-sm font-medium text-gray-700 mb-1.5">
+                First option name <span className="text-red-500">*</span>
               </label>
               <input
+                id="first-lookup-option"
                 type="text"
                 value={initialItemName}
                 onChange={(e) => setInitialItemName(e.target.value)}
                 className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors"
                 required
-                placeholder="Enter the first lookup item name"
+                placeholder="For example, Doctor"
               />
-              <p className="mt-1.5 text-xs text-gray-400">
-                This creates the first item for this lookup type.
+              <p className="mt-1.5 text-xs leading-5 text-gray-500">
+                Enter the first option people will see in this list. You can add more after saving.
               </p>
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Parent Item <span className="text-gray-400 font-normal">(optional)</span>
+            <label htmlFor="lookup-type-parent" className="block text-sm font-medium text-gray-700 mb-1.5">
+              Parent item <span className="text-gray-400 font-normal">(optional)</span>
             </label>
+            <div className="relative mb-2">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <label htmlFor="parent-item-search" className="sr-only">
+                Search parent items
+              </label>
+              <input
+                id="parent-item-search"
+                type="search"
+                value={parentSearch}
+                onChange={(e) => setParentSearch(e.target.value)}
+                placeholder="Search parent items..."
+                className="w-full rounded-lg border border-gray-300 py-2 pl-9 pr-9 text-sm outline-none transition-colors focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
+              />
+              {parentSearch && (
+                <button
+                  type="button"
+                  onClick={() => setParentSearch('')}
+                  aria-label="Clear parent item search"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
             <select
+              id="lookup-type-parent"
               value={parentItemId}
               onChange={(e) => setParentItemId(e.target.value)}
               className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors"
             >
               <option value="0">None (top-level item)</option>
-              {parentItems.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
+              {visibleParentItems.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name} ({item.type})
+                </option>
               ))}
             </select>
-            <p className="mt-1.5 text-xs text-gray-400">
-              The new item will be linked to the selected parent item by name.
+            {parentSearch.trim() && matchingParentItems.length === 0 && (
+              <p className="mt-1.5 text-xs text-gray-500">No parent items match that search.</p>
+            )}
+            <p className="mt-1.5 text-xs leading-5 text-gray-500">
+              Use a parent only when this option belongs under another item, such as a city in a
+              state. Otherwise, leave it set to None.
             </p>
           </div>
+
+          {!type && (
+            <div className="rounded-lg border border-blue-100 bg-blue-50 p-3">
+              <p className="text-xs font-semibold text-blue-900">What happens next</p>
+              <p className="mt-1 text-xs leading-5 text-blue-800">
+                Saving creates this list and its first option. Open the list afterward to add more
+                options.
+              </p>
+            </div>
+          )}
 
           <div className="flex gap-3 pt-2">
             <button

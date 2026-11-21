@@ -15,6 +15,12 @@ export interface LookupItemRequest {
   parentId?: string | null;
 }
 
+interface LookupItemDto {
+  name: string;
+  type: string;
+  parentId: number;
+}
+
 export interface LookupType {
   name: string;
   label: string;
@@ -48,6 +54,9 @@ const readProperty = (item: Record<string, unknown>, propertyName: string) => {
   return key ? item[key] : undefined;
 };
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
 const normalizeItem = (item: Record<string, unknown>): LookupItem => {
   const id = readProperty(item, 'id');
   const rawName = String(readProperty(item, 'name') ?? '');
@@ -70,23 +79,45 @@ const normalizeItem = (item: Record<string, unknown>): LookupItem => {
   };
 };
 
-const buildApiBody = (item: LookupItemRequest) => {
-  // The LookupItemDto uses PascalCase; ASP.NET model binding is also case-insensitive.
-  const body: any = { Name: item.name, Type: item.type };
-  if (item.parentId && item.parentId !== '0' && item.parentId !== '') {
-    body.ParentId = parseInt(String(item.parentId), 10);
-  } else {
-    body.ParentId = 0;
+const normalizeItems = (data: unknown, endpoint: string): LookupItem[] => {
+  if (!Array.isArray(data)) {
+    throw new Error(`Lookup API returned an unexpected response for ${endpoint}`);
   }
-  return body;
+  return data.map((item, index) => {
+    if (!isRecord(item)) {
+      throw new Error(`Lookup API returned an invalid item at index ${index} for ${endpoint}`);
+    }
+    return normalizeItem(item);
+  });
+};
+
+const parseApiId = (id: string, fieldName: string): number => {
+  const parsedId = Number(id);
+  if (!Number.isInteger(parsedId) || parsedId < 1 || parsedId > 2147483647) {
+    throw new Error(`Lookup ${fieldName} must be a positive 32-bit integer`);
+  }
+  return parsedId;
+};
+
+const buildApiBody = (item: LookupItemRequest): LookupItemDto => {
+  const rawParentId = item.parentId?.trim();
+  const parentId = !rawParentId || rawParentId === '0' ? 0 : Number(rawParentId);
+  if (!Number.isInteger(parentId) || parentId < 0 || parentId > 2147483647) {
+    throw new Error('Lookup parentId must be a non-negative 32-bit integer');
+  }
+  return {
+    name: item.name,
+    type: item.type,
+    parentId,
+  };
 };
 
 export class LookupsService {
   static async getByType(type: string): Promise<LookupItem[]> {
     try {
-      const data = await apiClient.get<any>(`/Lookups/${encodeURIComponent(type)}`);
-      const list = Array.isArray(data) ? data : [];
-      return list.map(normalizeItem);
+      const endpoint = `/Lookups/type/${encodeURIComponent(type)}`;
+      const data = await apiClient.get<unknown>(endpoint);
+      return normalizeItems(data, `GET ${endpoint}`);
     } catch (error) {
       console.error(`Error fetching lookups for type ${type}:`, error);
       return [];
@@ -94,11 +125,8 @@ export class LookupsService {
   }
 
   static async getAll(): Promise<LookupItem[]> {
-    const data = await apiClient.get<any>('/Lookups');
-    if (!Array.isArray(data)) {
-      throw new Error('Lookup API returned an unexpected response for GET /Lookups');
-    }
-    return data.map(normalizeItem);
+    const data = await apiClient.get<unknown>('/Lookups');
+    return normalizeItems(data, 'GET /Lookups');
   }
 
   /**
@@ -202,15 +230,24 @@ export class LookupsService {
   }
 
   static async create(item: LookupItemRequest): Promise<LookupItem> {
-    const data = await apiClient.post<any>('/Lookups/create-body', buildApiBody(item));
-    return normalizeItem(data ?? { name: item.name, type: item.type, parentId: item.parentId });
+    const data = await apiClient.post<unknown>('/Lookups', buildApiBody(item));
+    if (!isRecord(data)) {
+      throw new Error('Lookup API returned an unexpected response for POST /Lookups');
+    }
+    return normalizeItem(data);
   }
 
-  static async update(id: string, item: LookupItemRequest): Promise<void> {
-    await apiClient.put(`/Lookups/update-body/${encodeURIComponent(id)}`, buildApiBody(item));
+  static async update(id: string, item: LookupItemRequest): Promise<LookupItem> {
+    const lookupId = parseApiId(id, 'id');
+    const data = await apiClient.put<unknown>(`/Lookups/${lookupId}`, buildApiBody(item));
+    if (!isRecord(data)) {
+      throw new Error(`Lookup API returned an unexpected response for PUT /Lookups/${lookupId}`);
+    }
+    return normalizeItem(data);
   }
 
   static async remove(id: string): Promise<void> {
-    await apiClient.delete(`/Lookups/delete/${encodeURIComponent(id)}`);
+    const lookupId = parseApiId(id, 'id');
+    await apiClient.delete(`/Lookups/${lookupId}`);
   }
 }
