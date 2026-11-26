@@ -102,7 +102,7 @@ export const LookupTypeForm: React.FC<LookupTypeFormProps> = ({
         if (e.target === e.currentTarget && !isSubmitting) onCancel();
       }}
     >
-      <div className="bg-white rounded-2xl w-full max-w-md mx-auto shadow-2xl overflow-hidden">
+      <div className="bg-white rounded-2xl w-full max-w-md max-h-[calc(100vh-2rem)] mx-auto shadow-2xl overflow-y-auto">
         <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100">
           <h3 className="text-lg font-semibold text-gray-800">
             {type ? 'Edit Lookup Type' : 'Add Lookup Type'}
@@ -133,7 +133,11 @@ export const LookupTypeForm: React.FC<LookupTypeFormProps> = ({
             <select
               id="lookup-type-name"
               value={selectedTypeName}
-              onChange={(e) => setSelectedTypeName(e.target.value)}
+              onChange={(e) => {
+                const nextTypeName = e.target.value;
+                setSelectedTypeName(nextTypeName);
+                if (nextTypeName === CUSTOM_TYPE) setParentItemId('0');
+              }}
               required
               autoFocus
               disabled={!!type}
@@ -188,55 +192,57 @@ export const LookupTypeForm: React.FC<LookupTypeFormProps> = ({
             </div>
           )}
 
-          <div>
-            <label htmlFor="lookup-type-parent" className="block text-sm font-medium text-gray-700 mb-1.5">
-              Parent item <span className="text-gray-400 font-normal">(optional)</span>
-            </label>
-            <div className="relative mb-2">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-              <label htmlFor="parent-item-search" className="sr-only">
-                Search parent items
+          {selectedTypeName !== CUSTOM_TYPE && (
+            <div>
+              <label htmlFor="lookup-type-parent" className="block text-sm font-medium text-gray-700 mb-1.5">
+                Parent item <span className="text-gray-400 font-normal">(optional)</span>
               </label>
-              <input
-                id="parent-item-search"
-                type="search"
-                value={parentSearch}
-                onChange={(e) => setParentSearch(e.target.value)}
-                placeholder="Search parent items..."
-                className="w-full rounded-lg border border-gray-300 py-2 pl-9 pr-9 text-sm outline-none transition-colors focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
-              />
-              {parentSearch && (
-                <button
-                  type="button"
-                  onClick={() => setParentSearch('')}
-                  aria-label="Clear parent item search"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
-                >
-                  <X className="h-4 w-4" />
-                </button>
+              <div className="relative mb-2">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <label htmlFor="parent-item-search" className="sr-only">
+                  Search parent items
+                </label>
+                <input
+                  id="parent-item-search"
+                  type="search"
+                  value={parentSearch}
+                  onChange={(e) => setParentSearch(e.target.value)}
+                  placeholder="Search parent items..."
+                  className="w-full rounded-lg border border-gray-300 py-2 pl-9 pr-9 text-sm outline-none transition-colors focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
+                />
+                {parentSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setParentSearch('')}
+                    aria-label="Clear parent item search"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+              <select
+                id="lookup-type-parent"
+                value={parentItemId}
+                onChange={(e) => setParentItemId(e.target.value)}
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors"
+              >
+                <option value="0">None (top-level item)</option>
+                {visibleParentItems.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name} ({item.type})
+                  </option>
+                ))}
+              </select>
+              {parentSearch.trim() && matchingParentItems.length === 0 && (
+                <p className="mt-1.5 text-xs text-gray-500">No parent items match that search.</p>
               )}
+              <p className="mt-1.5 text-xs leading-5 text-gray-500">
+                Use a parent only when this option belongs under another item, such as a city in a
+                state. Otherwise, leave it set to None.
+              </p>
             </div>
-            <select
-              id="lookup-type-parent"
-              value={parentItemId}
-              onChange={(e) => setParentItemId(e.target.value)}
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors"
-            >
-              <option value="0">None (top-level item)</option>
-              {visibleParentItems.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name} ({item.type})
-                </option>
-              ))}
-            </select>
-            {parentSearch.trim() && matchingParentItems.length === 0 && (
-              <p className="mt-1.5 text-xs text-gray-500">No parent items match that search.</p>
-            )}
-            <p className="mt-1.5 text-xs leading-5 text-gray-500">
-              Use a parent only when this option belongs under another item, such as a city in a
-              state. Otherwise, leave it set to None.
-            </p>
-          </div>
+          )}
 
           {!type && (
             <div className="rounded-lg border border-blue-100 bg-blue-50 p-3">

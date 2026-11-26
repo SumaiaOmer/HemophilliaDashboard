@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
-import { Patient, PatientRequest, PatientTestDate, TestType, OtherMedicalTest, InhibitorEntry, InhibitorTestRequest } from '../../types/api';
+import { Patient, PatientRequest, PatientTestDate, PatientTestTakenValue, TestType, OtherMedicalTest, InhibitorEntry, InhibitorTestRequest } from '../../types/api';
 import { toDateInputValue } from '../../lib/dateUtils';
 import { LookupsService } from '../../services/lookups';
 import { getLookupOptions, LookupOption, toLookupOptions, useLookupOptions } from '../../hooks/useLookupOptions';
@@ -18,16 +18,6 @@ const COUNTRIES = [
   'Jordan', 'Lebanon', 'Turkey', 'Ethiopia', 'Eritrea', 'Kenya', 'Uganda', 'Chad',
   'Libya', 'South Sudan', 'United Kingdom', 'United States', 'Canada', 'Germany',
   'France', 'Italy', 'Spain', 'Australia', 'Other'
-];
-
-const DIAGNOSES = [
-  'Hemophilia A', 'Hemophilia B', 'Hemophilia A carrier', 'Hemophilia B carrier',
-  'Acquired hemophilia', 'Von Willebrand Disease', 'Afibrinogenemia', 'Hypofibrinogenemia',
-  'Dysfibrinogenemia', 'Platelete dysfunction', 'Bernard Soulier syndrome',
-  'Glanzmann thrombasthenia', 'Prothrombin deficiency', 'Factor V deficiency',
-  'Combined factor V and VIII deficiency', 'Factor VII deficiency', 'Factor X deficiency',
-  'Factor XI deficiency', 'Factor XII deficiency', 'Factor XIII deficiency',
-  'Vitamin K dependent factor deficiency', 'Other bleeding disorder', 'Undiagnosed',
 ];
 
 const PHONE_CODE_OPTIONS = [
@@ -53,7 +43,7 @@ const PHONE_CODE_OPTIONS = [
 ];
 
 const PATIENT_LOOKUP_TYPES = [
-  'VitalStatusOptions', 'GenderOptions', 'DiagnosisOptions', 'ResidenceTypeOptions',
+  'VitalStatusOptions', 'GenderOptions', 'Diagnosis', 'Status', 'ResidenceTypeOptions',
   'Countries', 'MaritalStatusOptions', 'Occupations', 'PhoneCountryCodes',
   'BloodGroupOptions', 'YesNoOptions', 'ViralTestStatusOptions', 'ChronicDiseaseOptions',
   'TestResultOptions', 'FamilyHistoryOptions', 'OtherOptions',
@@ -62,7 +52,6 @@ const PATIENT_LOOKUP_TYPES = [
 const PATIENT_LOOKUP_FALLBACKS: Record<string, LookupOption[]> = {
   VitalStatusOptions: toLookupOptions(['Alive', 'Died', 'Unknown']),
   GenderOptions: toLookupOptions(['male|Male', 'female|Female']),
-  DiagnosisOptions: toLookupOptions(DIAGNOSES),
   ResidenceTypeOptions: toLookupOptions(['InsideSudan|Inside Sudan', 'OutsideSudan|Outside Sudan']),
   Countries: toLookupOptions(COUNTRIES),
   MaritalStatusOptions: toLookupOptions(['single|Single', 'married|Married', 'divorced|Divorced', 'widow|Widow', 'widower|Widower', 'child|Child']),
@@ -80,6 +69,19 @@ const PATIENT_LOOKUP_FALLBACKS: Record<string, LookupOption[]> = {
 
 type ViralTestType = 'HBV' | 'HCV' | 'HIV';
 type ViralTestStatus = 'yes' | 'no' | 'not_done';
+
+const parseViralTestStatus = (value: unknown): ViralTestStatus => {
+  if (value === true) return 'yes';
+  if (typeof value !== 'string') return 'no';
+
+  const normalized = value.trim().toLowerCase().replace(/_/g, ' ');
+  if (normalized === 'true' || normalized === 'yes') return 'yes';
+  if (normalized === 'not done') return 'not_done';
+  return 'no';
+};
+
+const toPatientTestTakenValue = (status: ViralTestStatus): PatientTestTakenValue =>
+  status === 'yes' ? 'true' : status === 'not_done' ? 'not done' : 'false';
 
 const normalizePhoneValue = (value?: string): { code: string; number: string } => {
   if (!value) return { code: '+249', number: '' };
@@ -118,7 +120,8 @@ export const PatientForm: React.FC<PatientFormProps> = ({
   const [lookupStates, setLookupStates] = useState<string[]>([]);
   const [lookupCitiesByState, setLookupCitiesByState] = useState<Record<string, string[]>>({});
   const [lookupLocalAreasByCity, setLookupLocalAreasByCity] = useState<Record<string, string[]>>({});
-  const diagnoses = getLookupOptions(lookupOptions, 'DiagnosisOptions', toLookupOptions(DIAGNOSES));
+  const diagnoses = lookupOptions.Diagnosis ?? [];
+  const statusOptions = lookupOptions.Status ?? [];
   const occupations = lookupOptions.Occupations ?? [];
   const genderOptions = getLookupOptions(lookupOptions, 'GenderOptions', PATIENT_LOOKUP_FALLBACKS.GenderOptions)
     .map(option => ({ ...option, value: option.value.toLowerCase() }));
@@ -218,6 +221,8 @@ export const PatientForm: React.FC<PatientFormProps> = ({
   const [hasFamilyHistory, setHasFamilyHistory] = useState(false);
   const [inhibitorStatus, setInhibitorStatus] = useState<'yes' | 'no' | 'not_done'>('no');
   const isPatientAlive = (formData.vitalStatus || 'Alive') === 'Alive';
+  const selectedDiagnosisLabel = diagnoses.find(option => option.value === formData.diagnosis)?.label;
+  const isUndiagnosed = `${formData.diagnosis} ${selectedDiagnosisLabel ?? ''}`.toLowerCase().includes('undiagnos');
 
   const [testDates, setTestDates] = useState<Partial<Record<TestType, { hasTaken: boolean; testDate: string; result?: 'positive' | 'negative' }>>>({
     HBV: { hasTaken: false, testDate: '', result: undefined },
@@ -407,29 +412,32 @@ export const PatientForm: React.FC<PatientFormProps> = ({
       const hbvTaken = patient.hbvTestTaken ?? (patient as any)['HBVTestTaken'] ?? (patient as any)['hbv_test_taken'];
       const hbvDate = patient.hbvTestDate ?? (patient as any)['HBVTestDate'] ?? (patient as any)['hbv_test_date'];
       const hbvResult = patient.hbvTestResult ?? (patient as any)['HBVTestResult'] ?? (patient as any)['hbv_test_result'];
+      const hbvStatus = parseViralTestStatus(hbvTaken);
       if (hbvTaken !== undefined || hbvDate || hbvResult) {
-        testDatesMap.HBV = { hasTaken: Boolean(hbvTaken), testDate: toDateInputValue(hbvDate), result: hbvResult || undefined };
+        testDatesMap.HBV = { hasTaken: hbvStatus === 'yes', testDate: toDateInputValue(hbvDate), result: hbvResult || undefined };
       }
 
       const hcvTaken = patient.hcvTestTaken ?? (patient as any)['HCVTestTaken'] ?? (patient as any)['hcv_test_taken'];
       const hcvDate = patient.hcvTestDate ?? (patient as any)['HCVTestDate'] ?? (patient as any)['hcv_test_date'];
       const hcvResult = patient.hcvTestResult ?? (patient as any)['HCVTestResult'] ?? (patient as any)['hcv_test_result'];
+      const hcvStatus = parseViralTestStatus(hcvTaken);
       if (hcvTaken !== undefined || hcvDate || hcvResult) {
-        testDatesMap.HCV = { hasTaken: Boolean(hcvTaken), testDate: toDateInputValue(hcvDate), result: hcvResult || undefined };
+        testDatesMap.HCV = { hasTaken: hcvStatus === 'yes', testDate: toDateInputValue(hcvDate), result: hcvResult || undefined };
       }
 
       const hivTaken = patient.hivTestTaken ?? (patient as any)['HIVTestTaken'] ?? (patient as any)['hiv_test_taken'];
       const hivDate = patient.hivTestDate ?? (patient as any)['HIVTestDate'] ?? (patient as any)['hiv_test_date'];
       const hivResult = patient.hivTestResult ?? (patient as any)['HIVTestResult'] ?? (patient as any)['hiv_test_result'];
+      const hivStatus = parseViralTestStatus(hivTaken);
       if (hivTaken !== undefined || hivDate || hivResult) {
-        testDatesMap.HIV = { hasTaken: Boolean(hivTaken), testDate: toDateInputValue(hivDate), result: hivResult || undefined };
+        testDatesMap.HIV = { hasTaken: hivStatus === 'yes', testDate: toDateInputValue(hivDate), result: hivResult || undefined };
       }
 
       setTestDates(testDatesMap);
       setViralTestStatuses({
-        HBV: testDatesMap.HBV?.hasTaken ? 'yes' : 'no',
-        HCV: testDatesMap.HCV?.hasTaken ? 'yes' : 'no',
-        HIV: testDatesMap.HIV?.hasTaken ? 'yes' : 'no',
+        HBV: hbvTaken !== undefined ? hbvStatus : testDatesMap.HBV?.hasTaken ? 'yes' : 'no',
+        HCV: hcvTaken !== undefined ? hcvStatus : testDatesMap.HCV?.hasTaken ? 'yes' : 'no',
+        HIV: hivTaken !== undefined ? hivStatus : testDatesMap.HIV?.hasTaken ? 'yes' : 'no',
       });
     } else {
       setHasChronicDiseases(false);
@@ -569,13 +577,13 @@ const handleSubmit = (e: React.FormEvent) => {
     hasInhibitors: Boolean(formData.HasInhibitors || formData.hasInhibitors),
     otherMedicalTests: otherMedicalTests.length > 0 ? otherMedicalTests : [],
     testDates: testDatesArray.length > 0 ? testDatesArray : [],
-    hbvTestTaken: hbvTestState?.hasTaken ?? false,
+    hbvTestTaken: toPatientTestTakenValue(viralTestStatuses.HBV),
     hbvTestDate: hbvTestState?.testDate || '',
     hbvTestResult: hbvTestState?.result || '',
-    hcvTestTaken: hcvTestState?.hasTaken ?? false,
+    hcvTestTaken: toPatientTestTakenValue(viralTestStatuses.HCV),
     hcvTestDate: hcvTestState?.testDate || '',
     hcvTestResult: hcvTestState?.result || '',
-    hivTestTaken: hivTestState?.hasTaken ?? false,
+    hivTestTaken: toPatientTestTakenValue(viralTestStatuses.HIV),
     hivTestDate: hivTestState?.testDate || '',
     hivTestResult: hivTestState?.result || '',
   };
@@ -818,18 +826,6 @@ const handleSubmit = (e: React.FormEvent) => {
               </select>
             </div>
 
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-              <input
-                type="text"
-                name="status"
-                value={formData.status || ''}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                placeholder="Enter status"
-              />
-            </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
@@ -983,6 +979,16 @@ const handleSubmit = (e: React.FormEvent) => {
               </div>
             )}
 
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+              <select name="status" value={formData.status || ''} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                <option value="">Select Status</option>
+                {statusOptions.map(option => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+            </div>
+
             {/* Marital Status, Occupation */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
@@ -1068,10 +1074,12 @@ const handleSubmit = (e: React.FormEvent) => {
                 <h4 className="text-lg font-semibold text-green-900 mb-4">Medical Information</h4>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Hemophilia Center ID *</label>
-                    <input type="text" name="hemophiliaCenterId" value={formData.hemophiliaCenterId} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Center ID" />
-                  </div>
+                  {!isUndiagnosed && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Hemophilia Center ID *</label>
+                      <input type="text" name="hemophiliaCenterId" value={formData.hemophiliaCenterId} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Center ID" />
+                    </div>
+                  )}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Incidence Date</label>
                     <input type="date" name="incidenceDate" value={formData.incidenceDate || ''} onChange={handleChange} max={toDateInputValue(new Date().toISOString())} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
@@ -1094,6 +1102,7 @@ const handleSubmit = (e: React.FormEvent) => {
                   </div>
                 </div>
 
+                {!isUndiagnosed && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Diagnosis Year *</label>
@@ -1119,6 +1128,7 @@ const handleSubmit = (e: React.FormEvent) => {
                     )}
                   </div>
                 </div>
+                )}
 
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">Blood Group *</label>
@@ -1130,6 +1140,8 @@ const handleSubmit = (e: React.FormEvent) => {
                   </select>
                 </div>
 
+                {!isUndiagnosed && (
+                <>
                 {/* Factor Level */}
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">Has Factor Level Test?</label>
@@ -1306,6 +1318,8 @@ const handleSubmit = (e: React.FormEvent) => {
                       )}
                     </div>
                   </>
+                )}
+                </>
                 )}
 
                 {/* Chronic Diseases */}

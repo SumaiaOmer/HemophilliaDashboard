@@ -87,6 +87,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
   // Lookup data from API
   const [lookupDiagnoses, setLookupDiagnoses] = useState<LookupItem[]>([]);
   const [lookupOccupations, setLookupOccupations] = useState<LookupItem[]>([]);
+  const [lookupStatuses, setLookupStatuses] = useState<LookupItem[]>([]);
   const [lookupStates, setLookupStates] = useState<string[]>([]);
   const [lookupMaritalStatuses, setLookupMaritalStatuses] = useState<LookupItem[]>([]);
   const [lookupChronicDiseases, setLookupChronicDiseases] = useState<LookupItem[]>([]);
@@ -95,15 +96,17 @@ export const PatientForm: React.FC<PatientFormProps> = ({
 
   useEffect(() => {
     const loadLookups = async () => {
-      const [diagnoses, occupations, maritalStatuses, chronicDiseases, hierarchy] = await Promise.all([
-        LookupsService.getByType('DiagnosisOptions').catch(() => []),
+      const [diagnoses, occupations, statuses, maritalStatuses, chronicDiseases, hierarchy] = await Promise.all([
+        LookupsService.getByType('Diagnosis').catch(() => []),
         LookupsService.getByType('Occupations').catch(() => []),
+        LookupsService.getByType('Status').catch(() => []),
         LookupsService.getByType('MaritalStatusOptions').catch(() => []),
         LookupsService.getByType('ChronicDiseaseOptions').catch(() => []),
         LookupsService.getLocationHierarchy(),
       ]);
       setLookupDiagnoses(diagnoses);
       setLookupOccupations(occupations);
+      setLookupStatuses(statuses.filter(item => item.name.toLowerCase() !== item.type.toLowerCase()));
       setLookupMaritalStatuses(maritalStatuses);
       setLookupChronicDiseases(chronicDiseases);
       setLookupStates(hierarchy.states);
@@ -193,6 +196,8 @@ export const PatientForm: React.FC<PatientFormProps> = ({
   const [hasFamilyHistory, setHasFamilyHistory] = useState(false);
   const [inhibitorStatus, setInhibitorStatus] = useState<'yes' | 'no' | 'not_done'>('no');
   const isPatientAlive = (formData.vitalStatus || 'Alive') === 'Alive';
+  const selectedDiagnosis = lookupDiagnoses.find(item => item.name === formData.diagnosis);
+  const isUndiagnosed = `${formData.diagnosis} ${selectedDiagnosis?.description ?? ''}`.toLowerCase().includes('undiagnos');
 
   const [testDates, setTestDates] = useState<Partial<Record<TestType, { hasTaken: boolean; testDate: string; result?: 'positive' | 'negative' }>>>({
     HBV: { hasTaken: false, testDate: '', result: undefined },
@@ -793,18 +798,6 @@ const handleSubmit = (e: React.FormEvent) => {
               </select>
             </div>
 
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-              <input
-                type="text"
-                name="status"
-                value={formData.status || ''}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                placeholder="Enter status"
-              />
-            </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
@@ -826,23 +819,7 @@ const handleSubmit = (e: React.FormEvent) => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Diagnosis</label>
                   <select name="diagnosis" value={formData.diagnosis || ''} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                     <option value="">Select Diagnosis</option>
-                    {(lookupDiagnoses.length > 0 ? lookupDiagnoses : [
-                      { id: '1', name: 'Hemophilia A' }, { id: '2', name: 'Hemophilia B' },
-                      { id: '3', name: 'Hemophilia A carrier' }, { id: '4', name: 'Hemophilia B carrier' },
-                      { id: '5', name: 'Acquired hemophilia' }, { id: '6', name: 'Von Willebrand Disease' },
-                      { id: '7', name: 'Afibrinogenemia' }, { id: '8', name: 'Hypofibrinogenemia' },
-                      { id: '9', name: 'Dysfibrinogenemia' }, { id: '10', name: 'Platelete dysfunction' },
-                      { id: '11', name: 'Bernard Soulier syndrome' }, { id: '12', name: 'Glanzmann thrombasthenia' },
-                      { id: '13', name: 'Prothrombin deficiency' }, { id: '14', name: 'Factor V deficiency' },
-                      { id: '15', name: 'Combined factor V and VIII deficiency' }, { id: '16', name: 'Factor VII deficiency' },
-                      { id: '17', name: 'Factor X deficiency' }, { id: '18', name: 'Factor XI deficiency' },
-                      { id: '19', name: 'Factor XII deficiency' }, { id: '20', name: 'Factor XIII deficiency' },
-                      { id: '21', name: 'Vitamin K dependent factor deficiency' }, { id: '22', name: 'Other bleeding disorder' }
-                    ]).concat(
-                      lookupDiagnoses.some(d => d.name.trim().toLowerCase() === 'undiagnosed')
-                        ? []
-                        : [{ id: 'undiagnosed', name: 'Undiagnosed' }]
-                    ).map(d => (
+                    {lookupDiagnoses.map(d => (
                       <option key={d.id} value={d.name}>{d.name}</option>
                     ))}
                   </select>
@@ -972,6 +949,16 @@ const handleSubmit = (e: React.FormEvent) => {
               </div>
             )}
 
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+              <select name="status" value={formData.status || ''} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                <option value="">Select Status</option>
+                {lookupStatuses.map(status => (
+                  <option key={status.id} value={status.name}>{status.name}</option>
+                ))}
+              </select>
+            </div>
+
             {/* Marital Status, Occupation */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
@@ -1058,10 +1045,12 @@ const handleSubmit = (e: React.FormEvent) => {
                 <h4 className="text-lg font-semibold text-green-900 mb-4">Medical Information</h4>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Hemophilia Center ID *</label>
-                    <input type="text" name="hemophiliaCenterId" value={formData.hemophiliaCenterId} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Center ID" />
-                  </div>
+                  {!isUndiagnosed && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Hemophilia Center ID *</label>
+                      <input type="text" name="hemophiliaCenterId" value={formData.hemophiliaCenterId} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Center ID" />
+                    </div>
+                  )}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Incidence Date</label>
                     <input type="date" name="incidenceDate" value={formData.incidenceDate || ''} onChange={handleChange} max={toDateInputValue(new Date().toISOString())} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
@@ -1073,23 +1062,7 @@ const handleSubmit = (e: React.FormEvent) => {
                     <label className="block text-sm font-medium text-gray-700 mb-2">Diagnosis</label>
                     <select name="diagnosis" value={formData.diagnosis} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                       <option value="">Select Diagnosis</option>
-                      {(lookupDiagnoses.length > 0 ? lookupDiagnoses : [
-                        { id: '1', name: 'Hemophilia A' }, { id: '2', name: 'Hemophilia B' },
-                        { id: '3', name: 'Hemophilia A carrier' }, { id: '4', name: 'Hemophilia B carrier' },
-                        { id: '5', name: 'Acquired hemophilia' }, { id: '6', name: 'Von Willebrand Disease' },
-                        { id: '7', name: 'Afibrinogenemia' }, { id: '8', name: 'Hypofibrinogenemia' },
-                        { id: '9', name: 'Dysfibrinogenemia' }, { id: '10', name: 'Platelete dysfunction' },
-                        { id: '11', name: 'Bernard Soulier syndrome' }, { id: '12', name: 'Glanzmann thrombasthenia' },
-                        { id: '13', name: 'Prothrombin deficiency' }, { id: '14', name: 'Factor V deficiency' },
-                        { id: '15', name: 'Combined factor V and VIII deficiency' }, { id: '16', name: 'Factor VII deficiency' },
-                        { id: '17', name: 'Factor X deficiency' }, { id: '18', name: 'Factor XI deficiency' },
-                        { id: '19', name: 'Factor XII deficiency' }, { id: '20', name: 'Factor XIII deficiency' },
-                        { id: '21', name: 'Vitamin K dependent factor deficiency' }, { id: '22', name: 'Other bleeding disorder' }
-                      ]).concat(
-                        lookupDiagnoses.some(d => d.name.trim().toLowerCase() === 'undiagnosed')
-                          ? []
-                          : [{ id: 'undiagnosed', name: 'Undiagnosed' }]
-                      ).map(d => (
+                      {lookupDiagnoses.map(d => (
                         <option key={d.id} value={d.name}>{d.name}</option>
                       ))}
                     </select>
@@ -1100,6 +1073,7 @@ const handleSubmit = (e: React.FormEvent) => {
                   </div>
                 </div>
 
+                {!isUndiagnosed && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Diagnosis Year *</label>
@@ -1125,6 +1099,7 @@ const handleSubmit = (e: React.FormEvent) => {
                     )}
                   </div>
                 </div>
+                )}
 
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">Blood Group *</label>
@@ -1142,6 +1117,8 @@ const handleSubmit = (e: React.FormEvent) => {
                   </select>
                 </div>
 
+                {!isUndiagnosed && (
+                <>
                 {/* Factor Level */}
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">Has Factor Level Test?</label>
@@ -1317,6 +1294,8 @@ const handleSubmit = (e: React.FormEvent) => {
                       )}
                     </div>
                   </>
+                )}
+                </>
                 )}
 
                 {/* Chronic Diseases */}

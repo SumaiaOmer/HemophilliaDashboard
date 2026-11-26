@@ -220,6 +220,7 @@ export class PatientsService {
       : typeof patient.chronicDiseases === 'string' && patient.chronicDiseases.trim().length > 0
         ? patient.chronicDiseases
         : null;
+    const hasHBVVaccinationValue = patient.hasHBVVaccination ? 'true' : 'false';
 
     const transformed: any = {
       FullName: patient.fullName,
@@ -262,24 +263,24 @@ export class PatientsService {
       ChronicDiseases: chronicDiseasesValue,
       chronicDiseases: chronicDiseasesValue,
       ChronicDiseaseOther: patient.chronicDiseaseOther || null,
-      HasHBVVaccination: patient.hasHBVVaccination || false,
-      hasHBVVaccination: patient.hasHBVVaccination || false,
+      HasHBVVaccination: hasHBVVaccinationValue,
+      hasHBVVaccination: hasHBVVaccinationValue,
       HBVVaccinationDate: patient.hbvVaccinationDate || null,
       hbvVaccinationDate: patient.hbvVaccinationDate || null,
-      HBVTestTaken: patient.hbvTestTaken ?? false,
-      hbvTestTaken: patient.hbvTestTaken ?? false,
+      HBVTestTaken: patient.hbvTestTaken ?? 'false',
+      hbvTestTaken: patient.hbvTestTaken ?? 'false',
       HBVTestDate: patient.hbvTestDate || null,
       hbvTestDate: patient.hbvTestDate || null,
       HBVTestResult: patient.hbvTestResult || null,
       hbvTestResult: patient.hbvTestResult || null,
-      HCVTestTaken: patient.hcvTestTaken ?? false,
-      hcvTestTaken: patient.hcvTestTaken ?? false,
+      HCVTestTaken: patient.hcvTestTaken ?? 'false',
+      hcvTestTaken: patient.hcvTestTaken ?? 'false',
       HCVTestDate: patient.hcvTestDate || null,
       hcvTestDate: patient.hcvTestDate || null,
       HCVTestResult: patient.hcvTestResult || null,
       hcvTestResult: patient.hcvTestResult || null,
-      HIVTestTaken: patient.hivTestTaken ?? false,
-      hivTestTaken: patient.hivTestTaken ?? false,
+      HIVTestTaken: patient.hivTestTaken ?? 'false',
+      hivTestTaken: patient.hivTestTaken ?? 'false',
       HIVTestDate: patient.hivTestDate || null,
       hivTestDate: patient.hivTestDate || null,
       HIVTestResult: patient.hivTestResult || null,

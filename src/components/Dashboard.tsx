@@ -80,7 +80,7 @@ export const Dashboard: React.FC = () => {
         setExpiringDrugs(expiring);
 
         setStats({
-          totalPatients: patients.length,
+          totalPatients: patients.filter((patient) => patient.vitalStatus?.trim().toLowerCase() === 'alive').length,
           totalCompanies: companies.length,
           totalFactors: factors.length,
           totalTreatments: activeTreatmentsCount,

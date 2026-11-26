@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, CreditCard as Edit, Trash2, Users, Calendar, MapPin, Phone, Heart, ChevronDown, ChevronUp } from 'lucide-react';
-import { Patient, PatientRequest } from '../../types/api';
+import { Patient, PatientRequest, PatientTestTakenValue } from '../../types/api';
 import { PatientsService } from '../../services/patients';
 import { PatientForm } from './PatientForm';
 import { formatDate } from '../../lib/dateUtils';
@@ -125,7 +125,8 @@ export const PatientsManager: React.FC = () => {
     return 'None';
   };
 
-  const formatBooleanValue = (value?: boolean) => (value ? 'Yes' : 'No');
+  const formatBooleanValue = (value?: boolean | PatientTestTakenValue) =>
+    value === 'not done' ? 'Not done' : value === true || value === 'true' ? 'Yes' : 'No';
   const getInhibitorStatus = (patient: Patient) =>
     patient.HasInhibitors ?? patient.hasInhibitors ?? patient.inhibitor ?? false;
   const isDeceased = (patient: Patient) => patient.vitalStatus?.toLowerCase() === 'died';
@@ -327,9 +328,19 @@ export const PatientsManager: React.FC = () => {
                                 <span className="ml-2 text-gray-900">{formatOccupation(patient.occupation)}</span>
                               </div>
                               <div>
-                                <span className="text-gray-600">Address:</span>
+                                <span className="text-gray-600">Home State:</span>
+                                <span className="ml-2 text-gray-900">{patient.homeState || 'N/A'}</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-600">Residence Location:</span>
                                 <span className="ml-2 text-gray-900">
-                                  {[patient.locality, patient.cityOrTown, patient.state].filter(Boolean).join(', ') || 'N/A'}
+                                  {[
+                                    patient.residenceLocalArea || patient.locality,
+                                    patient.residenceCityOrTown || patient.cityOrTown,
+                                    patient.residenceState || patient.state,
+                                    patient.residenceRegion,
+                                    patient.residenceCountry || patient.country,
+                                  ].filter(Boolean).join(', ') || 'N/A'}
                                 </span>
                               </div>
                             </div>

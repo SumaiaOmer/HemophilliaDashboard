@@ -1,6 +1,6 @@
 // api.ts
-//const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5057/api';
-const API_URL = import.meta.env.VITE_API_URL || 'http://nbtc.gov.sd:5057/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5057/api';
+//const API_URL = import.meta.env.VITE_API_URL || 'http://nbtc.gov.sd:5057/api';
 interface ApiRequestOptions extends RequestInit {
   requiresAuth?: boolean;
 }
@@ -246,6 +246,9 @@ export interface InhibitorHistory {
 }
 
 // ================= PATIENT =================
+export type PatientTestTakenValue = 'true' | 'false' | 'not done';
+export type ApiBooleanString = 'true' | 'false';
+
 export interface Patient {
   id: number;
   fullName: string;
@@ -298,15 +301,15 @@ export interface Patient {
   chronicDiseases?: string[] | string;
   chronicDiseaseOther?: string;
   bloodGroup?: string;
-  hasHBVVaccination?: boolean;
+  hasHBVVaccination?: boolean | ApiBooleanString;
   hbvVaccinationDate?: string;
-  hbvTestTaken?: boolean;
+  hbvTestTaken?: boolean | PatientTestTakenValue;
   hbvTestDate?: string;
   hbvTestResult?: string;
-  hcvTestTaken?: boolean;
+  hcvTestTaken?: boolean | PatientTestTakenValue;
   hcvTestDate?: string;
   hcvTestResult?: string;
-  hivTestTaken?: boolean;
+  hivTestTaken?: boolean | PatientTestTakenValue;
   hivTestDate?: string;
   hivTestResult?: string;
   hasHealthInsurance?: boolean;
@@ -372,15 +375,15 @@ export interface PatientRequest {
   hasChronicDiseases?: boolean;
   chronicDiseases?: string | string[];
   chronicDiseaseOther?: string;
-  hasHBVVaccination?: boolean;
+  hasHBVVaccination?: ApiBooleanString;
   hbvVaccinationDate?: string;
-  hbvTestTaken?: boolean;
+  hbvTestTaken?: PatientTestTakenValue;
   hbvTestDate?: string;
   hbvTestResult?: string;
-  hcvTestTaken?: boolean;
+  hcvTestTaken?: PatientTestTakenValue;
   hcvTestDate?: string;
   hcvTestResult?: string;
-  hivTestTaken?: boolean;
+  hivTestTaken?: PatientTestTakenValue;
   hivTestDate?: string;
   hivTestResult?: string;
   hasHealthInsurance?: boolean;

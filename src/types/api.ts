@@ -45,6 +45,8 @@ export interface OtherMedicalTestRequest {
   testDate: string;
 }
 
+export type PatientTestTakenValue = 'true' | 'false' | 'not done';
+
 export interface Patient {
   id: number;
   fullName: string;
@@ -98,13 +100,13 @@ export interface Patient {
   bloodGroup?: string;
   hasHBVVaccination?: boolean;
   hbvVaccinationDate?: string;
-  hbvTestTaken?: boolean;
+  hbvTestTaken?: boolean | PatientTestTakenValue;
   hbvTestDate?: string;
   hbvTestResult?: string;
-  hcvTestTaken?: boolean;
+  hcvTestTaken?: boolean | PatientTestTakenValue;
   hcvTestDate?: string;
   hcvTestResult?: string;
-  hivTestTaken?: boolean;
+  hivTestTaken?: boolean | PatientTestTakenValue;
   hivTestDate?: string;
   hivTestResult?: string;
   hasHealthInsurance?: boolean;
@@ -181,13 +183,13 @@ export interface PatientRequest {
   chronicDiseaseOther?: string;
   hasHBVVaccination?: boolean;
   hbvVaccinationDate?: string;
-  hbvTestTaken?: boolean;
+  hbvTestTaken?: PatientTestTakenValue;
   hbvTestDate?: string;
   hbvTestResult?: string;
-  hcvTestTaken?: boolean;
+  hcvTestTaken?: PatientTestTakenValue;
   hcvTestDate?: string;
   hcvTestResult?: string;
-  hivTestTaken?: boolean;
+  hivTestTaken?: PatientTestTakenValue;
   hivTestDate?: string;
   hivTestResult?: string;
   hasHealthInsurance?: boolean;

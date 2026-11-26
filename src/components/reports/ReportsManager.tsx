@@ -54,6 +54,15 @@ const formatReportField = (value: unknown): string => {
   return typeof value === 'object' ? JSON.stringify(value) : String(value);
 };
 
+const formatTestTaken = (value: Patient['hbvTestTaken']): string =>
+  value === 'not done' ? 'Not done' : value === true || value === 'true' ? 'Tested' : 'Not tested';
+
+const parsePatientAge = (age?: string | number): number | null => {
+  if (age == null || String(age).trim() === '') return null;
+  const parsedAge = Number(age);
+  return Number.isFinite(parsedAge) && parsedAge >= 0 ? parsedAge : null;
+};
+
 export const ReportsManager: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -257,6 +266,34 @@ export const ReportsManager: React.FC = () => {
     { label: 'Died', count: vitalStatusCounts.Died, style: 'bg-red-600', text: 'text-red-700', card: 'border-red-200 bg-red-50' },
     { label: 'Unknown', count: vitalStatusCounts.Unknown, style: 'bg-gray-500', text: 'text-gray-700', card: 'border-gray-200 bg-gray-50' },
   ];
+  const patientAges = reportData.patients
+    .map((patient) => parsePatientAge(patient.age))
+    .filter((age): age is number => age !== null);
+  const patientSummaryMetrics = [
+    { label: 'Total patients', count: vitalStatusCounts.Alive },
+    { label: 'Deceased', count: reportData.patients.filter((patient) => ['died', 'deceased', 'dead'].includes(patient.vitalStatus?.trim().toLowerCase() || '')).length },
+    { label: 'Under 18', count: patientAges.filter((age) => age < 18).length },
+    { label: 'Under 5', count: patientAges.filter((age) => age < 5).length },
+    { label: 'Men', count: reportData.patients.filter((patient) => patient.gender?.trim().toLowerCase() === 'male').length },
+    { label: 'Women', count: reportData.patients.filter((patient) => patient.gender?.trim().toLowerCase() === 'female').length },
+    { label: 'Adults over 18', count: patientAges.filter((age) => age > 18).length },
+  ];
+  const patientHomeStateCounts = Array.from(reportData.patients.reduce((counts, patient) => {
+    const homeState = patient.homeState?.trim() || 'Unknown';
+    counts.set(homeState, (counts.get(homeState) || 0) + 1);
+    return counts;
+  }, new Map<string, number>()).entries())
+    .map(([homeState, count]) => ({ homeState, count }))
+    .sort((a, b) => b.count - a.count || a.homeState.localeCompare(b.homeState));
+  const patientDiagnosisCounts = Array.from(reportData.patients.reduce((counts, patient) => {
+    const diagnosis = patient.diagnosis?.trim() || 'Not specified';
+    counts.set(diagnosis, (counts.get(diagnosis) || 0) + 1);
+    return counts;
+  }, new Map<string, number>()).entries())
+    .map(([diagnosis, count]) => ({ diagnosis, count }))
+    .sort((a, b) => b.count - a.count || a.diagnosis.localeCompare(b.diagnosis));
+  const maxHomeStateCount = patientHomeStateCounts.reduce((max, item) => Math.max(max, item.count), 0);
+  const maxDiagnosisCount = patientDiagnosisCounts.reduce((max, item) => Math.max(max, item.count), 0);
   const distributionStates = Array.from(new Set(reportData.distributions.map((item) => item.state).filter(Boolean))).sort();
   const distributionCategories = Array.from(new Set(reportData.distributions.map((item) => item.category).filter(Boolean))).sort();
   const filteredDrugDistributions = reportData.distributions.filter((item) => {
@@ -388,7 +425,7 @@ export const ReportsManager: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-red-600 mb-1">Total Patients</p>
-                  <p className="text-3xl font-bold text-red-700">{reportData.patients.length}</p>
+                  <p className="text-3xl font-bold text-red-700">{vitalStatusCounts.Alive}</p>
                 </div>
                 <Users className="h-8 w-8 text-red-600" />
               </div>
@@ -513,7 +550,7 @@ export const ReportsManager: React.FC = () => {
               </div>
               <div className="mt-4 pt-4 border-t border-gray-200">
                 <div className="text-xs text-gray-500">
-                  Total Patients: {reportData.patients.length}
+                  Total Patient Records: {reportData.patients.length}
                 </div>
               </div>
             </div>
@@ -1102,6 +1139,61 @@ export const ReportsManager: React.FC = () => {
       {/* Patient Summary Report */}
       {activeReport === 'patients' && (
         <div className="space-y-6">
+          <section className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-8" aria-label="Patient summary counts">
+            {patientSummaryMetrics.map((metric) => (
+              <div key={metric.label} className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+                <p className="text-xs font-medium text-gray-500">{metric.label}</p>
+                <p className="mt-2 text-2xl font-bold text-gray-900">{metric.count.toLocaleString()}</p>
+              </div>
+            ))}
+          </section>
+
+          <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+              <h3 className="mb-5 text-lg font-semibold text-gray-800">Patients by Home State</h3>
+              {patientHomeStateCounts.length > 0 ? (
+                <div className="max-h-80 space-y-3 overflow-y-auto" role="img" aria-label="Patient count grouped by home state">
+                  {patientHomeStateCounts.map(({ homeState, count }) => (
+                    <div key={homeState} className="grid grid-cols-[minmax(5rem,9rem)_1fr_2.5rem] items-center gap-3">
+                      <span className="truncate text-sm text-gray-600" title={homeState}>{homeState}</span>
+                      <div className="h-3 overflow-hidden rounded-full bg-gray-100">
+                        <div
+                          className="h-full rounded-full bg-blue-600"
+                          style={{ width: `${(count / maxHomeStateCount) * 100}%` }}
+                        />
+                      </div>
+                      <span className="text-right text-sm font-semibold text-gray-800">{count}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="py-8 text-center text-sm text-gray-500">No patient records are available.</p>
+              )}
+            </div>
+
+            <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+              <h3 className="mb-5 text-lg font-semibold text-gray-800">Patients by Diagnosis</h3>
+              {patientDiagnosisCounts.length > 0 ? (
+                <div className="max-h-80 space-y-3 overflow-y-auto" role="img" aria-label="Patient count grouped by diagnosis">
+                  {patientDiagnosisCounts.map(({ diagnosis, count }) => (
+                    <div key={diagnosis} className="grid grid-cols-[minmax(5rem,9rem)_1fr_2.5rem] items-center gap-3">
+                      <span className="truncate text-sm text-gray-600" title={diagnosis}>{diagnosis}</span>
+                      <div className="h-3 overflow-hidden rounded-full bg-gray-100">
+                        <div
+                          className="h-full rounded-full bg-red-600"
+                          style={{ width: `${(count / maxDiagnosisCount) * 100}%` }}
+                        />
+                      </div>
+                      <span className="text-right text-sm font-semibold text-gray-800">{count}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="py-8 text-center text-sm text-gray-500">No patient records are available.</p>
+              )}
+            </div>
+          </section>
+
           {/* Patient Age Distribution Chart */}
           <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
             <div className="flex items-center justify-between mb-6">
@@ -1123,7 +1215,10 @@ export const ReportsManager: React.FC = () => {
                     ];
                     const ageGroupCounts = ageGroups.map(group => ({
                       ...group,
-                      count: reportData.patients.filter(p => p.age >= group.min && p.age <= group.max).length
+                      count: reportData.patients.filter((patient) => {
+                        const age = parsePatientAge(patient.age);
+                        return age !== null && age >= group.min && age <= group.max;
+                      }).length
                     }));
                     const maxCount = Math.max(...ageGroupCounts.map(g => g.count));
                     
@@ -1154,28 +1249,28 @@ export const ReportsManager: React.FC = () => {
                 <div className="space-y-3">
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600">Total Patients:</span>
-                    <span className="text-sm font-medium text-gray-800">{reportData.patients.length}</span>
+                    <span className="text-sm font-medium text-gray-800">{vitalStatusCounts.Alive}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600">Average Age:</span>
                     <span className="text-sm font-medium text-gray-800">
-                      {reportData.patients.length > 0 ? Math.round(reportData.patients.reduce((sum, p) => sum + p.age, 0) / reportData.patients.length) : 0} years
+                      {patientAges.length > 0 ? Math.round(patientAges.reduce((sum, age) => sum + age, 0) / patientAges.length) : 0} years
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">States Covered:</span>
-                    <span className="text-sm font-medium text-gray-800">{new Set(reportData.patients.map(p => p.state)).size}</span>
+                    <span className="text-sm text-gray-600">Home States Covered:</span>
+                    <span className="text-sm font-medium text-gray-800">{new Set(reportData.patients.map((patient) => patient.homeState?.trim()).filter(Boolean)).size}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600">Youngest Patient:</span>
                     <span className="text-sm font-medium text-gray-800">
-                      {reportData.patients.length > 0 ? Math.min(...reportData.patients.map(p => p.age)) : 0} years
+                      {patientAges.length > 0 ? Math.min(...patientAges) : 0} years
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600">Oldest Patient:</span>
                     <span className="text-sm font-medium text-gray-800">
-                      {reportData.patients.length > 0 ? Math.max(...reportData.patients.map(p => p.age)) : 0} years
+                      {patientAges.length > 0 ? Math.max(...patientAges) : 0} years
                     </span>
                   </div>
                 </div>
@@ -1328,9 +1423,9 @@ export const ReportsManager: React.FC = () => {
                 {
                   title: 'Screening Results',
                   fields: [
-                    { label: 'HBV', value: [singlePatientReport.hbvTestTaken ? 'Tested' : 'Not tested', singlePatientReport.hbvTestResult, singlePatientReport.hbvTestDate ? formatDate(singlePatientReport.hbvTestDate) : ''].filter(Boolean).join(' · ') },
-                    { label: 'HCV', value: [singlePatientReport.hcvTestTaken ? 'Tested' : 'Not tested', singlePatientReport.hcvTestResult, singlePatientReport.hcvTestDate ? formatDate(singlePatientReport.hcvTestDate) : ''].filter(Boolean).join(' · ') },
-                    { label: 'HIV', value: [singlePatientReport.hivTestTaken ? 'Tested' : 'Not tested', singlePatientReport.hivTestResult, singlePatientReport.hivTestDate ? formatDate(singlePatientReport.hivTestDate) : ''].filter(Boolean).join(' · ') },
+                    { label: 'HBV', value: [formatTestTaken(singlePatientReport.hbvTestTaken), singlePatientReport.hbvTestResult, singlePatientReport.hbvTestDate ? formatDate(singlePatientReport.hbvTestDate) : ''].filter(Boolean).join(' · ') },
+                    { label: 'HCV', value: [formatTestTaken(singlePatientReport.hcvTestTaken), singlePatientReport.hcvTestResult, singlePatientReport.hcvTestDate ? formatDate(singlePatientReport.hcvTestDate) : ''].filter(Boolean).join(' · ') },
+                    { label: 'HIV', value: [formatTestTaken(singlePatientReport.hivTestTaken), singlePatientReport.hivTestResult, singlePatientReport.hivTestDate ? formatDate(singlePatientReport.hivTestDate) : ''].filter(Boolean).join(' · ') },
                     { label: 'Other Medical Tests', value: singlePatientReport.otherMedicalTests },
                   ],
                 },

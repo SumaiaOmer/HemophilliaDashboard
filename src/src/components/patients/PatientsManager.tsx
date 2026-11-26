@@ -327,9 +327,19 @@ export const PatientsManager: React.FC = () => {
                                 <span className="ml-2 text-gray-900">{formatOccupation(patient.occupation)}</span>
                               </div>
                               <div>
-                                <span className="text-gray-600">Address:</span>
+                                <span className="text-gray-600">Home State:</span>
+                                <span className="ml-2 text-gray-900">{patient.homeState || 'N/A'}</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-600">Residence Location:</span>
                                 <span className="ml-2 text-gray-900">
-                                  {[patient.locality, patient.cityOrTown, patient.state].filter(Boolean).join(', ') || 'N/A'}
+                                  {[
+                                    patient.residenceLocalArea || patient.locality,
+                                    patient.residenceCityOrTown || patient.cityOrTown,
+                                    patient.residenceState || patient.state,
+                                    patient.residenceRegion,
+                                    patient.residenceCountry || patient.country,
+                                  ].filter(Boolean).join(', ') || 'N/A'}
                                 </span>
                               </div>
                             </div>
