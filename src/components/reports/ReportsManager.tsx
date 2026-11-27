@@ -63,6 +63,16 @@ const parsePatientAge = (age?: string | number): number | null => {
   return Number.isFinite(parsedAge) && parsedAge >= 0 ? parsedAge : null;
 };
 
+const isPermanentlyDisplaced = (patient: Patient): boolean =>
+  (patient.status || '').trim().toLowerCase() === 'permanently displaced';
+
+const getReportState = (patient: Patient): string => {
+  if (isPermanentlyDisplaced(patient)) {
+    return patient.residenceState || patient.residenceRegion || patient.state || 'Unknown';
+  }
+  return patient.homeState || patient.state || 'Unknown';
+};
+
 export const ReportsManager: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -140,7 +150,7 @@ export const ReportsManager: React.FC = () => {
     const stateMap = new Map<string, StateStatistics>();
 
     reportData.patients.forEach(patient => {
-      const stateKey = patient.residenceState || patient.state || 'Unknown';
+      const stateKey = getReportState(patient);
       if (!stateMap.has(stateKey)) {
         stateMap.set(stateKey, {
           state: stateKey,
@@ -237,7 +247,7 @@ export const ReportsManager: React.FC = () => {
   const companyStats = getCompanyStatistics();
   const expiringFactors = getExpiringFactors();
   const reportPatients = reportData.patients.filter((patient) => {
-    const state = patient.residenceState || patient.state || 'Unknown';
+    const state = getReportState(patient);
     const matchesSearch = `${patient.fullName} ${patient.nationalIdNumber} ${patient.diagnosis || ''}`
       .toLowerCase()
       .includes(patientSearch.trim().toLowerCase());
@@ -279,8 +289,8 @@ export const ReportsManager: React.FC = () => {
     { label: 'Adults over 18', count: patientAges.filter((age) => age > 18).length },
   ];
   const patientHomeStateCounts = Array.from(reportData.patients.reduce((counts, patient) => {
-    const homeState = patient.homeState?.trim() || 'Unknown';
-    counts.set(homeState, (counts.get(homeState) || 0) + 1);
+    const reportState = getReportState(patient);
+    counts.set(reportState, (counts.get(reportState) || 0) + 1);
     return counts;
   }, new Map<string, number>()).entries())
     .map(([homeState, count]) => ({ homeState, count }))
@@ -735,7 +745,7 @@ export const ReportsManager: React.FC = () => {
                 className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100"
               >
                 <option value="all">All states</option>
-                {Array.from(new Set(reportData.patients.map((p) => p.residenceState || p.state || 'Unknown'))).sort().map((state) => (
+                {Array.from(new Set(reportData.patients.map((p) => getReportState(p)))).sort().map((state) => (
                   <option key={state} value={state}>{state}</option>
                 ))}
               </select>
@@ -820,7 +830,7 @@ export const ReportsManager: React.FC = () => {
                     <tr key={patient.id} className="hover:bg-gray-50">
                       <td className="px-5 py-3 text-sm text-gray-900">{patient.fullName}</td>
                       <td className="px-5 py-3 text-sm text-gray-600">{patient.nationalIdNumber || '—'}</td>
-                      <td className="px-5 py-3 text-sm text-gray-600">{patient.residenceState || patient.state || 'Unknown'}</td>
+                      <td className="px-5 py-3 text-sm text-gray-600">{getReportState(patient)}</td>
                       <td className="px-5 py-3 text-sm capitalize text-gray-600">{patient.gender || '—'}</td>
                       <td className="px-5 py-3 text-sm">
                         {(() => {
@@ -919,7 +929,7 @@ export const ReportsManager: React.FC = () => {
                   fullName: patient.fullName,
                   nationalIdNumber: patient.nationalIdNumber,
                   vitalStatus: patient.vitalStatus || 'Unknown',
-                  state: patient.residenceState || patient.state || 'Unknown',
+                  state: getReportState(patient),
                   diagnosis: patient.diagnosis || '',
                 })), 'patient_vital_status_report')}
                 disabled={reportData.patients.length === 0}
@@ -949,7 +959,7 @@ export const ReportsManager: React.FC = () => {
                         <td className="px-5 py-3 text-sm text-gray-900">{patient.fullName || '—'}</td>
                         <td className="px-5 py-3 text-sm text-gray-600">{patient.nationalIdNumber || '—'}</td>
                         <td className="px-5 py-3 text-sm"><span className={`rounded-full px-2.5 py-1 text-xs font-medium ${badge}`}>{label}</span></td>
-                        <td className="px-5 py-3 text-sm text-gray-600">{patient.residenceState || patient.state || 'Unknown'}</td>
+                        <td className="px-5 py-3 text-sm text-gray-600">{getReportState(patient)}</td>
                         <td className="px-5 py-3 text-sm text-gray-600">{patient.diagnosis || '—'}</td>
                       </tr>
                     );
@@ -1150,7 +1160,7 @@ export const ReportsManager: React.FC = () => {
 
           <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-              <h3 className="mb-5 text-lg font-semibold text-gray-800">Patients by Home State</h3>
+              <h3 className="mb-5 text-lg font-semibold text-gray-800">Patients by State</h3>
               {patientHomeStateCounts.length > 0 ? (
                 <div className="max-h-80 space-y-3 overflow-y-auto" role="img" aria-label="Patient count grouped by home state">
                   {patientHomeStateCounts.map(({ homeState, count }) => (
@@ -1258,8 +1268,8 @@ export const ReportsManager: React.FC = () => {
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Home States Covered:</span>
-                    <span className="text-sm font-medium text-gray-800">{new Set(reportData.patients.map((patient) => patient.homeState?.trim()).filter(Boolean)).size}</span>
+                    <span className="text-sm text-gray-600">States Covered:</span>
+                    <span className="text-sm font-medium text-gray-800">{new Set(reportData.patients.map((patient) => getReportState(patient)).filter((state) => state !== 'Unknown')).size}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600">Youngest Patient:</span>
@@ -1305,7 +1315,7 @@ export const ReportsManager: React.FC = () => {
                       <tr key={patient.id}>
                         <td className="px-6 py-4 text-sm text-gray-900">{patient.fullName}</td>
                         <td className="px-6 py-4 text-sm text-gray-900">{patient.age}</td>
-                        <td className="px-6 py-4 text-sm text-gray-900">{patient.residenceType}</td>
+                        <td className="px-6 py-4 text-sm text-gray-900">{getReportState(patient)}</td>
                         <td className="px-6 py-4 text-sm text-gray-900">{patient.diagnosis}</td>
                       </tr>
                     ))}

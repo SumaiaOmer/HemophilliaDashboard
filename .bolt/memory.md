@@ -39,6 +39,9 @@
 - API URL conventions may differ between client code and documentation. Confirm live base paths before treating failed loads as empty data.
 - Do not create live State, City, or Local Area records without the user’s concrete list and confirmation.
 - Production build remains blocked by a pre-existing missing login-screen image unrelated to lookup hierarchy work.
+- Patient model includes `status`, `homeState`, and `residenceState` fields.
+- Reports page aggregates patient data across multiple sections: State Distribution pie chart, State Consumption report, Patient Summary state breakdown, Patient Analytics results/filters, and Vital Status table.
+- A report-state helper selects the reporting state by patient status: `status === "Permanently displaced"` uses `residenceState`; all other statuses use `homeState`. Applied consistently across all report sections listed above.
 
 ## Open questions & assumptions
 
@@ -49,3 +52,4 @@
 - Verify selection changes, dependent resets, loading, empty states, API errors, and responsive behavior in the browser.
 - Decide how orphaned children are handled when parent items/types are edited or deleted.
 - Confirm whether hierarchy depth is limited to the three location levels or should support arbitrary configured nesting.
+- Confirm exact set of patient `status` values and whether additional statuses should map to residence state instead of home state.
