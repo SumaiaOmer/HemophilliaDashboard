@@ -702,6 +702,14 @@ const handleSubmit = (e: React.FormEvent) => {
         cityOrTown: value,
         locality: autoSelectLocality
       }));
+    } else if (name === 'diagnosis') {
+      const label = diagnoses.find(option => option.value === value)?.label ?? '';
+      const becomesUndiagnosed = `${value} ${label}`.toLowerCase().includes('undiagnos');
+      setFormData(prev => ({
+        ...prev,
+        diagnosis: value,
+        hemophiliaCenterId: becomesUndiagnosed ? '' : prev.hemophiliaCenterId
+      }));
     } else if (name === 'HasInhibitors') {
       const inhibitorValue = value === 'true';
       const inhibitorStatus = value === 'true' ? 'true' : 'false';
@@ -862,10 +870,12 @@ const handleSubmit = (e: React.FormEvent) => {
                     ))}
                   </select>
                 </div>
+                {!isUndiagnosed && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Hemophilia Center ID</label>
                   <input type="text" name="hemophiliaCenterId" value={formData.hemophiliaCenterId || ''} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Center ID" />
                 </div>
+                )}
               </div>
             )}
 
@@ -1074,10 +1084,12 @@ const handleSubmit = (e: React.FormEvent) => {
                 <h4 className="text-lg font-semibold text-green-900 mb-4">Medical Information</h4>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    {!isUndiagnosed && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Hemophilia Center ID{!isUndiagnosed ? ' *' : ''}</label>
-                      <input type="text" name="hemophiliaCenterId" value={formData.hemophiliaCenterId} onChange={handleChange} required={!isUndiagnosed} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Center ID" />
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Hemophilia Center ID</label>
+                      <input type="text" name="hemophiliaCenterId" value={formData.hemophiliaCenterId || ''} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Center ID" />
                     </div>
+                    )}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Incidence Date</label>
                     <input type="date" name="incidenceDate" value={formData.incidenceDate || ''} onChange={handleChange} max={toDateInputValue(new Date().toISOString())} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
