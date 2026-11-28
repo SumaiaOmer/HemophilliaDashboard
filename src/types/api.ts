@@ -84,8 +84,8 @@ export interface Patient {
   factorPercentDate?: string;
   familyHistory?: 'first_degree' | 'second_degree' | 'third_degree' | 'none';
   isDiagnosed?: boolean;
-  HasInhibitors?: boolean;
-  hasInhibitors?: boolean;
+  HasInhibitors?: boolean | InhibitorStatusValue;
+  hasInhibitors?: boolean | InhibitorStatusValue;
   inhibitorLevel?: number;
   inhibitorScreeningDate?: string;
   inhibitors?: InhibitorEntry[];
@@ -126,6 +126,8 @@ export interface Patient {
 
 export type TestType = 'FactorLevel' | 'InhibitorScreening' | 'HBV' | 'HCV' | 'HIV' | 'Other';
 
+export type InhibitorStatusValue = 'true' | 'false' | 'Not Done';
+
 export interface PatientTestDate {
   testType: TestType;
   hasTaken: boolean;
@@ -152,7 +154,7 @@ export interface PatientRequest {
   severity?: string;
   factorPercent?: number;
   factorPercentDate?: string;
-  hasInhibitors?: boolean;
+  hasInhibitors?: boolean | InhibitorStatusValue;
   familyHistory?: string;
   vitalStatus?: 'Alive' | 'Died' | 'Unknown';
   status?: string;
@@ -171,7 +173,7 @@ export interface PatientRequest {
   country?: string;
   incidenceDate?: string;
   isDiagnosed?: boolean;
-  HasInhibitors?: boolean;
+  HasInhibitors?: boolean | InhibitorStatusValue;
   inhibitorLevel?: number;
   inhibitorScreeningDate?: string;
   inhibitors?: InhibitorEntry[];

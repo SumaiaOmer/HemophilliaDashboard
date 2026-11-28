@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
-import { Patient, PatientRequest, PatientTestDate, PatientTestTakenValue, TestType, OtherMedicalTest, InhibitorEntry, InhibitorTestRequest } from '../../types/api';
+import { Patient, PatientRequest, PatientTestDate, PatientTestTakenValue, TestType, OtherMedicalTest, InhibitorEntry, InhibitorTestRequest, InhibitorStatusValue } from '../../types/api';
 import { toDateInputValue } from '../../lib/dateUtils';
 import { LookupsService } from '../../services/lookups';
 import { getLookupOptions, LookupOption, toLookupOptions, useLookupOptions } from '../../hooks/useLookupOptions';
@@ -82,6 +82,18 @@ const parseViralTestStatus = (value: unknown): ViralTestStatus => {
 
 const toPatientTestTakenValue = (status: ViralTestStatus): PatientTestTakenValue =>
   status === 'yes' ? 'true' : status === 'not_done' ? 'not done' : 'false';
+
+const toInhibitorStatusValue = (status: ViralTestStatus): InhibitorStatusValue =>
+  status === 'yes' ? 'true' : status === 'not_done' ? 'Not Done' : 'false';
+
+const parseInhibitorStatus = (value: unknown): ViralTestStatus => {
+  if (value === true) return 'yes';
+  if (typeof value !== 'string') return 'no';
+  const normalized = value.trim().toLowerCase();
+  if (normalized === 'true' || normalized === 'yes') return 'yes';
+  if (normalized === 'not done' || normalized === 'not_done') return 'not_done';
+  return 'no';
+};
 
 const normalizePhoneValue = (value?: string): { code: string; number: string } => {
   if (!value) return { code: '+249', number: '' };
@@ -303,11 +315,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
       const normalized1 = normalizePhoneValue(patient.contactNumber1 || patient.contactNumber);
       const normalized2 = normalizePhoneValue(patient.contactNumber2);
 
-      setInhibitorStatus(
-        patient.HasInhibitors === true || patient.hasInhibitors === true || patient.inhibitor === true || normalizedInhibitorHistory.length > 0
-          ? 'yes'
-          : 'no'
-      );
+      setInhibitorStatus(parseInhibitorStatus(patient.HasInhibitors ?? patient.hasInhibitors ?? patient.inhibitor));
 
       setFormData({
         fullName: patient.fullName || '',
@@ -358,11 +366,11 @@ export const PatientForm: React.FC<PatientFormProps> = ({
           if (!fh || String(fh).toLowerCase() === 'none') return '';
           return reverseMap[String(fh)] || String(fh).toLowerCase();
         })(),
-        HasInhibitors: patient.HasInhibitors === true || patient.hasInhibitors === true || patient.inhibitor === true || normalizedInhibitorHistory.length > 0,
-        hasInhibitors: patient.hasInhibitors === true || patient.HasInhibitors === true || patient.inhibitor === true || normalizedInhibitorHistory.length > 0,
-        inhibitorLevel: inheritedInhibitorLevel,
-        inhibitorScreeningDate: inheritedInhibitorScreeningDate,
-        inhibitors: normalizedInhibitors,
+        HasInhibitors: toInhibitorStatusValue(inhibitorStatus),
+        hasInhibitors: toInhibitorStatusValue(inhibitorStatus),
+        inhibitorLevel: inhibitorStatus === 'yes' ? inheritedInhibitorLevel : undefined,
+        inhibitorScreeningDate: inhibitorStatus === 'yes' ? inheritedInhibitorScreeningDate : '',
+        inhibitors: inhibitorStatus === 'yes' ? normalizedInhibitors : [],
         HasChronicDiseases: hasChronicDiseasesValue,
         chronicDiseases: chronicDiseasesArray,
         chronicDiseaseOther: patient.chronicDiseaseOther || '',
@@ -573,8 +581,8 @@ const handleSubmit = (e: React.FormEvent) => {
     chronicDiseaseOther: formData.chronicDiseaseOther || '',
     HasChronicDiseases: chronicDiseasesArray.length > 0,
     hasChronicDiseases: chronicDiseasesArray.length > 0,
-    HasInhibitors: Boolean(formData.HasInhibitors || formData.hasInhibitors),
-    hasInhibitors: Boolean(formData.HasInhibitors || formData.hasInhibitors),
+    HasInhibitors: toInhibitorStatusValue(inhibitorStatus),
+    hasInhibitors: toInhibitorStatusValue(inhibitorStatus),
     otherMedicalTests: otherMedicalTests.length > 0 ? otherMedicalTests : [],
     testDates: testDatesArray.length > 0 ? testDatesArray : [],
     hbvTestTaken: toPatientTestTakenValue(viralTestStatuses.HBV),
@@ -590,9 +598,9 @@ const handleSubmit = (e: React.FormEvent) => {
 
   // CRITICAL: Always include inhibitorTests if there are any, even if empty array
   // Don't skip it - backend expects it
-  if (inhibitorTests.length > 0) {
+  if (inhibitorStatus === 'yes' && inhibitorTests.length > 0) {
     submitData.inhibitorTests = inhibitorTests;
-  } else if (formData.HasInhibitors) {
+  } else if (inhibitorStatus === 'yes') {
     // If HasInhibitors is true but no tests, send at least the current one
     submitData.inhibitorTests = [{
       level: formData.inhibitorLevel || 0,
@@ -610,9 +618,9 @@ const handleSubmit = (e: React.FormEvent) => {
   if (hasFamilyHistory && formData.familyHistory) submitData.familyHistory = familyHistoryMap[formData.familyHistory] || formData.familyHistory;
   if (hasFactorLevel && formData.factorPercent !== undefined && formData.factorPercent !== null) submitData.factorPercent = formData.factorPercent;
   if (hasFactorLevel && factorTestDate) submitData.factorPercentDate = factorTestDate;
-  if (formData.hasInhibitors) submitData.hasInhibitors = formData.hasInhibitors;
-  if (formData.inhibitorLevel) submitData.inhibitorLevel = formData.inhibitorLevel;
-  if (formData.inhibitorScreeningDate) submitData.inhibitorScreeningDate = formData.inhibitorScreeningDate;
+  if (inhibitorStatus === 'yes') submitData.hasInhibitors = toInhibitorStatusValue(inhibitorStatus);
+  if (inhibitorStatus === 'yes' && formData.inhibitorLevel) submitData.inhibitorLevel = formData.inhibitorLevel;
+  if (inhibitorStatus === 'yes' && formData.inhibitorScreeningDate) submitData.inhibitorScreeningDate = formData.inhibitorScreeningDate;
   if (formData.hasHBVVaccination) submitData.hasHBVVaccination = formData.hasHBVVaccination;
   if (formData.hbvVaccinationDate) submitData.hbvVaccinationDate = formData.hbvVaccinationDate;
   if (formData.hasHealthInsurance) submitData.hasHealthInsurance = formData.hasHealthInsurance;

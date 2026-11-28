@@ -32,10 +32,15 @@ export class PatientsService {
       }
     }
 
-    const inhibitor = patient.HasInhibitors === true || patient.HasInhibitors === 'true' ||
-                     patient.hasInhibitors === true || patient.hasInhibitors === 'true' ||
-                     patient.inhibitor === true || patient.inhibitor === 'true' ||
-                     patient.has_inhibitors === true || patient.has_inhibitors === 'true';
+    const inhibitorStatusValue = patient.HasInhibitors ?? patient.hasInhibitors ?? patient.inhibitor ?? patient.has_inhibitors;
+    const inhibitorIsYes = inhibitorStatusValue === true || inhibitorStatusValue === 'true' ||
+                     inhibitorStatusValue === 'True' || inhibitorStatusValue === 'yes';
+    const inhibitorIsNotDone = typeof inhibitorStatusValue === 'string' &&
+                     inhibitorStatusValue.trim().toLowerCase() === 'not done';
+    const inhibitor: boolean | string =
+      inhibitorIsYes ? true :
+      inhibitorIsNotDone ? 'Not Done' :
+      false;
 
     // Parse inhibitors array if present on the patient record
     let inhibitors: any[] = [];
@@ -245,7 +250,7 @@ export class PatientsService {
       FactorPercentDate: patient.factorPercentDate || null,
       IsDiagnosed: patient.isDiagnosed ?? Boolean(patient.diagnosis || patient.diagnosisType || patient.diagnosisYear),
       isDiagnosed: patient.isDiagnosed ?? Boolean(patient.diagnosis || patient.diagnosisType || patient.diagnosisYear),
-      HasInhibitors: patient.hasInhibitors ?? patient.HasInhibitors ?? false,
+      HasInhibitors: patient.HasInhibitors ?? patient.hasInhibitors ?? false,
       hasInhibitors: patient.hasInhibitors ?? patient.HasInhibitors ?? false,
       FamilyHistory: patient.familyHistory || null,
       VitalStatus: patient.vitalStatus || 'Alive',
